@@ -3,7 +3,6 @@
 /*===== HARDEWARE =====*/
 #include "hardware_cfg.h"
 #include "motors.h"
-#include "kinematic.h"
 #include "bsp.h"
 //IMU
 
