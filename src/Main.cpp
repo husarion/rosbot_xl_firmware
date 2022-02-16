@@ -5,7 +5,7 @@
 #include "motors.h"
 #include "bsp.h"
 //IMU
-
+#include "ImuLib_cfg.h"
 //PIXEL
 #include "PixelLedLib_cfg.h"
 /*===== CONNECTIVITY =====*/
@@ -23,6 +23,8 @@
 #include <std_msgs/msg/int64.h>
 #include <nav_msgs/msg/odometry.h>
 #include <geometry_msgs/msg/twist.h>
+#include <sensor_msgs/msg/imu.h>
+#include <sensor_msgs/msg/battery_state.h>
 
 /* DEFINES */
 #define CLIENT_IP "192.168.1.177"
@@ -72,9 +74,9 @@ typedef struct {
 /* VARIABLES */
 QueueHandle_t CmdVelQueue;
 QueueHandle_t OdomQueue;
-
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
+QueueHandle_t ImuQueue;
 
 //ROS PUBLISHERS
 rcl_publisher_t publisher;
@@ -86,9 +88,9 @@ rcl_subscription_t cmd_vel_subscriber;
 //ROS MESSAGES
 nav_msgs__msg__Odometry odom_msg;
 geometry_msgs__msg__Twist* twist_msg;
-geometry_msgs__msg__Twist twist_msg_temp;
 std_msgs__msg__String msgs;
 uint8_t ros_msgs_cnt = 0;
+sensor_msgs__msg__Imu imu_msg;
 
 //ROS
 rclc_executor_t executor;
@@ -113,12 +115,13 @@ MotorPidClass M3_PID(&Motor3);
 MotorPidClass M4_PID(&Motor4);
 
 //IMU
-
+extern ImuDriver ImuBno;
 //PIXEL LED
 PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
 
 /* TASKS DECLARATION */
 static void rclc_spin_task(void *p);
+static void imu_task(void *p);
 static void chatter_publisher_task(void *p);
 static void runtime_stats_task(void *p);
 static void pid_handler_task(void *p);
@@ -168,6 +171,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
 
   static odometry_queue_t queue_odom;
+  static imu_queue_t queue_imu;
   if (timer != NULL) {
     if (xQueueReceive(OdomQueue, &queue_odom, (TickType_t) 0) == pdPASS) {
       struct timespec ts = {0};
@@ -194,6 +198,24 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       odom_msg.twist.twist.angular.z = queue_odom.rot_v_z;
 
       RCSOFTCHECK(rcl_publish(&odom_publisher, &odom_msg, NULL));
+    }
+    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      imu_msg.header.stamp.sec = ts.tv_sec;
+      imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      imu_msg.header.frame_id.data = (char *) "imu";
+      imu_msg.orientation.x = queue_imu.Orientation[0];
+      imu_msg.orientation.y = queue_imu.Orientation[1];
+      imu_msg.orientation.z = queue_imu.Orientation[2];
+      imu_msg.orientation.w = queue_imu.Orientation[3];
+      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
+      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
+      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
+      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
+      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
+      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
+      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
     }
   }
 }
@@ -234,7 +256,8 @@ void setup() {
 
   //Pixel Led
   PixelStrip.Init();
-  
+  ImuBno.Init();
+
   delay(2000);
 
   client_ip.fromString(CLIENT_IP);
@@ -256,7 +279,7 @@ void setup() {
 
   allocator = rcl_get_default_allocator();
 
-
+  /* MICRO ROS INIT */
   // create init_options
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator))
   // create node
@@ -283,22 +306,27 @@ void setup() {
   if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
   RCCHECK(rmw_uros_sync_session(1000));
   if(BOARD_MODE_DEBUG) Serial.printf("Clocks synchronised\r\n");
+
+  /* RTOS QUEUES CREATION */
   CmdVelQueue = xQueueCreate(1, sizeof(cmd_vel_queue_t));
   OdomQueue = xQueueCreate(1, sizeof(odometry_queue_t));
-
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
   MotorStateQueue = xQueueCreate(1, sizeof(double)*4);
-
+  ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
 
+  /* MICRO ROS MESSAGES INIT */
   init_odom_msg();
 
-  // create spin task
+  /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
                    configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS)  Serial.printf("S1 creation problem");
-  // create spin task
+  s2 = xTaskCreate(imu_task, "rclc_spin_task",
+                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   NULL);
+  if(s2 != pdPASS)  Serial.printf("S2 creation problem");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
                    configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
@@ -319,13 +347,14 @@ void setup() {
                           configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s7 != pdPASS)  Serial.printf("S7 creation problem");
-  if(BOARD_MODE_DEBUG) Serial.printf("Tasks started\r\n");
-  // start FreeRTOS
+
+  /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
+
+  /* START RTOS */
+  if(BOARD_MODE_DEBUG) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
 }
-
-/* RTOS TASKS */
 
 static void rclc_spin_task(void *p) {
   UNUSED(p);
@@ -338,6 +367,14 @@ static void rclc_spin_task(void *p) {
   }
 }
 
+static void imu_task(void *p){
+  static imu_queue_t queue_imu;
+  while(1){
+    queue_imu = ImuBno.LoopHandler();
+    xQueueSendToFront(ImuQueue, (void*) &queue_imu, TickType_t(0));
+    vTaskDelay(1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS);
+  }
+}
 
 static void runtime_stats_task(void *p) {
   char buf[2000];
