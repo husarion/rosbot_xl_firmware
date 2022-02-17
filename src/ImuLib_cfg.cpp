@@ -23,20 +23,31 @@ ImuDriver::~ImuDriver(){
 }
 
 bool ImuDriver::Init(){
-    return this->ImuBno->begin();
+    if(this->ImuBno->begin()){
+        this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P3);
+        this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P3);
+        this->ImuBno->setExtCrystalUse(true);
+        return false;
+    }
+    return true;
 }
 
 imu_queue_t ImuDriver::LoopHandler(){
     imu_queue_t ImuQueue;
+    imu::Quaternion Quaternion;
     double* buffer = &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER))[0];
-    ImuQueue.LinearAcceleration[0] = buffer[0];
-    ImuQueue.LinearAcceleration[1] = buffer[1];
-    ImuQueue.LinearAcceleration[2] = buffer[2];
+    ImuQueue.LinearAcceleration[0] = (float)buffer[0];
+    ImuQueue.LinearAcceleration[1] = (float)buffer[1];
+    ImuQueue.LinearAcceleration[2] = (float)buffer[2];
     buffer = &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE))[0];
-    ImuQueue.AngularVelocity[0] = buffer[0];
-    ImuQueue.AngularVelocity[1] = buffer[1];
-    ImuQueue.AngularVelocity[2] = buffer[2];
-    
+    ImuQueue.AngularVelocity[0] = (float)buffer[0];
+    ImuQueue.AngularVelocity[1] = (float)buffer[1];
+    ImuQueue.AngularVelocity[2] = (float)buffer[2];
+    Quaternion = this->ImuBno->getQuat();
+    ImuQueue.Orientation[0] = Quaternion.x();
+    ImuQueue.Orientation[1] = Quaternion.y();
+    ImuQueue.Orientation[2] = Quaternion.z();
+    ImuQueue.Orientation[3] = Quaternion.w();
     return ImuQueue;
 }
 

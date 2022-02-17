@@ -289,6 +289,11 @@ void setup() {
       "odom/wheels"));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'odom/wheels' publisher.\r\n");
+  RCCHECK(rclc_publisher_init_default(
+      &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
+      "sensor_msgs/Imu"));
+  ros_msgs_cnt++;
+  if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
   RCCHECK(rclc_subscription_init_default(
       &cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
       "cmd_vel"));
@@ -320,15 +325,15 @@ void setup() {
 
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 5000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS)  Serial.printf("S1 creation problem");
-  s2 = xTaskCreate(imu_task, "rclc_spin_task",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+  s2 = xTaskCreate(imu_task, "imu_task",
+                   configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s2 != pdPASS)  Serial.printf("S2 creation problem");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s3 != pdPASS)  Serial.printf("S3 creation problem");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
@@ -369,10 +374,12 @@ static void rclc_spin_task(void *p) {
 
 static void imu_task(void *p){
   static imu_queue_t queue_imu;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
   while(1){
     queue_imu = ImuBno.LoopHandler();
     xQueueSendToFront(ImuQueue, (void*) &queue_imu, TickType_t(0));
-    vTaskDelay(1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS);
+    // vTaskDelay(1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS);
+    vTaskDelayUntil(&xLastWakeTime, (1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS));
   }
 }
 
@@ -395,7 +402,7 @@ static void pid_handler_task(void *p){
 
 
   while(1){
-    vTaskDelayUntil(&xLastWakeTime, 1000/PID_FREQ);
+    vTaskDelayUntil(&xLastWakeTime, (1000/PID_FREQ*portTICK_PERIOD_MS));
     xQueueReceive(SetpointQueue, &setpoint, (TickType_t) 0);
 
     M4_PID.Handler();
@@ -413,7 +420,6 @@ static void pid_handler_task(void *p){
     M3_PID.Handler();
     M3_PID.SetSetpoint(setpoint[2]);
     motor_state[2] = double(M3_PID.Motor->GetVelocity());
-
     xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
   }
 }
@@ -485,7 +491,8 @@ static void kinematics_task(void *p) {
     xQueueSendToFront(OdomQueue, &queue_odom, (TickType_t) 0);
 
     LastTime = ActualTime;
-    vTaskDelay(TickType_t(40 / portTICK_PERIOD_MS));
+    // vTaskDelay(TickType_t(40 / portTICK_PERIOD_MS));
+    vTaskDelay(1000/KINEMATIC_TASK_FREQ*portTICK_PERIOD_MS);
   }
 }
 
