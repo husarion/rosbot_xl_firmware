@@ -44,7 +44,12 @@ void SetRedLed(SwitchStateTypeDef State_){
 
 void BoardPheripheralsInit(void){
     //SBC Serial port init
-    Serial.setRx(SBC_SERIAL_RX);
-    Serial.setTx(SBC_SERIAL_TX);
-    Serial.begin(SBC_SERIAL_BAUDRATE);
+    Serial1.setRx(SBC_SERIAL_RX);
+    Serial1.setTx(SBC_SERIAL_TX);
+    Serial1.begin(SBC_SERIAL_BAUDRATE);
+    //Power Board Serial port init
+    // HardwareSerial Serial2(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX);
+    // Serial2.begin(PWR_BRD_SERIAL_BAUDRATE);
 }
+
+

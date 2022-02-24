@@ -40,18 +40,19 @@
 #define AUDIO_DAC_CH        OUT1
 
 /* POWER BOARD */
-#define PWR_BRD_GPIO_INPUT  PD4 //PB5 on power board -> output push pull
-#define PWR_BRD_GPIO_OUTPUT PD7 //PB8 on power board -> input
-#define PWR_BRD_RX          PD6
-#define PWR_BRD_TX          PD5
-#define PWR_BRD_SERIAL      UART2
+#define PWR_BRD_GPIO_INPUT          PD4 //PB5 on power board -> output push pull
+#define PWR_BRD_GPIO_OUTPUT         PD7 //PB8 on power board -> input
+#define PWR_BRD_SERIAL_RX           PD6
+#define PWR_BRD_SERIAL_TX           PD5
+#define PWR_BRD_SERIAL              UART2
+#define PWR_BRD_SERIAL_BAUDRATE     11520
 
 /* IMU */
 #define IMU_I2C             I2C2
 #define IMU_SDA             PF0
 #define IMU_SCL             PF1
 #define IMU_GPIO_IT         PF2
-#define IMU_SAMPLE_FREQ     50  //Hz
+#define IMU_SAMPLE_FREQ     25  //Hz
 #define IMU_ID              0x37
 #define IMU_ADDR_A          0x28
 #define IMU_ADDR_B          0x29

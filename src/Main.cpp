@@ -1,16 +1,17 @@
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
 /*===== HARDEWARE =====*/
-#include "hardware_cfg.h"
-#include "motors.h"
-#include "bsp.h"
+#include <hardware_cfg.h>
+#include <motors.h>
+#include <bsp.h>
 //IMU
-#include "ImuLib_cfg.h"
+#include <ImuLib_cfg.h>
 //PIXEL
-#include "PixelLedLib_cfg.h"
+#include <PixelLedLib_cfg.h>
 /*===== CONNECTIVITY =====*/
 #include <LwIP.h>
 #include <STM32Ethernet.h>
+#include <UartLib.h>
 /*===== MICRO ROS =====*/
 #include <micro_ros_arduino.h>
 #include <micro_ros_utilities/string_utilities.h>
@@ -128,6 +129,7 @@ static void pid_handler_task(void *p);
 static void pixel_led_task(void *p);
 static void kinematics_task(void *p);
 static void board_support_task(void *p);
+static void power_board_task(void *p);
 
 /* FUNCTIONS */
 void error_loop() {
@@ -274,6 +276,8 @@ void setup() {
   delay(2000);
 
   while(rmw_uros_ping_agent(50, 2) != RMW_RET_OK) {
+    SetRedLed(Toggle);
+    delay(100);
     continue;
   }
 
@@ -352,6 +356,10 @@ void setup() {
                           configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s7 != pdPASS)  Serial.printf("S7 creation problem");
+  s8 = xTaskCreate(power_board_task, "power_board_task",
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          NULL);
+  if(s8 != pdPASS)  Serial.printf("S8 creation problem");
 
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
@@ -367,7 +375,6 @@ static void rclc_spin_task(void *p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     RCSOFTCHECK(rclc_executor_spin(&executor));
-
     vTaskDelayUntil(&xLastWakeTime, 2);
   }
 }
@@ -505,11 +512,23 @@ static void board_support_task(void *p){
   }
 }
 
+static void power_board_task(void *p){
+  static String Frame = "Temp_Text";
+  static char FrameBuffer[100];
+  while(1){
+    // Serial2.readStringUntil('<');
+    // frame = Serial2.readStringUntil('>');
+    // sprintf(FrameBuffer, "Temp");
+    // Serial.printf("%c", FrameBuffer);
+    vTaskDelay(100);
+  }
+}
+
 
 /*============== LOOP - IDDLE TASK ===============*/
 
 void loop() {
-  digitalWrite(GRN_LED, !digitalRead(GRN_LED));
+  SetGreenLed(Toggle);
   delay(1000);
 }
 
