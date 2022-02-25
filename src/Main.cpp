@@ -26,6 +26,7 @@
 #include <geometry_msgs/msg/twist.h>
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/battery_state.h>
+#include <sensor_msgs/msg/joint_state.h>
 
 /* DEFINES */
 #define CLIENT_IP "192.168.1.177"
@@ -86,12 +87,14 @@ rcl_publisher_t imu_publisher;
 //ROS SUBSCRIPTIONS
 rcl_subscription_t subscriber;
 rcl_subscription_t cmd_vel_subscriber;
+rcl_subscription_t joint_state_subscriber;
 //ROS MESSAGES
 nav_msgs__msg__Odometry odom_msg;
 geometry_msgs__msg__Twist* twist_msg;
 std_msgs__msg__String msgs;
 uint8_t ros_msgs_cnt = 0;
 sensor_msgs__msg__Imu imu_msg;
+sensor_msgs__msg__JointState joint_state_msg;
 
 //ROS
 rclc_executor_t executor;
@@ -138,6 +141,18 @@ void error_loop() {
     SetRedLed(Toggle);
     delay(100);
   }
+}
+
+void joint_state_callback(const void *msgin){
+  double Setpoint[4];
+  static sensor_msgs__msg__JointState * setpoint_msg;
+  setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
+  char* joint_name = (char*)setpoint_msg->name.data;
+  if(joint_name == "RR")  Setpoint[0] = *((double*)setpoint_msg->velocity.data);
+  if(joint_name == "RL")  Setpoint[1] = *((double*)setpoint_msg->velocity.data);
+  if(joint_name == "FR")  Setpoint[2] = *((double*)setpoint_msg->velocity.data);
+  if(joint_name == "FL")  Setpoint[3] = *((double*)setpoint_msg->velocity.data);
+  xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
 
 void cmd_vel_callback(const void *msgin){
@@ -303,6 +318,11 @@ void setup() {
       "cmd_vel"));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'cmd_vel' subscriber\r\n");
+  RCCHECK(rclc_subscription_init_default(
+      &joint_state_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
+      "joint_state"));
+  ros_msgs_cnt++;
+  if(BOARD_MODE_DEBUG) Serial.printf("Created 'joint_state' subscriber\r\n");
   // create timer,
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(50),
                                   timer_callback));
@@ -310,7 +330,9 @@ void setup() {
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msgs,
-                                        &cmd_vel_callback, ON_NEW_DATA));                                    
+                                        &cmd_vel_callback, ON_NEW_DATA));   
+  RCCHECK(rclc_executor_add_subscription(&executor, &joint_state_subscriber, &msgs,
+                                        &joint_state_callback, ON_NEW_DATA));                                 
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
   if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
   RCCHECK(rmw_uros_sync_session(1000));
@@ -331,35 +353,35 @@ void setup() {
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
                    configMINIMAL_STACK_SIZE + 5000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s1 != pdPASS)  Serial.printf("S1 creation problem");
+  if(s1 != pdPASS)  Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(imu_task, "imu_task",
                    configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s2 != pdPASS)  Serial.printf("S2 creation problem");
+  if(s2 != pdPASS)  Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
                    configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s3 != pdPASS)  Serial.printf("S3 creation problem");
+  if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
                             configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 2,
                             NULL);
-  if(s4 != pdPASS)  Serial.printf("S4 creation problem");
-  s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-                          NULL);
-  if(s5 != pdPASS)  Serial.printf("S5 creation problem");
-  s6 = xTaskCreate(kinematics_task, "kinematics_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-                          NULL);
-  if(s6 != pdPASS)  Serial.printf("S6 creation problem");
-  s7 = xTaskCreate(board_support_task, "board_support_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-                          NULL);
-  if(s7 != pdPASS)  Serial.printf("S7 creation problem");
-  s8 = xTaskCreate(power_board_task, "power_board_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-                          NULL);
-  if(s8 != pdPASS)  Serial.printf("S8 creation problem");
+  if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
+  // s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
+  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+  //                         NULL);
+  // if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
+  // s6 = xTaskCreate(kinematics_task, "kinematics_task",
+  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+  //                         NULL);
+  // if(s6 != pdPASS)  Serial.printf("S6 creation problem\r\n");
+  // s7 = xTaskCreate(board_support_task, "board_support_task",
+  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+  //                         NULL);
+  // if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
+  // s8 = xTaskCreate(power_board_task, "power_board_task",
+  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+  //                         NULL);
+  // if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
 
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
