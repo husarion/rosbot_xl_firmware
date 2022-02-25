@@ -71,6 +71,10 @@ typedef struct {
   double rot_v_z;
 } odometry_queue_t;
 
+typedef struct {
+  double velocity[4];
+  double positon[4];
+} motor_state_queue_t;
 
 
 /* VARIABLES */
@@ -84,17 +88,19 @@ QueueHandle_t ImuQueue;
 rcl_publisher_t publisher;
 rcl_publisher_t odom_publisher;
 rcl_publisher_t imu_publisher;
+rcl_publisher_t motor_state_publisher;
 //ROS SUBSCRIPTIONS
 rcl_subscription_t subscriber;
 rcl_subscription_t cmd_vel_subscriber;
-rcl_subscription_t joint_state_subscriber;
+rcl_subscription_t motors_cmd_subscriber;
 //ROS MESSAGES
 nav_msgs__msg__Odometry odom_msg;
 geometry_msgs__msg__Twist* twist_msg;
 std_msgs__msg__String msgs;
 uint8_t ros_msgs_cnt = 0;
 sensor_msgs__msg__Imu imu_msg;
-sensor_msgs__msg__JointState joint_state_msg;
+sensor_msgs__msg__JointState motors_cmd_msg;
+sensor_msgs__msg__JointState motors_response;
 
 //ROS
 rclc_executor_t executor;
@@ -143,7 +149,7 @@ void error_loop() {
   }
 }
 
-void joint_state_callback(const void *msgin){
+void motors_cmd_callback(const void *msgin){
   double Setpoint[4];
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
@@ -189,6 +195,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 
   static odometry_queue_t queue_odom;
   static imu_queue_t queue_imu;
+  static motor_state_queue_t motor_state_queue;
   if (timer != NULL) {
     if (xQueueReceive(OdomQueue, &queue_odom, (TickType_t) 0) == pdPASS) {
       struct timespec ts = {0};
@@ -233,6 +240,18 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
       imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
       RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
+    }
+    if(xQueueReceive(MotorStateQueue, &motor_state_queue.velocity, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      motors_response.header.stamp.sec = ts.tv_sec;
+      motors_response.header.stamp.nanosec = ts.tv_nsec;
+      motors_response.header.frame_id.data = (char*) "motors_response";
+      motors_response.velocity.data[0] = motor_state_queue.velocity[0];
+      motors_response.velocity.data[1] = motor_state_queue.velocity[1];
+      motors_response.velocity.data[2] = motor_state_queue.velocity[2];
+      motors_response.velocity.data[3] = motor_state_queue.velocity[3];
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response, NULL));
     }
   }
 }
@@ -303,37 +322,40 @@ void setup() {
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator))
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  RCCHECK(rclc_publisher_init_default(
-      &odom_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
-      "odom/wheels"));
+  // init timer
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(50),
+                                  timer_callback));
   ros_msgs_cnt++;
-  if(BOARD_MODE_DEBUG) Serial.printf("Created 'odom/wheels' publisher.\r\n");
-  RCCHECK(rclc_publisher_init_default(
-      &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-      "sensor_msgs/Imu"));
+  if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
+  // init subscribers
+  RCCHECK(rclc_subscription_init_default(
+      &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
+      "motors_cmd"));
   ros_msgs_cnt++;
-  if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
+  if(BOARD_MODE_DEBUG) Serial.printf("Created 'joint_state' subscriber\r\n");
   RCCHECK(rclc_subscription_init_default(
       &cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
       "cmd_vel"));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'cmd_vel' subscriber\r\n");
-  RCCHECK(rclc_subscription_init_default(
-      &joint_state_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-      "joint_state"));
-  ros_msgs_cnt++;
-  if(BOARD_MODE_DEBUG) Serial.printf("Created 'joint_state' subscriber\r\n");
-  // create timer,
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(50),
-                                  timer_callback));
-  if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
+  // RCCHECK(rclc_publisher_init_default(
+  //     &odom_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
+  //     "odom/wheels"));
+  // ros_msgs_cnt++;
+  // if(BOARD_MODE_DEBUG) Serial.printf("Created 'odom/wheels' publisher.\r\n");
+  // RCCHECK(rclc_publisher_init_default(
+  //     &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
+  //     "sensor_msgs/Imu"));
+  // ros_msgs_cnt++;
+  // if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
+  // RCCHECK(rclc_publisher_init_default(
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
+  RCCHECK(rclc_executor_add_timer(&executor, &timer));
   RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msgs,
                                         &cmd_vel_callback, ON_NEW_DATA));   
-  RCCHECK(rclc_executor_add_subscription(&executor, &joint_state_subscriber, &msgs,
-                                        &joint_state_callback, ON_NEW_DATA));                                 
-  RCCHECK(rclc_executor_add_timer(&executor, &timer));
+  RCCHECK(rclc_executor_add_subscription(&executor, &motors_cmd_subscriber, &motors_cmd_msg,
+                                        &motors_cmd_callback, ON_NEW_DATA));                                 
   if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
   RCCHECK(rmw_uros_sync_session(1000));
   if(BOARD_MODE_DEBUG) Serial.printf("Clocks synchronised\r\n");
@@ -496,11 +518,11 @@ static void kinematics_task(void *p) {
     setpoint[3] = setpoint_left;
 
     // Update motor setpoints
-    xQueueSendToFront(SetpointQueue, (void*) setpoint, (TickType_t) 0);
+    // xQueueSendToFront(SetpointQueue, (void*) setpoint, (TickType_t) 0);
 
 
     // Read motor positions
-    xQueueReceive(MotorStateQueue, (void*) motor_state, (TickType_t) 0);
+    // xQueueReceive(MotorStateQueue, (void*) motor_state, (TickType_t) 0);
     
 
     // if(BOARD_MODE_DEBUG) Serial.println(motor_state[0].pos);
