@@ -256,7 +256,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       clock_gettime(CLOCK_REALTIME, &ts);
       motors_response.header.stamp.sec = ts.tv_sec;
       motors_response.header.stamp.nanosec = ts.tv_nsec;
-      // motors_response.header.frame_id.data = (char*) "motors_response";
+      motors_response.header.frame_id.data = (char*) "motors_response";
       motors_response.velocity.size = motor_state_queue.size;
       motors_response.velocity.data = motor_state_queue.velocity;
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response, NULL));
@@ -437,6 +437,19 @@ void setup() {
   motors_response.velocity.size=4;
   motors_response.velocity.capacity=4;
   motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
+
+  motors_cmd_msg.name.capacity = 4;
+  motors_cmd_msg.name.size = 4;
+  motors_cmd_msg.name.data = (rosidl_runtime_c__String*) malloc(motors_cmd_msg.name.capacity*sizeof(rosidl_runtime_c__String));
+  for(int i=0;i<4;i++) {
+      motors_cmd_msg.name.data[i].data = (char*)malloc(2);
+      motors_cmd_msg.name.data[i].capacity = 2;
+      sprintf(motors_cmd_msg.name.data[i].data,"M%d",i+1);
+      motors_cmd_msg.name.data[i].size = strlen(motors_cmd_msg.name.data[i].data);
+  }
+  motors_cmd_msg.velocity.size=4;
+  motors_cmd_msg.velocity.capacity=4;
+  motors_cmd_msg.velocity.data = (double*)malloc(motors_cmd_msg.velocity.capacity*sizeof(double));
 
 
 
