@@ -151,14 +151,23 @@ void error_loop() {
 }
 
 void motors_cmd_callback(const void *msgin){
-  double Setpoint[4];
+  static double Setpoint[] = {0,0,0,0};
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
-  char* joint_name = (char*)setpoint_msg->name.data;
-  if(joint_name == "RR")  Setpoint[0] = *((double*)setpoint_msg->velocity.data);
-  if(joint_name == "RL")  Setpoint[1] = *((double*)setpoint_msg->velocity.data);
-  if(joint_name == "FR")  Setpoint[2] = *((double*)setpoint_msg->velocity.data);
-  if(joint_name == "FL")  Setpoint[3] = *((double*)setpoint_msg->velocity.data);
+  // char* joint_name = (char*)setpoint_msg->name.data;
+  // if(joint_name == "RR")  Setpoint[0] = *((double*)setpoint_msg->velocity.data);
+  // if(joint_name == "RL")  Setpoint[1] = *((double*)setpoint_msg->velocity.data);
+  // if(joint_name == "FR")  Setpoint[2] = *((double*)setpoint_msg->velocity.data);
+  // if(joint_name == "FL")  Setpoint[3] = *((double*)setpoint_msg->velocity.data);
+  // Setpoint[0] = *((double*)setpoint_msg->velocity.data);
+  // Setpoint[1] = *((double*)setpoint_msg->velocity.data);
+  // Setpoint[2] = *((double*)setpoint_msg->velocity.data);
+  Setpoint[0] = (double)setpoint_msg->velocity.data[0];
+  Setpoint[1] = (double)setpoint_msg->velocity.data[1];
+  Setpoint[2] = (double)setpoint_msg->velocity.data[2];
+  Setpoint[3] = (double)setpoint_msg->velocity.data[3];
+  // motors_response.velocity.size = motor_state_queue.size;
+  // motors_response.velocity.data = motor_state_queue.velocity;
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
 
@@ -247,15 +256,9 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       clock_gettime(CLOCK_REALTIME, &ts);
       motors_response.header.stamp.sec = ts.tv_sec;
       motors_response.header.stamp.nanosec = ts.tv_nsec;
-      motors_response.header.frame_id.data = (char*) "motors_response";
+      // motors_response.header.frame_id.data = (char*) "motors_response";
       motors_response.velocity.size = motor_state_queue.size;
       motors_response.velocity.data = motor_state_queue.velocity;
-      // String msg_names[] = {"FR", "FL", "RR", "RL"};
-      // rosidl_runtime_c__String msg_name;
-      // msg_name.data = "FR, FL, RR, RL";
-      // msg_name.size = 250;
-      // motors_response.name.data = &msg_name;
-      // motors_response.name.size = msg_name.size;
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response, NULL));
     }
   }
@@ -288,7 +291,6 @@ void setup() {
   SetLocalPower(On);
   delay(1000);
   portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
-
   //Motors init
   M1_PID.SetSetpoint(0);
   M2_PID.SetSetpoint(0);
@@ -337,13 +339,13 @@ void setup() {
       &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
       "motors_cmd"));
   ros_msgs_cnt++;
-  if(BOARD_MODE_DEBUG) Serial.printf("Created 'joint_state' subscriber\r\n");
+  if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_cmd' subscriber\r\n");
 
-  RCCHECK(rclc_subscription_init_default(
-      &cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-      "cmd_vel"));
-  ros_msgs_cnt++;
-  if(BOARD_MODE_DEBUG) Serial.printf("Created 'cmd_vel' subscriber\r\n");
+  // RCCHECK(rclc_subscription_init_default(
+  //     &cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+  //     "cmd_vel"));
+  // ros_msgs_cnt++;
+  // if(BOARD_MODE_DEBUG) Serial.printf("Created 'cmd_vel' subscriber\r\n");
   // Init publishers
   // RCCHECK(rclc_publisher_init_default(
   //     &odom_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
@@ -366,8 +368,8 @@ void setup() {
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
-  RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msgs,
-                                        &cmd_vel_callback, ON_NEW_DATA));   
+  // RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msgs,
+  //                                       &cmd_vel_callback, ON_NEW_DATA));   
   RCCHECK(rclc_executor_add_subscription(&executor, &motors_cmd_subscriber, &motors_cmd_msg,
                                         &motors_cmd_callback, ON_NEW_DATA));                                 
   if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
@@ -388,21 +390,21 @@ void setup() {
 
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
-                   configMINIMAL_STACK_SIZE + 5000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 7000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS)  Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(imu_task, "imu_task",
-                   configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s2 != pdPASS)  Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
-                   configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 1500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
-                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 2,
+                            configMINIMAL_STACK_SIZE + 800, NULL, tskIDLE_PRIORITY + 2,
                             NULL);
-  if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
+  // if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
   // s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
   //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
   //                         NULL);
@@ -421,6 +423,23 @@ void setup() {
   // if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
 
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
+
+//Allocate memory for motors response message
+  motors_response.name.capacity = 4;
+  motors_response.name.size = 4;
+  motors_response.name.data = (rosidl_runtime_c__String*) malloc(motors_response.name.capacity*sizeof(rosidl_runtime_c__String));
+  for(int i=0;i<4;i++) {
+      motors_response.name.data[i].data = (char*)malloc(2);
+      motors_response.name.data[i].capacity = 2;
+      sprintf(motors_response.name.data[i].data,"M%d",i+1);
+      motors_response.name.data[i].size = strlen(motors_response.name.data[i].data);
+  }
+  motors_response.velocity.size=4;
+  motors_response.velocity.capacity=4;
+  motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
+
+
+
   SetGreenLed(On);
 
   /* START RTOS */
