@@ -20,10 +20,7 @@
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
 /*===== ROS MSGS TYPES =====*/
-#include <std_msgs/msg/string.h>
 #include <std_msgs/msg/int64.h>
-#include <nav_msgs/msg/odometry.h>
-#include <geometry_msgs/msg/twist.h>
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/battery_state.h>
 #include <sensor_msgs/msg/joint_state.h>
@@ -54,13 +51,11 @@
 
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 
-
 typedef struct {
   double lin_x;
   double lin_y;
   double ang_z;
 } cmd_vel_queue_t;
-
 
 typedef struct {
   double pos_x;
@@ -79,25 +74,18 @@ typedef struct {
 
 
 /* VARIABLES */
-QueueHandle_t CmdVelQueue;
-QueueHandle_t OdomQueue;
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 
 //ROS PUBLISHERS
 rcl_publisher_t publisher;
-rcl_publisher_t odom_publisher;
 rcl_publisher_t imu_publisher;
 rcl_publisher_t motor_state_publisher;
 //ROS SUBSCRIPTIONS
 rcl_subscription_t subscriber;
-rcl_subscription_t cmd_vel_subscriber;
 rcl_subscription_t motors_cmd_subscriber;
 //ROS MESSAGES
-nav_msgs__msg__Odometry odom_msg;
-geometry_msgs__msg__Twist* twist_msg;
-std_msgs__msg__String msgs;
 uint8_t ros_msgs_cnt = 0;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__JointState motors_cmd_msg;
@@ -125,6 +113,23 @@ MotorPidClass M2_PID(&Motor2);
 MotorPidClass M3_PID(&Motor3);
 MotorPidClass M4_PID(&Motor4);
 
+//temp variables
+#define MSG_LEN  4
+#define MOT_NAMES_LEN  3
+rosidl_runtime_c__String str0;
+rosidl_runtime_c__String str1;
+rosidl_runtime_c__String str2;
+rosidl_runtime_c__String str3;
+char tab0[] = "FR";
+char tab1[] = "FL";
+char tab2[] = "RR";
+char tab3[] = "RL";
+double pos[4]; 
+double vel[4];
+double eff[4];
+rosidl_runtime_c__String__Sequence msg_name;
+rosidl_runtime_c__String str_name_tab[4];
+
 //IMU
 extern ImuDriver ImuBno;
 //PIXEL LED
@@ -137,7 +142,6 @@ static void chatter_publisher_task(void *p);
 static void runtime_stats_task(void *p);
 static void pid_handler_task(void *p);
 static void pixel_led_task(void *p);
-static void kinematics_task(void *p);
 static void board_support_task(void *p);
 static void power_board_task(void *p);
 
@@ -154,85 +158,26 @@ void motors_cmd_callback(const void *msgin){
   static double Setpoint[] = {0,0,0,0};
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
-  // char* joint_name = (char*)setpoint_msg->name.data;
-  // if(joint_name == "RR")  Setpoint[0] = *((double*)setpoint_msg->velocity.data);
-  // if(joint_name == "RL")  Setpoint[1] = *((double*)setpoint_msg->velocity.data);
-  // if(joint_name == "FR")  Setpoint[2] = *((double*)setpoint_msg->velocity.data);
-  // if(joint_name == "FL")  Setpoint[3] = *((double*)setpoint_msg->velocity.data);
-  // Setpoint[0] = *((double*)setpoint_msg->velocity.data);
-  // Setpoint[1] = *((double*)setpoint_msg->velocity.data);
-  // Setpoint[2] = *((double*)setpoint_msg->velocity.data);
+  char* motor_name;
   Setpoint[0] = (double)setpoint_msg->velocity.data[0];
   Setpoint[1] = (double)setpoint_msg->velocity.data[1];
   Setpoint[2] = (double)setpoint_msg->velocity.data[2];
   Setpoint[3] = (double)setpoint_msg->velocity.data[3];
-  // motors_response.velocity.size = motor_state_queue.size;
-  // motors_response.velocity.data = motor_state_queue.velocity;
+  // for(uint8_t i = 0; i < (uint8_t)setpoint_msg->velocity.size; i++){
+  //   motor_name = setpoint_msg->name.data[i].data;
+  //   if(motor_name == "RR") Setpoint[0] = (double)setpoint_msg->velocity.data[0];
+  //   if(motor_name == "RL") Setpoint[1] = (double)setpoint_msg->velocity.data[1];
+  //   if(motor_name == "FR") Setpoint[2] = (double)setpoint_msg->velocity.data[2];
+  //   if(motor_name == "FL") Setpoint[3] = (double)setpoint_msg->velocity.data[3];
+  // }
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
 
-void cmd_vel_callback(const void *msgin){
-  static cmd_vel_queue_t queue_cmd;
-  static geometry_msgs__msg__Twist * twist_msg;
-  twist_msg = (geometry_msgs__msg__Twist *)msgin;
-  queue_cmd.lin_x = twist_msg->linear.x;
-  queue_cmd.lin_y = twist_msg->linear.y;
-  queue_cmd.ang_z = twist_msg->angular.z;
-  xQueueSendToFront(CmdVelQueue, (void*) &queue_cmd, (TickType_t) 0);
-}
-
-
-
-const void euler_to_quat(float x, float y, float z, double* q) {
-    float c1 = cos((y)/2);
-    float c2 = cos((z)/2);
-    float c3 = cos((x)/2);
-
-    float s1 = sin((y)/2);
-    float s2 = sin((z)/2);
-    float s3 = sin((x)/2);
-
-    q[0] = c1 * c2 * c3 - s1 * s2 * s3;
-    q[1] = s1 * s2 * c3 + c1 * c2 * s3;
-    q[2] = s1 * c2 * c3 + c1 * s2 * s3;
-    q[3] = c1 * s2 * c3 - s1 * c2 * s3;
-}
-
-
-
 void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
-
-  static odometry_queue_t queue_odom;
   static imu_queue_t queue_imu;
   static motor_state_queue_t motor_state_queue;
   if (timer != NULL) {
-    if (xQueueReceive(OdomQueue, &queue_odom, (TickType_t) 0) == pdPASS) {
-      struct timespec ts = {0};
-      clock_gettime(CLOCK_REALTIME, &ts);
-
-      odom_msg.header.stamp.sec = ts.tv_sec;
-      odom_msg.header.stamp.nanosec = ts.tv_nsec;
-
-      odom_msg.header.frame_id.data = (char *) "odom";
-      odom_msg.child_frame_id.data = (char *) "base_link";
-
-      odom_msg.pose.pose.position.x = queue_odom.pos_x;
-      odom_msg.pose.pose.position.y = queue_odom.pos_y;
-
-      double quat[4];
-      euler_to_quat(0.0, 0.0, queue_odom.rot_p_z, quat);
-      odom_msg.pose.pose.orientation.w = quat[0];
-      odom_msg.pose.pose.orientation.x = quat[1];
-      odom_msg.pose.pose.orientation.y = quat[2];
-      odom_msg.pose.pose.orientation.z = quat[3];
-
-      odom_msg.twist.twist.linear.x = queue_odom.lin_x;
-      odom_msg.twist.twist.linear.y = queue_odom.lin_y;
-      odom_msg.twist.twist.angular.z = queue_odom.rot_v_z;
-
-      RCSOFTCHECK(rcl_publish(&odom_publisher, &odom_msg, NULL));
-    }
     if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
       struct timespec ts = {0};
       clock_gettime(CLOCK_REALTIME, &ts);
@@ -256,32 +201,15 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       clock_gettime(CLOCK_REALTIME, &ts);
       motors_response.header.stamp.sec = ts.tv_sec;
       motors_response.header.stamp.nanosec = ts.tv_nsec;
-      motors_response.header.frame_id.data = (char*) "motors_response";
-      motors_response.velocity.size = motor_state_queue.size;
-      motors_response.velocity.data = motor_state_queue.velocity;
+      // motors_response.velocity.data = motor_state_queue.velocity;
+      motors_response.velocity.data[0] = motor_state_queue.velocity[0];
+      motors_response.velocity.data[1] = motor_state_queue.velocity[1];
+      motors_response.velocity.data[2] = motor_state_queue.velocity[2];
+      motors_response.velocity.data[3] = motor_state_queue.velocity[3];
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response, NULL));
     }
   }
 }
-
-void init_odom_msg() {
-  odom_msg.header.frame_id.data = (char *) "odom";
-  odom_msg.header.frame_id.size = strlen(odom_msg.header.frame_id.data);
-  odom_msg.header.frame_id.capacity = odom_msg.header.frame_id.size + 1;
-
-  odom_msg.child_frame_id.data = (char *) "base_link";
-  odom_msg.child_frame_id.size = strlen(odom_msg.child_frame_id.data);
-  odom_msg.child_frame_id.capacity = odom_msg.child_frame_id.size + 1;
-
-  odom_msg.pose.covariance[0] = 0.01;
-  odom_msg.pose.covariance[6] = 0.01;
-  odom_msg.pose.covariance[35] = 0.01;
-
-  odom_msg.twist.covariance[0] = 0.01;
-  odom_msg.twist.covariance[6] = 0.01;
-  odom_msg.twist.covariance[35] = 0.01;
-}
-
 
 /*==================== SETUP ========================*/
 void setup() {
@@ -341,18 +269,6 @@ void setup() {
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_cmd' subscriber\r\n");
 
-  // RCCHECK(rclc_subscription_init_default(
-  //     &cmd_vel_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-  //     "cmd_vel"));
-  // ros_msgs_cnt++;
-  // if(BOARD_MODE_DEBUG) Serial.printf("Created 'cmd_vel' subscriber\r\n");
-  // Init publishers
-  // RCCHECK(rclc_publisher_init_default(
-  //     &odom_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
-  //     "odom/wheels"));
-  // ros_msgs_cnt++;
-  // if(BOARD_MODE_DEBUG) Serial.printf("Created 'odom/wheels' publisher.\r\n");
-
   RCCHECK(rclc_publisher_init_default(
       &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
       "imu/data_raw"));
@@ -377,16 +293,10 @@ void setup() {
   if(BOARD_MODE_DEBUG) Serial.printf("Clocks synchronised\r\n");
 
   /* RTOS QUEUES CREATION */
-  CmdVelQueue = xQueueCreate(1, sizeof(cmd_vel_queue_t));
-  OdomQueue = xQueueCreate(1, sizeof(odometry_queue_t));
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
-  // MotorStateQueue = xQueueCreate(1, sizeof(double)*4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
-
-  /* MICRO ROS MESSAGES INIT */
-  init_odom_msg();
 
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
@@ -404,15 +314,11 @@ void setup() {
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
                             configMINIMAL_STACK_SIZE + 800, NULL, tskIDLE_PRIORITY + 2,
                             NULL);
-  // if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
+  if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
   // s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
   //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
   //                         NULL);
   // if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
-  // s6 = xTaskCreate(kinematics_task, "kinematics_task",
-  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-  //                         NULL);
-  // if(s6 != pdPASS)  Serial.printf("S6 creation problem\r\n");
   // s7 = xTaskCreate(board_support_task, "board_support_task",
   //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
   //                         NULL);
@@ -425,36 +331,65 @@ void setup() {
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
 
 //Allocate memory for motors response message
-  motors_response.name.capacity = 4;
-  motors_response.name.size = 4;
-  motors_response.name.data = (rosidl_runtime_c__String*) malloc(motors_response.name.capacity*sizeof(rosidl_runtime_c__String));
-  for(int i=0;i<4;i++) {
-      motors_response.name.data[i].data = (char*)malloc(2);
-      motors_response.name.data[i].capacity = 2;
-      sprintf(motors_response.name.data[i].data,"M%d",i+1);
-      motors_response.name.data[i].size = strlen(motors_response.name.data[i].data);
-  }
-  motors_response.velocity.size=4;
-  motors_response.velocity.capacity=4;
-  motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
+  
+  motors_response.position.capacity = 4;
+  motors_response.position.size = 4; 
+  motors_response.position.data = pos;
+  
+  motors_response.effort.capacity = 4;
+  motors_response.effort.size = 4; 
+  motors_response.effort.data = eff;
 
-  motors_cmd_msg.name.capacity = 4;
-  motors_cmd_msg.name.size = 4;
-  motors_cmd_msg.name.data = (rosidl_runtime_c__String*) malloc(motors_cmd_msg.name.capacity*sizeof(rosidl_runtime_c__String));
-  for(int i=0;i<4;i++) {
-      motors_cmd_msg.name.data[i].data = (char*)malloc(2);
-      motors_cmd_msg.name.data[i].capacity = 2;
-      sprintf(motors_cmd_msg.name.data[i].data,"M%d",i+1);
-      motors_cmd_msg.name.data[i].size = strlen(motors_cmd_msg.name.data[i].data);
-  }
-  motors_cmd_msg.velocity.size=4;
-  motors_cmd_msg.velocity.capacity=4;
-  motors_cmd_msg.velocity.data = (double*)malloc(motors_cmd_msg.velocity.capacity*sizeof(double));
+  motors_response.velocity.capacity = 4;
+  motors_response.velocity.size = 4;
+  motors_response.velocity.data = vel;
+
+  motors_response.header.frame_id.capacity = 20;
+  motors_response.header.frame_id.size = 20;
+  motors_response.header.frame_id.data = (char*) "motors_response";
+
+  str_name_tab->capacity = 4;
+  str_name_tab->size = 4;
+  
+  str_name_tab[0].capacity = 3;
+  str_name_tab[0].size = 2;
+  str_name_tab[0].data = (char*)"FR";
+  
+  str_name_tab[1].capacity = 3;
+  str_name_tab[1].size = 2;
+  str_name_tab[1].data = (char*)"FL";
+  
+  str_name_tab[2].capacity = 3;
+  str_name_tab[2].size = 2;
+  str_name_tab[2].data = (char*)"RR";
+  
+  str_name_tab[3].capacity = 3;
+  str_name_tab[3].size = 2;
+  str_name_tab[3].data = (char*)"RL";
 
 
+
+  msg_name.capacity = 4;
+  msg_name.size = 4;
+  msg_name.data->size = 4;
+  msg_name.data->capacity = 4;
+  msg_name.data = str_name_tab;
+  motors_response.name = msg_name;
+
+// motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
+
+  // // motors_response.name.data = (rosidl_runtime_c__String*) malloc(motors_response.name.capacity*sizeof(rosidl_runtime_c__String));
+  // for(int i=0;i<4;i++) {
+  //     motors_response.name.data[i].data = (char*)malloc(2);
+  //     motors_response.name.data[i].capacity = 2;
+  //     sprintf(motors_response.name.data[i].data,"M%d",i+1);
+  //     motors_response.name.data[i].size = strlen(motors_response.name.data[i].data);
+  // }
+  // motors_response.velocity.size=4;
+  // motors_response.velocity.capacity=4;
+  // motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
 
   SetGreenLed(On);
-
   /* START RTOS */
   if(BOARD_MODE_DEBUG) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
@@ -462,7 +397,6 @@ void setup() {
 
 static void rclc_spin_task(void *p) {
   UNUSED(p);
-
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     RCSOFTCHECK(rclc_executor_spin(&executor));
@@ -494,7 +428,6 @@ static void runtime_stats_task(void *p) {
 
 static void pid_handler_task(void *p){
   TickType_t xLastWakeTime = xTaskGetTickCount();
-
   double setpoint[4];
   // double motor_state[4];
   static motor_state_queue_t motor_state;
@@ -502,31 +435,21 @@ static void pid_handler_task(void *p){
   while(1){
     vTaskDelayUntil(&xLastWakeTime, (1000/PID_FREQ*portTICK_PERIOD_MS));
     xQueueReceive(SetpointQueue, &setpoint, (TickType_t) 0);
-
     M4_PID.Handler();
     M4_PID.SetSetpoint(setpoint[3]);
-    // motor_state[3] = double(M4_PID.Motor->GetVelocity());
     motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
-
     M2_PID.Handler();
     M2_PID.SetSetpoint(setpoint[1]);
-    // motor_state[1] = double(M2_PID.Motor->GetVelocity());
     motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
-
     M1_PID.Handler();
     M1_PID.SetSetpoint(setpoint[0]);
-    // motor_state[0] = double(M1_PID.Motor->GetVelocity());
     motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
-
     M3_PID.Handler();
     M3_PID.SetSetpoint(setpoint[2]);
-    // motor_state[2] = double(M3_PID.Motor->GetVelocity());
     motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
-
     xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
   }
 }
-
 
 static void pixel_led_task(void *p){
   uint16_t DelayTime = 2000;
@@ -538,66 +461,6 @@ static void pixel_led_task(void *p){
   }
 }
 
-static void kinematics_task(void *p) {
-  static cmd_vel_queue_t queue_cmd;
-  static odometry_queue_t queue_odom;
-  static int64_t motor_vel_handler = 0;
-
-  static double setpoint[4];
-  double motor_state[4];
-
-  double setpoint_right = 0.0;
-  double setpoint_left = 0.0;
-  static uint32_t LastTime;
-  static uint32_t ActualTime;
-  double sleep_time;
-  LastTime = ActualTime = xTaskGetTickCount();
-  vTaskDelay(40);
-
-  // RR, RL, FR, FL
-
-  while(1) {
-    // Get currently set velocity
-    xQueueReceive(CmdVelQueue, (void*) &queue_cmd, (TickType_t) 0);
-
-
-    setpoint_right =  (1/(WHEEL_DIAM/2)) * (queue_cmd.lin_x + (ROBOT_WIDTH + ROBOT_LENGTH) * queue_cmd.ang_z);
-    setpoint_left =   (1/(WHEEL_DIAM/2)) * (queue_cmd.lin_x - (ROBOT_WIDTH + ROBOT_LENGTH) * queue_cmd.ang_z);
-
-    setpoint[0] = setpoint_right;
-    setpoint[1] = setpoint_left;
-    setpoint[2] = setpoint_right;
-    setpoint[3] = setpoint_left;
-
-    // Update motor setpoints
-    // xQueueSendToFront(SetpointQueue, (void*) setpoint, (TickType_t) 0);
-
-
-    // Read motor positions
-    // xQueueReceive(MotorStateQueue, (void*) motor_state, (TickType_t) 0);
-    
-
-    // if(BOARD_MODE_DEBUG) Serial.println(motor_state[0].pos);
-    queue_odom.lin_x = ((motor_state[0] + motor_state[1] + motor_state[2] + motor_state[3])/4)*WHEEL_DIAM/2;
-    queue_odom.rot_v_z = (-motor_state[3] + motor_state[2] - motor_state[1] + motor_state[0]) * (
-                          WHEEL_DIAM/2/(4 * (ROBOT_WIDTH / 2 + ROBOT_LENGTH / 2)));
-    // queue_odom.lin_y = (-motor_state[3] + motor_state[2] + motor_state[1] - motor_state[0]) * (wheel_diameter/4);
-
-    ActualTime = xTaskGetTickCount();
-    sleep_time = double(ActualTime - LastTime) / 1000;
-    queue_odom.rot_p_z += queue_odom.rot_v_z * sleep_time;
-    // queue_odom.rot_p_z = 0.0; 
-    queue_odom.pos_x += (queue_odom.lin_x * cos(queue_odom.rot_p_z) - queue_odom.lin_y * sin(queue_odom.rot_p_z)) * sleep_time;
-    queue_odom.pos_y += (queue_odom.lin_x * sin(queue_odom.rot_p_z) + queue_odom.lin_y * cos(queue_odom.rot_p_z)) * sleep_time;
-
-    // Output odometry
-    xQueueSendToFront(OdomQueue, &queue_odom, (TickType_t) 0);
-
-    LastTime = ActualTime;
-    // vTaskDelay(TickType_t(40 / portTICK_PERIOD_MS));
-    vTaskDelay(1000/KINEMATIC_TASK_FREQ*portTICK_PERIOD_MS);
-  }
-}
 
 static void board_support_task(void *p){
   while(1){
