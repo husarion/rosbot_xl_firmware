@@ -20,6 +20,7 @@
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
 /*===== ROS MSGS TYPES =====*/
+#include <std_msgs/msg/string.h>
 #include <std_msgs/msg/int64.h>
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/battery_state.h>
@@ -87,9 +88,10 @@ rcl_subscription_t subscriber;
 rcl_subscription_t motors_cmd_subscriber;
 //ROS MESSAGES
 uint8_t ros_msgs_cnt = 0;
+std_msgs__msg__String msgs;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__JointState motors_cmd_msg;
-sensor_msgs__msg__JointState motors_response;
+sensor_msgs__msg__JointState motors_response_msg;
 
 //ROS
 rclc_executor_t executor;
@@ -112,23 +114,6 @@ MotorPidClass M1_PID(&Motor1);
 MotorPidClass M2_PID(&Motor2);
 MotorPidClass M3_PID(&Motor3);
 MotorPidClass M4_PID(&Motor4);
-
-//temp variables
-#define MSG_LEN  4
-#define MOT_NAMES_LEN  3
-rosidl_runtime_c__String str0;
-rosidl_runtime_c__String str1;
-rosidl_runtime_c__String str2;
-rosidl_runtime_c__String str3;
-char tab0[] = "FR";
-char tab1[] = "FL";
-char tab2[] = "RR";
-char tab3[] = "RL";
-double pos[4]; 
-double vel[4];
-double eff[4];
-rosidl_runtime_c__String__Sequence msg_name;
-rosidl_runtime_c__String str_name_tab[4];
 
 //IMU
 extern ImuDriver ImuBno;
@@ -158,18 +143,14 @@ void motors_cmd_callback(const void *msgin){
   static double Setpoint[] = {0,0,0,0};
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
-  char* motor_name;
-  Setpoint[0] = (double)setpoint_msg->velocity.data[0];
-  Setpoint[1] = (double)setpoint_msg->velocity.data[1];
-  Setpoint[2] = (double)setpoint_msg->velocity.data[2];
-  Setpoint[3] = (double)setpoint_msg->velocity.data[3];
-  // for(uint8_t i = 0; i < (uint8_t)setpoint_msg->velocity.size; i++){
-  //   motor_name = setpoint_msg->name.data[i].data;
-  //   if(motor_name == "RR") Setpoint[0] = (double)setpoint_msg->velocity.data[0];
-  //   if(motor_name == "RL") Setpoint[1] = (double)setpoint_msg->velocity.data[1];
-  //   if(motor_name == "FR") Setpoint[2] = (double)setpoint_msg->velocity.data[2];
-  //   if(motor_name == "FL") Setpoint[3] = (double)setpoint_msg->velocity.data[3];
-  // }
+  String motor_name;
+  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->velocity.size; i++){
+    motor_name = (String)setpoint_msg->name.data[i].data;
+    if(motor_name == "RR") Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "RL") Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "FR") Setpoint[2] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "FL") Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+  }
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
 
@@ -199,14 +180,14 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
     if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
       struct timespec ts = {0};
       clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response.header.stamp.sec = ts.tv_sec;
-      motors_response.header.stamp.nanosec = ts.tv_nsec;
-      // motors_response.velocity.data = motor_state_queue.velocity;
-      motors_response.velocity.data[0] = motor_state_queue.velocity[0];
-      motors_response.velocity.data[1] = motor_state_queue.velocity[1];
-      motors_response.velocity.data[2] = motor_state_queue.velocity[2];
-      motors_response.velocity.data[3] = motor_state_queue.velocity[3];
-      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response, NULL));
+      motors_response_msg.header.stamp.sec = ts.tv_sec;
+      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      // motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.velocity.data[0] = motor_state_queue.velocity[0];
+      motors_response_msg.velocity.data[1] = motor_state_queue.velocity[1];
+      motors_response_msg.velocity.data[2] = motor_state_queue.velocity[2];
+      motors_response_msg.velocity.data[3] = motor_state_queue.velocity[3];
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
     }
   }
 }
@@ -249,6 +230,9 @@ void setup() {
     delay(100);
     continue;
   }
+//Allocate memory for motors response message
+  MotorsResponseMsgInit(&motors_response_msg);
+  MotorsCmdMsgInit(&motors_cmd_msg);
 
   allocator = rcl_get_default_allocator();
 
@@ -329,66 +313,6 @@ void setup() {
   // if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
 
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
-
-//Allocate memory for motors response message
-  
-  motors_response.position.capacity = 4;
-  motors_response.position.size = 4; 
-  motors_response.position.data = pos;
-  
-  motors_response.effort.capacity = 4;
-  motors_response.effort.size = 4; 
-  motors_response.effort.data = eff;
-
-  motors_response.velocity.capacity = 4;
-  motors_response.velocity.size = 4;
-  motors_response.velocity.data = vel;
-
-  motors_response.header.frame_id.capacity = 20;
-  motors_response.header.frame_id.size = 20;
-  motors_response.header.frame_id.data = (char*) "motors_response";
-
-  str_name_tab->capacity = 4;
-  str_name_tab->size = 4;
-  
-  str_name_tab[0].capacity = 3;
-  str_name_tab[0].size = 2;
-  str_name_tab[0].data = (char*)"FR";
-  
-  str_name_tab[1].capacity = 3;
-  str_name_tab[1].size = 2;
-  str_name_tab[1].data = (char*)"FL";
-  
-  str_name_tab[2].capacity = 3;
-  str_name_tab[2].size = 2;
-  str_name_tab[2].data = (char*)"RR";
-  
-  str_name_tab[3].capacity = 3;
-  str_name_tab[3].size = 2;
-  str_name_tab[3].data = (char*)"RL";
-
-
-
-  msg_name.capacity = 4;
-  msg_name.size = 4;
-  msg_name.data->size = 4;
-  msg_name.data->capacity = 4;
-  msg_name.data = str_name_tab;
-  motors_response.name = msg_name;
-
-// motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
-
-  // // motors_response.name.data = (rosidl_runtime_c__String*) malloc(motors_response.name.capacity*sizeof(rosidl_runtime_c__String));
-  // for(int i=0;i<4;i++) {
-  //     motors_response.name.data[i].data = (char*)malloc(2);
-  //     motors_response.name.data[i].capacity = 2;
-  //     sprintf(motors_response.name.data[i].data,"M%d",i+1);
-  //     motors_response.name.data[i].size = strlen(motors_response.name.data[i].data);
-  // }
-  // motors_response.velocity.size=4;
-  // motors_response.velocity.capacity=4;
-  // motors_response.velocity.data = (double*)malloc(motors_response.velocity.capacity*sizeof(double));
-
   SetGreenLed(On);
   /* START RTOS */
   if(BOARD_MODE_DEBUG) Serial.printf("Tasks starting\r\n");
