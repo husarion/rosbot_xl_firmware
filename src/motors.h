@@ -83,9 +83,9 @@
 
 //MOTORS ROS MSGS DEFINES
 #define MOT_CMD_MSG_LEN         4
-#define MOT_CMD_MSG_NAMES_LEN  10
+#define MOT_CMD_MSG_NAMES_LEN   3
+#define MOT_CMD_MSG_FR_ID_LEN   20
 #define MOT_RESP_MSG_LEN        4
-// #define MOT_RESP_MSG_NAMES_LEN 10
 
 
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);

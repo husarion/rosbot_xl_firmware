@@ -183,11 +183,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       clock_gettime(CLOCK_REALTIME, &ts);
       motors_response_msg.header.stamp.sec = ts.tv_sec;
       motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
-      // motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.velocity.data[0] = motor_state_queue.velocity[0];
-      motors_response_msg.velocity.data[1] = motor_state_queue.velocity[1];
-      motors_response_msg.velocity.data[2] = motor_state_queue.velocity[2];
-      motors_response_msg.velocity.data[3] = motor_state_queue.velocity[3];
+      motors_response_msg.velocity.data = motor_state_queue.velocity;
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
     }
   }
@@ -231,7 +227,7 @@ void setup() {
     delay(100);
     continue;
   }
-//Allocate memory for motors response message
+  //Allocate memory for motors response message
   MotorsResponseMsgInit(&motors_response_msg);
   MotorsCmdMsgInit(&motors_cmd_msg);
 
@@ -300,18 +296,18 @@ void setup() {
                             configMINIMAL_STACK_SIZE + 800, NULL, tskIDLE_PRIORITY + 2,
                             NULL);
   if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
-  // s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
-  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-  //                         NULL);
-  // if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
-  // s7 = xTaskCreate(board_support_task, "board_support_task",
-  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-  //                         NULL);
-  // if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
-  // s8 = xTaskCreate(power_board_task, "power_board_task",
-  //                         configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
-  //                         NULL);
-  // if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
+  s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          NULL);
+  if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
+  s7 = xTaskCreate(board_support_task, "board_support_task",
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          NULL);
+  if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
+  s8 = xTaskCreate(power_board_task, "power_board_task",
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          NULL);
+  if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
 
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);

@@ -38,89 +38,23 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
 }
 
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
-    static char msg_data_tab[3][MOT_CMD_MSG_LEN];
-
-
-    static char tab0[10];
-    static char tab1[10];
-    static char tab2[10];
-    static char tab3[10];
-    static double pos[10]; 
-    static double vel[10];
-    static double eff[10];
-    static rosidl_runtime_c__String str_name_tab[10];
-
-    msg->position.capacity = 10;
-    msg->position.data = pos;
-    msg->effort.capacity = 10;
-    msg->effort.data = eff;
-    msg->velocity.capacity = 10;
-    msg->velocity.data = vel;
-    msg->header.frame_id.capacity = 20;
-
-    str_name_tab->capacity = 10;
-    str_name_tab->size = 10;
-    
-    str_name_tab[0].capacity = 10;
-    str_name_tab[0].data = tab0;
-    
-    str_name_tab[1].capacity = 10;
-    str_name_tab[1].data = tab1;
-    
-    str_name_tab[2].capacity = 10;
-    str_name_tab[2].data = tab2;
-    
-    str_name_tab[3].capacity = 10;
-    str_name_tab[3].data = tab3;
-
-    msg->name.capacity = 10;
-    msg->name.data->capacity = 10;
-    msg->name.data = str_name_tab;
-}
-
-void SetpointMsgInit(sensor_msgs__msg__JointState* msg){
-    static char tab0[3];
-    static char tab1[3];
-    static char tab2[3];
-    static char tab3[3];
-    static double pos[4]; 
-    static double vel[4];
-    static double eff[4];
-    static rosidl_runtime_c__String__Sequence msg_name;
-    static rosidl_runtime_c__String str_name_tab[4];
-    msg->position.capacity = 4;
-    msg->position.size = 4; 
-    msg->position.data = pos;
-    msg->effort.capacity = 4;
-    msg->effort.size = 4; 
-    msg->effort.data = eff;
-    msg->velocity.capacity = 4;
-    msg->velocity.size = 4;
-    msg->velocity.data = vel;
-    msg->header.frame_id.capacity = 20;
-    msg->header.frame_id.size = 20;
-
-    str_name_tab->capacity = 4;
-    str_name_tab->size = 4;
-    
-    str_name_tab[0].capacity = 3;
-    str_name_tab[0].size = 2;
-    
-    str_name_tab[1].capacity = 3;
-    str_name_tab[1].size = 2;
-    
-    str_name_tab[2].capacity = 3;
-    str_name_tab[2].size = 2;
-    
-    str_name_tab[3].capacity = 3;
-    str_name_tab[3].size = 2;
-
-    msg_name.capacity = 4;
-    msg_name.size = 4;
-    msg_name.data->size = 4;
-    msg_name.data->capacity = 4;
-    msg_name.data = str_name_tab;
-    msg->name = msg_name;
+    static double msg_data_tab[3][MOT_CMD_MSG_LEN];
+    static rosidl_runtime_c__String msg_name_tab[MOT_CMD_MSG_LEN];
+    static char msg_name_data_tab[MOT_CMD_MSG_LEN][MOT_CMD_MSG_NAMES_LEN];
+    msg->position.data = msg_data_tab[0];
+    msg->position.capacity = MOT_CMD_MSG_LEN;
+    msg->velocity.data = msg_data_tab[1];
+    msg->velocity.capacity = MOT_CMD_MSG_LEN;
+    msg->effort.data = msg_data_tab[2];
+    msg->effort.capacity = msg->effort.size = MOT_CMD_MSG_LEN;
+    msg->header.frame_id.capacity = MOT_CMD_MSG_FR_ID_LEN;
+    msg_name_tab->capacity = msg_name_tab->size = MOT_CMD_MSG_LEN;
+    for(uint8_t i = 0; i < MOT_CMD_MSG_LEN; i++){
+        msg_name_tab->capacity = MOT_CMD_MSG_NAMES_LEN;
+        msg_name_tab->data = msg_name_data_tab[i];
+    }
+    msg->name.capacity = MOT_CMD_MSG_LEN;
+    msg->name.data = msg_name_tab;
 }
 
 MotorClass::MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_tim_channel_, uint32_t Ilim_pin_, uint32_t A_channel_mot_,
@@ -214,12 +148,8 @@ void MotorClass::SoftStop(void){
 double MotorClass::VelocityUpdate(void){
     ActualTime = xTaskGetTickCount();
     ActualEncVal = this->EncValUpdate();
-    TimeChange = double(ActualTime-PrevTime)/1000; //in secondes
-    // this->Velocity = ((double(ActualEncVal-PrevEncVal))*1000/(IMP_PER_RAD)/TimeChange);
+    TimeChange = double(ActualTime-PrevTime)/1000; //in seconds
     this->Velocity = double(ActualEncVal-PrevEncVal)/(IMP_PER_RAD)/TimeChange;
-    // this->Velocity = double(ActualEncVal-PrevEncVal)/(GEARBOX_RATIO*ENC_RESOLUTION)/TimeChange;
-    // Serial.printf("Actual Value: %d, Previous Value: %d, Velocity: %d, LastTime: %d, NowTime: %d, Time Change: %d \r\n", 
-    //             int32_t(ActEncVal), int32_t(PrevEncVal), int32_t(this->Velocity), LastTime, NowTime, TimeChange);
     PrevEncVal = ActualEncVal;
     PrevTime = ActualTime;
     return this->Velocity*this->DefaultDir;
@@ -280,16 +210,6 @@ MotorPidClass::~MotorPidClass(){
 void MotorPidClass::SetSetpoint(double Setpoint_){
     Setpoint = Setpoint_;
 }
-
-// void MotorPidClass::Handler(void){
-
-//     PidSetpoint = (ActualSetpoint*OutputMax)/(MAX_ANG_VEL)*Motor->GetDefaultDir();
-//     Input = double((Motor->VelocityUpdate()*OutputMax)/(MAX_ANG_VEL));
-//     //Serial.printf("Input: %d, Velocity: %d \r\n", int16_t(Input), int16_t(temp));
-//     MotorPID->Compute();
-//     Motor->SetMove(int16_t(this->Output));
-//     //Serial.printf("Actual setpoint: %d, Setpoint: %d, Output: %d, Input: %d \r\n", int16_t(this->ActualSetpoint), int16_t(this->Setpoint), int16_t(this->Output), int16_t(this->Input));
-// }
 
 void MotorPidClass::Handler(void){
     if(RAMP_FLAG){
