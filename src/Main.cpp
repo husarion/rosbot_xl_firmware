@@ -144,7 +144,8 @@ void motors_cmd_callback(const void *msgin){
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
   String motor_name;
-  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->velocity.size; i++){
+  double name_size = setpoint_msg->name.size;
+  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
     motor_name = (String)setpoint_msg->name.data[i].data;
     if(motor_name == "RR") Setpoint[0] = (double)setpoint_msg->velocity.data[i];
     if(motor_name == "RL") Setpoint[1] = (double)setpoint_msg->velocity.data[i];

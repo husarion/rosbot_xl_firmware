@@ -13,50 +13,34 @@
 
 
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
-    static double pos[4]; 
-    static double vel[4];
-    static double eff[4];
-    static rosidl_runtime_c__String str_name_tab[4];
-    msg->position.capacity = 4;
-    msg->position.size = 4; 
-    msg->position.data = pos;
-    msg->effort.capacity = 4;
-    msg->effort.size = 4; 
-    msg->effort.data = eff;
-    msg->velocity.capacity = 4;
-    msg->velocity.size = 4;
-    msg->velocity.data = vel;
-    msg->header.frame_id.capacity = 20;
-    msg->header.frame_id.size = 20;
-    msg->header.frame_id.data = (char*) "motors_response";
-
-    str_name_tab->capacity = 4;
-    str_name_tab->size = 4;
+    static double msg_data_tab[3][MOT_RESP_MSG_LEN];
+    static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
+    char* frame_id = (char*)"motors_response";
+    msg->position.data = msg_data_tab[0];
+    msg->position.capacity = msg->position.size = MOT_RESP_MSG_LEN;
+    msg->velocity.data = msg_data_tab[1];
+    msg->velocity.capacity = msg->velocity.size = MOT_RESP_MSG_LEN;
+    msg->effort.data = msg_data_tab[2];
+    msg->effort.capacity = msg->effort.size = MOT_RESP_MSG_LEN;
+    msg->header.frame_id.data = frame_id;
+    msg->header.frame_id.capacity = msg->header.frame_id.size = strlen((const char*)frame_id);
     
-    str_name_tab[0].capacity = 3;
-    str_name_tab[0].size = 2;
-    str_name_tab[0].data = (char*)"FR";
-    
-    str_name_tab[1].capacity = 3;
-    str_name_tab[1].size = 2;
-    str_name_tab[1].data = (char*)"FL";
-    
-    str_name_tab[2].capacity = 3;
-    str_name_tab[2].size = 2;
-    str_name_tab[2].data = (char*)"RR";
-    
-    str_name_tab[3].capacity = 3;
-    str_name_tab[3].size = 2;
-    str_name_tab[3].data = (char*)"RL";
-
-    msg->name.capacity = 4;
-    msg->name.size = 4;
-    msg->name.data->size = 4;
-    msg->name.data->capacity = 4;
-    msg->name.data = str_name_tab;
+    msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
+    msg_name_tab[0].data = (char*)"RR";
+    msg_name_tab[1].data = (char*)"RL";
+    msg_name_tab[2].data = (char*)"FR";
+    msg_name_tab[3].data = (char*)"FL";
+    for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
+        msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
+    }
+    msg->name.capacity = msg->name.size = MOT_RESP_MSG_LEN;
+    msg->name.data = msg_name_tab;
 }
 
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
+    static char msg_data_tab[3][MOT_CMD_MSG_LEN];
+
+
     static char tab0[10];
     static char tab1[10];
     static char tab2[10];
