@@ -388,6 +388,7 @@ static void board_support_task(void *p){
     if(digitalRead(PWR_BRD_GPIO_INPUT)){
       //send information to SBC to turn off
     }
+    // Serial2.printf("Hello world serial 2");
     vTaskDelay(500);
   }
 }

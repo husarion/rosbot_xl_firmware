@@ -13,13 +13,14 @@
 #define BSP_H
 
 #include "hardware_cfg.h"
+#include <Arduino.h>
+
 
 typedef enum{
     Off     = 0,
     On      = 1,
     Toggle  = 2
 }SwitchStateTypeDef;
-
 
 void BoardGpioInit(void);
 void SetLocalPower(SwitchStateTypeDef State_);

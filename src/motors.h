@@ -138,6 +138,7 @@ class MotorPidClass {
         void SetSetpoint(double);
         MotorClass *Motor;
         PID *MotorPID;
+    private:
         double Kp = PID_DEFAULT_KP;
         double Ki = PID_DEFAULT_KI;
         double Kd = PID_DEFAULT_KD;
@@ -148,7 +149,6 @@ class MotorPidClass {
         double PidSetpoint = 0;       
         double OutputMin;
         double OutputMax;
-        private:
 };
 
 

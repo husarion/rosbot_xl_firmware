@@ -42,10 +42,16 @@
 /* POWER BOARD */
 #define PWR_BRD_GPIO_INPUT          PD4 //PB5 on power board -> output push pull
 #define PWR_BRD_GPIO_OUTPUT         PD7 //PB8 on power board -> input
+#define PWR_BRD_SERIAL              Serial2
+#define PWR_BRD_SERIAL_BAUDRATE     115200
 #define PWR_BRD_SERIAL_RX           PD6
 #define PWR_BRD_SERIAL_TX           PD5
-#define PWR_BRD_SERIAL              UART2
-#define PWR_BRD_SERIAL_BAUDRATE     11520
+
+/* SBC */
+#define SBC_SERIAL          Serial1
+#define SBC_SERIAL_BAUDRATE 460800
+#define SBC_SERIAL_RX       PA10
+#define SBC_SERIAL_TX       PA9
 
 /* IMU */
 #define IMU_I2C             I2C2
@@ -64,11 +70,6 @@
 #define PIXEL_LENGTH        18
 #define VIRTUAL_LED_LENGTH  10
 #define PIXEL_SPI_SPEED     4000000
-
-/* SBC */
-#define SBC_SERIAL_RX       PA10
-#define SBC_SERIAL_TX       PA9
-#define SBC_SERIAL_BAUDRATE 460800
 
 /* KINEMATICS */
 #define KINEMATIC_TASK_FREQ     25 //Hz
@@ -90,9 +91,11 @@
 #define EXT_I2C2_SDA        PC9
 #define EXT_I2C2_SCL        PA8
 //EXT Serial
-#define EXT_SERIAL          UART6
-#define EXT_SERIAL_RX       PG9
-#define EXT_SERIAL_TX       PG14
+#define EXT_SERIAL_EN_FLAG      1
+#define EXT_SERIAL              Serial6
+#define EXT_SERIAL_BAUDRATE     115200
+#define EXT_SERIAL_RX           PG9
+#define EXT_SERIAL_TX           PG14
 //EXT PWM1
 #define EXT_PWM1_TIM        TIM9
 #define EXT_PWM1_CH         CH1

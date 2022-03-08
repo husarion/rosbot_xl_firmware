@@ -10,7 +10,13 @@
  */
 
 #include "bsp.h"
-#include <Arduino.h>
+
+HardwareSerial SBC_SERIAL(SBC_SERIAL_RX, SBC_SERIAL_TX);
+HardwareSerial PWR_BRD_SERIAL(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX);
+#if EXT_SERIAL_EN_FLAG == 1
+    HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
+#endif
+
 
 void BoardGpioInit(void){
     pinMode(GRN_LED, OUTPUT);
@@ -44,12 +50,22 @@ void SetRedLed(SwitchStateTypeDef State_){
 
 void BoardPheripheralsInit(void){
     //SBC Serial port init
-    Serial.setRx(SBC_SERIAL_RX);
-    Serial.setTx(SBC_SERIAL_TX);
-    Serial.begin(SBC_SERIAL_BAUDRATE);
+    SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
     //Power Board Serial port init
-    // HardwareSerial Serial2(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX);
-    // Serial2.begin(PWR_BRD_SERIAL_BAUDRATE);
+    PWR_BRD_SERIAL.begin(PWR_BRD_SERIAL_BAUDRATE);
+    //External Serial port init
+    #if EXT_SERIAL_EN_FLAG == 1
+        EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
+    #endif
+    while(1) {
+        SBC_SERIAL.println("Hello SBC");
+        PWR_BRD_SERIAL.println("Hello Power Board");
+        #if EXT_SERIAL_EN_FLAG == 1 
+            EXT_SERIAL.println("Hello external device");
+        #endif
+        SetGreenLed(Toggle);
+        delay(1000);
+    }
 }
 
 
