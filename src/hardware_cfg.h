@@ -16,10 +16,6 @@
 
 // Define all inputs/outputs etc.
 
-/* ROBOT MECHANICAL DIMENSIONS */
-#define ROBOT_WIDTH     0.200   //meters
-#define ROBOT_LENGTH    0.170   //meters
-
 /* OTHERS */
 #define BOARD_MODE_DEBUG    true    //if true - debug mode is active
 

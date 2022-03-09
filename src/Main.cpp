@@ -120,6 +120,7 @@ extern ImuDriver ImuBno;
 //PIXEL LED
 PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
 
+
 /* TASKS DECLARATION */
 static void rclc_spin_task(void *p);
 static void imu_task(void *p);
@@ -202,6 +203,7 @@ void setup() {
   M2_PID.SetSetpoint(0);
   M3_PID.SetSetpoint(0);
   M4_PID.SetSetpoint(0);
+  
 
   //Pixel Led
   PixelStrip.Init();
@@ -281,7 +283,7 @@ void setup() {
 
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
-                   configMINIMAL_STACK_SIZE + 7000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS)  Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(imu_task, "imu_task",
@@ -289,11 +291,11 @@ void setup() {
                    NULL);
   if(s2 != pdPASS)  Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
-                   configMINIMAL_STACK_SIZE + 1500, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
-                            configMINIMAL_STACK_SIZE + 800, NULL, tskIDLE_PRIORITY + 2,
+                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 2,
                             NULL);
   if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
@@ -308,7 +310,7 @@ void setup() {
                           configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
-
+  
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
   /* START RTOS */
@@ -384,11 +386,19 @@ static void pixel_led_task(void *p){
 
 
 static void board_support_task(void *p){
+  static char FrameBuffer[100];
+  FrameBuffer[0] = 'a';
+  FrameBuffer[1] = 'b';
   while(1){
     if(digitalRead(PWR_BRD_GPIO_INPUT)){
       //send information to SBC to turn off
     }
-    // Serial2.printf("Hello world serial 2");
+    #if BOARD_MODE_DEBUG == true
+      //PWR_BRD_SERIAL.println("Hello Power Board");
+      EXT_SERIAL.println("Hello external device");
+      SBC_SERIAL.println("Hello SBC");
+      // PWR_BRD_SERIAL.write(FrameBuffer);
+    #endif
     vTaskDelay(500);
   }
 }

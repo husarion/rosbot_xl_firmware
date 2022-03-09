@@ -11,7 +11,6 @@
 
 #include "bsp.h"
 
-HardwareSerial SBC_SERIAL(SBC_SERIAL_RX, SBC_SERIAL_TX);
 HardwareSerial PWR_BRD_SERIAL(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX);
 #if EXT_SERIAL_EN_FLAG == 1
     HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
@@ -50,22 +49,18 @@ void SetRedLed(SwitchStateTypeDef State_){
 
 void BoardPheripheralsInit(void){
     //SBC Serial port init
+    SBC_SERIAL.setRx(SBC_SERIAL_RX);
+    SBC_SERIAL.setTx(SBC_SERIAL_TX);
     SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
+    SBC_SERIAL.println("Hello SBC");
     //Power Board Serial port init
     PWR_BRD_SERIAL.begin(PWR_BRD_SERIAL_BAUDRATE);
+    PWR_BRD_SERIAL.println("Hello Power Board");
     //External Serial port init
     #if EXT_SERIAL_EN_FLAG == 1
         EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
+        EXT_SERIAL.println("Hello external device");
     #endif
-    while(1) {
-        SBC_SERIAL.println("Hello SBC");
-        PWR_BRD_SERIAL.println("Hello Power Board");
-        #if EXT_SERIAL_EN_FLAG == 1 
-            EXT_SERIAL.println("Hello external device");
-        #endif
-        SetGreenLed(Toggle);
-        delay(1000);
-    }
 }
 
 
