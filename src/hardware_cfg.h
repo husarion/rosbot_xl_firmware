@@ -39,9 +39,10 @@
 #define PWR_BRD_GPIO_INPUT          PD4 //PB5 on power board -> output push pull
 #define PWR_BRD_GPIO_OUTPUT         PD7 //PB8 on power board -> input
 #define PWR_BRD_SERIAL              Serial2
-#define PWR_BRD_SERIAL_BAUDRATE     115200
+#define PWR_BRD_SERIAL_BAUDRATE     38400
 #define PWR_BRD_SERIAL_RX           PD6
 #define PWR_BRD_SERIAL_TX           PD5
+#define PWR_BRD_SERIAL_CONFIG       0x06
 
 /* SBC */
 #define SBC_SERIAL          Serial1

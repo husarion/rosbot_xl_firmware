@@ -14,6 +14,7 @@
 
 #include "hardware_cfg.h"
 #include <Arduino.h>
+#include "UartLib.h"
 
 typedef enum{
     Off     = 0,

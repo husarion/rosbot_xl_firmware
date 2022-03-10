@@ -120,6 +120,9 @@ extern ImuDriver ImuBno;
 //PIXEL LED
 PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
 
+//REST
+extern UartProtocolClass PowerBoardSerial;
+
 
 /* TASKS DECLARATION */
 static void rclc_spin_task(void *p);
@@ -295,7 +298,7 @@ void setup() {
                    NULL);
   if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
-                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 2,
+                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                             NULL);
   if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
@@ -303,7 +306,7 @@ void setup() {
                           NULL);
   if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
   s7 = xTaskCreate(board_support_task, "board_support_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
                           NULL);
   if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
   s8 = xTaskCreate(power_board_task, "power_board_task",
@@ -386,32 +389,27 @@ static void pixel_led_task(void *p){
 
 
 static void board_support_task(void *p){
-  static char FrameBuffer[100];
-  FrameBuffer[0] = 'a';
-  FrameBuffer[1] = 'b';
   while(1){
     if(digitalRead(PWR_BRD_GPIO_INPUT)){
       //send information to SBC to turn off
     }
-    #if BOARD_MODE_DEBUG == true
-      //PWR_BRD_SERIAL.println("Hello Power Board");
-      EXT_SERIAL.println("Hello external device");
-      SBC_SERIAL.println("Hello SBC");
-      // PWR_BRD_SERIAL.write(FrameBuffer);
-    #endif
-    vTaskDelay(500);
+    // EXT_SERIAL.println("Hello external device");
+    // SBC_SERIAL.println("Hello SBC");
+    vTaskDelay(50);
   }
 }
 
 static void power_board_task(void *p){
   static String Frame = "Temp_Text";
   static char FrameBuffer[100];
+  volatile uint8_t pointer = 0;
+  uint8_t Buffer[600];
   while(1){
-    // Serial2.readStringUntil('<');
-    // frame = Serial2.readStringUntil('>');
-    // sprintf(FrameBuffer, "Temp");
-    // Serial.printf("%c", FrameBuffer);
-    vTaskDelay(100);
+    PowerBoardSerial.println("PowerBoardSerial loop handler executed.");
+    for(uint8_t i = 0; i < 100; i++)
+      Buffer[i] = NULL;
+    pointer = PowerBoardSerial.readBytes(Buffer, 600);
+    vTaskDelay(2000);
   }
 }
 
