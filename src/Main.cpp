@@ -306,7 +306,7 @@ void setup() {
                           NULL);
   if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
   s7 = xTaskCreate(board_support_task, "board_support_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
+                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
   s8 = xTaskCreate(power_board_task, "power_board_task",
@@ -395,21 +395,14 @@ static void board_support_task(void *p){
     }
     // EXT_SERIAL.println("Hello external device");
     // SBC_SERIAL.println("Hello SBC");
-    vTaskDelay(50);
+    vTaskDelay(250);
   }
 }
 
 static void power_board_task(void *p){
-  static String Frame = "Temp_Text";
-  static char FrameBuffer[100];
-  volatile uint8_t pointer = 0;
-  uint8_t Buffer[600];
   while(1){
-    PowerBoardSerial.println("PowerBoardSerial loop handler executed.");
-    for(uint8_t i = 0; i < 100; i++)
-      Buffer[i] = NULL;
-    pointer = PowerBoardSerial.readBytes(Buffer, 600);
-    vTaskDelay(2000);
+    PowerBoardSerial.UartProtocolLoopHandler();
+    vTaskDelay(50);
   }
 }
 

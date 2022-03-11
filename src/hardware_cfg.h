@@ -43,6 +43,7 @@
 #define PWR_BRD_SERIAL_RX           PD6
 #define PWR_BRD_SERIAL_TX           PD5
 #define PWR_BRD_SERIAL_CONFIG       0x06
+#define PWR_BRD_SERIAL_TIMEOUT      1   //ms
 
 /* SBC */
 #define SBC_SERIAL          Serial1

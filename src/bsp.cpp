@@ -55,7 +55,9 @@ void BoardPheripheralsInit(void){
     SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
     SBC_SERIAL.println("Hello SBC");
     //Power Board Serial port init
+    PowerBoardSerial.setTimeout(PWR_BRD_SERIAL_TIMEOUT);
     PowerBoardSerial.println("Hello power board");
+    // PWR_BRD_SERIAL.begin(PWR_BRD_SERIAL_BAUDRATE);
     //External Serial port init
     #if EXT_SERIAL_EN_FLAG == 1
         EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);

@@ -13,9 +13,11 @@
 #define UartLib_H
 
 #include <Arduino.h>
+#include <bsp.h>
 
-#define MAX_ARGS_SIZE   32
-#define RX_BUFF_SIZE    100
+#define MAX_ARGS_SIZE       32
+#define RX_BUFF_CAPACITY    500
+#define DEFAULT_TIMEOUT     1
 
 
 struct UartProtocolFrame{
@@ -32,7 +34,8 @@ class UartProtocolClass: public HardwareSerial{
 
     private:
     UartProtocolFrame ProcessedFrame;
-    uint8_t RxBuffer[RX_BUFF_SIZE];
+    uint8_t RxBuffer[RX_BUFF_CAPACITY];
+    volatile uint16_t RxBufferSize = 0;
 };
 
 #endif /* UartLib_H */
