@@ -402,7 +402,7 @@ static void board_support_task(void *p){
 static void power_board_task(void *p){
   while(1){
     PowerBoardSerial.UartProtocolLoopHandler();
-    vTaskDelay(50);
+    vTaskDelay(150);
   }
 }
 
