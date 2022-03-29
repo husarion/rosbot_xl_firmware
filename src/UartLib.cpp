@@ -86,8 +86,10 @@ uint16_t UartProtocolClass:: HexToByte(uint8_t* byte_){
     return UART_H2B_ERR;
 }
 
-uint16_t UartProtocolClass:: ByteToHex(uint8_t* byte_){
-    return 0;
+uint8_t* UartProtocolClass:: ByteToHex(uint8_t byte_, uint8_t* buffer_){
+    buffer_[0] = EncodeHex((byte_ & 0xF0) >> 4);
+    buffer_[1] = EncodeHex(byte_ & 0x0F);
+    return buffer_ +2;
 }
 
 uint8_t UartProtocolClass:: DecodeHex(uint8_t byte_){
@@ -125,6 +127,24 @@ void UartProtocolClass:: ExecuteFrame(){
     }
 }
 
-void UartProtocolClass:: SendFrame(uint8_t cmd_, uint8_t arg_size_, uint8_t* arg){
-    ;
+void UartProtocolClass:: SendFrame(UartProtocolFrame frame_){
+    static uint8_t TxBuff[UART_FRAME_LENGTH(MAX_ARGS_SIZE)];
+    uint8_t* TxBufPtr = TxBuff;
+    frame_.CheckSum = frame_.Cmd ^ frame_.ArgSize;
+    *TxBufPtr++ = FRAME_START_BIT;
+    TxBufPtr = ByteToHex(frame_.Cmd, TxBufPtr);
+    TxBufPtr = ByteToHex(frame_.ArgSize, TxBufPtr);
+    for(uint8_t i = 0; i < frame_.ArgSize; i++){
+        TxBufPtr = ByteToHex(frame_.Arg[i], TxBufPtr);
+        frame_.CheckSum ^= frame_.Arg[i];
+    }
+    TxBufPtr = ByteToHex(frame_.CheckSum, TxBufPtr);
+    *TxBufPtr++ = FRAME_STOP_BIT;
+    this->SendBuffer(UART_FRAME_LENGTH(frame_.ArgSize), TxBuff);
+}
+
+void UartProtocolClass:: SendBuffer(uint8_t size_, uint8_t* buffer_){
+    String Input = (char*) buffer_;
+    String TxData = Input.substring(0, size_);
+    this->printf("%s", TxData);
 }

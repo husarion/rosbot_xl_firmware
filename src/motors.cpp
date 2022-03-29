@@ -26,10 +26,10 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
     msg->header.frame_id.capacity = msg->header.frame_id.size = strlen((const char*)frame_id);
     
     msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
-    msg_name_tab[0].data = (char*)"RR";
-    msg_name_tab[1].data = (char*)"RL";
-    msg_name_tab[2].data = (char*)"FR";
-    msg_name_tab[3].data = (char*)"FL";
+    msg_name_tab[0].data = (char*)"rear_right_wheel_joint";
+    msg_name_tab[1].data = (char*)"rear_left_wheel_joint";
+    msg_name_tab[2].data = (char*)"front_right_wheel_joint";
+    msg_name_tab[3].data = (char*)"front_left_wheel_joint";
     for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
         msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
     }
@@ -41,12 +41,14 @@ void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     static double msg_data_tab[3][MOT_CMD_MSG_LEN];
     static rosidl_runtime_c__String msg_name_tab[MOT_CMD_MSG_LEN];
     static char msg_name_data_tab[MOT_CMD_MSG_LEN][MOT_CMD_MSG_NAMES_LEN];
+    static char msg_frame_id_data[MOT_CMD_MSG_FR_ID_LEN];
     msg->position.data = msg_data_tab[0];
     msg->position.capacity = MOT_CMD_MSG_LEN;
     msg->velocity.data = msg_data_tab[1];
     msg->velocity.capacity = MOT_CMD_MSG_LEN;
     msg->effort.data = msg_data_tab[2];
-    msg->effort.capacity = msg->effort.size = MOT_CMD_MSG_LEN;
+    msg->effort.capacity = MOT_CMD_MSG_LEN;
+    msg->header.frame_id.data = msg_frame_id_data;
     msg->header.frame_id.capacity = MOT_CMD_MSG_FR_ID_LEN;
     msg_name_tab->capacity = msg_name_tab->size = MOT_CMD_MSG_LEN;
     for(uint8_t i = 0; i < MOT_CMD_MSG_LEN; i++){

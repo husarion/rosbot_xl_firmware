@@ -148,13 +148,18 @@ void motors_cmd_callback(const void *msgin){
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
   String motor_name;
+  String temp_motor_name;
   double name_size = setpoint_msg->name.size;
+  double setpoint1, setpoint2;
   for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
     motor_name = (String)setpoint_msg->name.data[i].data;
-    if(motor_name == "RR") Setpoint[0] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "RL") Setpoint[1] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "FR") Setpoint[2] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "FL") Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+    temp_motor_name = (String)setpoint_msg->name.data[i+1].data;
+    setpoint1 = (double)setpoint_msg->velocity.data[i];
+    setpoint2 = (double)setpoint_msg->velocity.data[i+1];
+    if(motor_name == "rear_right_wheel_joint") Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "rear_left_wheel_joint") Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "front_right_wheel_joint") Setpoint[2] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "front_left_wheel_joint") Setpoint[3] = (double)setpoint_msg->velocity.data[i];
   }
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
@@ -188,6 +193,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
       motors_response_msg.header.stamp.sec = ts.tv_sec;
       motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
       motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.position.data = motor_state_queue.positon;
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
     }
   }
@@ -364,15 +370,19 @@ static void pid_handler_task(void *p){
     M4_PID.Handler();
     M4_PID.SetSetpoint(setpoint[3]);
     motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
+    motor_state.positon[3] = (double)M4_PID.Motor->GetPosition();
     M2_PID.Handler();
     M2_PID.SetSetpoint(setpoint[1]);
     motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
+    motor_state.positon[1] = (double)M2_PID.Motor->GetPosition();
     M1_PID.Handler();
     M1_PID.SetSetpoint(setpoint[0]);
     motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
+    motor_state.positon[0] = (double)M1_PID.Motor->GetPosition();
     M3_PID.Handler();
     M3_PID.SetSetpoint(setpoint[2]);
     motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
+    motor_state.positon[2] = (double)M3_PID.Motor->GetPosition();
     xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
   }
 }

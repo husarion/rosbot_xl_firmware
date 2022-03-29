@@ -15,10 +15,16 @@
 #include <Arduino.h>
 #include <bsp.h>
 
-#define MAX_ARGS_SIZE       32
-#define RX_BUFF_CAPACITY    500
-#define DEFAULT_TIMEOUT     1
-#define UART_H2B_ERR        0xFFFF
+
+#define FRAME_START_BIT                 '<'
+#define FRAME_STOP_BIT                  '>'
+#define MAX_ARGS_SIZE                   32
+#define RX_BUFF_CAPACITY                500
+#define DEFAULT_TIMEOUT                 1
+#define UART_H2B_ERR                    0xFFFF
+#define UART_FRAME_DATA_LENGTH(arg)     (arg + 3) * 2 
+#define UART_FRAME_LENGTH(arg)          UART_FRAME_DATA_LENGTH(arg) + 2               
+#define UART_MAX_FRAME_DATA_LENGTH      UART_FRAME_DATA_LENGTH(MAX_ARGS_SIZE)
 
 
 struct UartProtocolFrame{
@@ -35,11 +41,12 @@ class UartProtocolClass: public HardwareSerial{
     void UartProtocolLoopHandler();
     int8_t StreamParse();
     uint16_t HexToByte(uint8_t* byte_);
-    uint16_t ByteToHex(uint8_t* byte_);
+    uint8_t* ByteToHex(uint8_t byte_, uint8_t* buffer_);
     uint8_t DecodeHex(uint8_t byte_);
     uint8_t EncodeHex(uint8_t byte_);
     void ExecuteFrame();
-    void SendFrame(uint8_t cmd_, uint8_t arg_size_, uint8_t* arg);
+    void SendFrame(UartProtocolFrame frame_);
+    void SendBuffer(uint8_t size_, uint8_t* buffer_);
 
     private:
     UartProtocolFrame ProcessedFrame;
