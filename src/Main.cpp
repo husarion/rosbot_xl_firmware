@@ -148,18 +148,12 @@ void motors_cmd_callback(const void *msgin){
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
   String motor_name;
-  String temp_motor_name;
-  double name_size = setpoint_msg->name.size;
-  double setpoint1, setpoint2;
   for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
     motor_name = (String)setpoint_msg->name.data[i].data;
-    temp_motor_name = (String)setpoint_msg->name.data[i+1].data;
-    setpoint1 = (double)setpoint_msg->velocity.data[i];
-    setpoint2 = (double)setpoint_msg->velocity.data[i+1];
-    if(motor_name == "rear_right_wheel_joint") Setpoint[0] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "rear_left_wheel_joint") Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "rear_right_wheel_joint")  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "rear_left_wheel_joint")   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
     if(motor_name == "front_right_wheel_joint") Setpoint[2] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "front_left_wheel_joint") Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == "front_left_wheel_joint")  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
   }
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
