@@ -200,8 +200,11 @@ double MotorClass::GetVelocity(void){
     return this->Velocity*this->DefaultDir;
 }
 
-
 double MotorClass::GetPosition(void){
+    return (double(this->ActualEncVal) / (double(ENC_RESOLUTION) * double(GEARBOX_RATIO)))*2*PI;
+}
+
+double MotorClass::GetWheelAngle(void){
     int16_t act_angle = ActualEncVal%(ENC_RESOLUTION*GEARBOX_RATIO);
     double pos_rad = double(act_angle)/double(ENC_RESOLUTION)/double(GEARBOX_RATIO)*PI;
     if (ActualEncVal >= 0) {

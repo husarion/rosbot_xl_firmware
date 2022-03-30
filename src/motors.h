@@ -71,8 +71,8 @@
 
 
 //HARDWARE DEFINES
-#define ENC_RESOLUTION      64      //four edges 
-#define GEARBOX_RATIO       50
+#define ENC_RESOLUTION      64//48 <-pololu 25D     //four edges 
+#define GEARBOX_RATIO       50//34 <-pololu 25D
 #define WHEEL_DIAM          0.105   //meters
 #define IMP_PER_RAD         ENC_RESOLUTION*GEARBOX_RATIO/(2*PI)
 #define MAX_ANG_VEL         20.0    // rad/s
@@ -105,6 +105,7 @@ class MotorClass {
         double VelocityUpdate(void);
         double GetVelocity(void);
         double GetPosition(void);
+        double GetWheelAngle(void);
         int8_t GetDefaultDir(void);
         uint32_t GetPwmTimerOverflow(void);
         void SetCurrentLimit(uint8_t CurrentMode_);
