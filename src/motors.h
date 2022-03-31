@@ -77,7 +77,7 @@
 #define IMP_PER_RAD         ENC_RESOLUTION*GEARBOX_RATIO/(2*PI)
 #define MAX_ANG_VEL         20.0    // rad/s
 #define RAMP_ACCELERATION   25.0      // rad/s^2
-#define RAMP_FLAG           true   // if true - use ramp, it false - without ramp
+#define RAMP_FLAG           false   // if true - use ramp, it false - without ramp
 #define MAX_CURRENT         0x01
 #define REDUCED_CURRENT     0x00
 

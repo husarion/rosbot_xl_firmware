@@ -62,10 +62,11 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
 // }
 
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
-    static char tab0[24];
-    static char tab1[24];
-    static char tab2[24];
-    static char tab3[24];
+    static char tab[4][24];
+    // static char tab0[24];
+    // static char tab1[24];
+    // static char tab2[24];
+    // static char tab3[24];
     static double pos[10]; 
     static double vel[10];
     static double eff[10];
@@ -82,16 +83,16 @@ void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     str_name_tab->capacity = 4;
     
     str_name_tab[0].capacity = 24;
-    str_name_tab[0].data = tab0;
+    str_name_tab[0].data = tab[0];
     
     str_name_tab[1].capacity = 24;
-    str_name_tab[1].data = tab1;
+    str_name_tab[1].data = tab[1];
     
     str_name_tab[2].capacity = 24;
-    str_name_tab[2].data = tab2;
+    str_name_tab[2].data = tab[2];
     
     str_name_tab[3].capacity = 24;
-    str_name_tab[3].data = tab3;
+    str_name_tab[3].data = tab[3];
 
     msg->name.capacity = 4;
     msg->name.data->capacity = 24;
@@ -152,7 +153,6 @@ void MotorClass::SetPWM(uint16_t setpoint){
 
 
 void MotorClass::SetMove(int16_t vel){
-    vel = vel;
     this->SetPWM(abs(vel));
     if(vel < 0){      ;    //backward move
         pinMode(this->A_channel_mot, INPUT);

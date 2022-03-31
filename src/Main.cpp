@@ -206,7 +206,7 @@ void setup() {
   M2_PID.SetSetpoint(0);
   M3_PID.SetSetpoint(0);
   M4_PID.SetSetpoint(0);
-  
+
 
   //Pixel Led
   PixelStrip.Init();
@@ -351,30 +351,28 @@ static void runtime_stats_task(void *p) {
   }
 }
 
-
 static void pid_handler_task(void *p){
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  double setpoint[4];
-  // double motor_state[4];
+  double setpoint[] = {0,0,0,0};
   static motor_state_queue_t motor_state;
-
+  
   while(1){
     vTaskDelayUntil(&xLastWakeTime, (1000/PID_FREQ*portTICK_PERIOD_MS));
-    xQueueReceive(SetpointQueue, &setpoint, (TickType_t) 0);
-    M4_PID.Handler();
+    xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0);
     M4_PID.SetSetpoint(setpoint[3]);
+    M4_PID.Handler();
     motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
     motor_state.positon[3] = (double)M4_PID.Motor->GetPosition();
-    M2_PID.Handler();
     M2_PID.SetSetpoint(setpoint[1]);
+    M2_PID.Handler();
     motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
     motor_state.positon[1] = (double)M2_PID.Motor->GetPosition();
-    M1_PID.Handler();
     M1_PID.SetSetpoint(setpoint[0]);
+    M1_PID.Handler();
     motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
     motor_state.positon[0] = (double)M1_PID.Motor->GetPosition();
-    M3_PID.Handler();
     M3_PID.SetSetpoint(setpoint[2]);
+    M3_PID.Handler();
     motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
     motor_state.positon[2] = (double)M3_PID.Motor->GetPosition();
     xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
