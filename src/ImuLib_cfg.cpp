@@ -24,8 +24,8 @@ ImuDriver::~ImuDriver(){
 
 bool ImuDriver::Init(){
     if(this->ImuBno->begin()){
-        this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P3);
-        this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P3);
+        this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
+        this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
         this->ImuBno->setExtCrystalUse(true);
         return false;
     }
