@@ -133,6 +133,7 @@ static void pid_handler_task(void *p);
 static void pixel_led_task(void *p);
 static void board_support_task(void *p);
 static void power_board_task(void *p);
+static void motors_response_task(void *p);
 
 /* FUNCTIONS */
 void error_loop() {
@@ -244,7 +245,7 @@ void setup() {
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   // init timer
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(50),
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
                                   timer_callback));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
@@ -255,7 +256,7 @@ void setup() {
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_cmd' subscriber\r\n");
 
-  RCCHECK(rclc_publisher_init_best_effort(
+  RCCHECK(rclc_publisher_init_default(
       &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
       "imu/data_raw"));
   ros_msgs_cnt++;
@@ -296,7 +297,7 @@ void setup() {
                    NULL);
   if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
-                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                            configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
                             NULL);
   if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
@@ -304,13 +305,18 @@ void setup() {
                           NULL);
   if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
   s7 = xTaskCreate(board_support_task, "board_support_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
   s8 = xTaskCreate(power_board_task, "power_board_task",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n");
+  // s9 = xTaskCreate(motors_response_task, "motors_response_task",
+  //                         configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+  //                         NULL);
+  // if(s9 != pdPASS)  Serial.printf("S9 creation problem\r\n");
+  
   
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
@@ -352,27 +358,31 @@ static void pid_handler_task(void *p){
   TickType_t xLastWakeTime = xTaskGetTickCount();
   double setpoint[] = {0,0,0,0};
   static motor_state_queue_t motor_state;
-  
+  static uint8_t freq_div_ptr = 0;
   while(1){
     vTaskDelayUntil(&xLastWakeTime, (1000/PID_FREQ*portTICK_PERIOD_MS));
     xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0);
     M4_PID.SetSetpoint(setpoint[3]);
     M4_PID.Handler();
-    motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
-    motor_state.positon[3] = (double)M4_PID.Motor->GetPosition();
     M2_PID.SetSetpoint(setpoint[1]);
     M2_PID.Handler();
-    motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
-    motor_state.positon[1] = (double)M2_PID.Motor->GetPosition();
     M1_PID.SetSetpoint(setpoint[0]);
     M1_PID.Handler();
-    motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
-    motor_state.positon[0] = (double)M1_PID.Motor->GetPosition();
     M3_PID.SetSetpoint(setpoint[2]);
     M3_PID.Handler();
-    motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
-    motor_state.positon[2] = (double)M3_PID.Motor->GetPosition();
-    xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
+    if(freq_div_ptr > (PID_FREQ/MOTORS_RESPONSE_FREQ)){
+      motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
+      motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
+      motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
+      motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
+      motor_state.positon[0] = (double)M1_PID.Motor->GetPosition();
+      motor_state.positon[1] = (double)M2_PID.Motor->GetPosition();
+      motor_state.positon[2] = (double)M3_PID.Motor->GetPosition();
+      motor_state.positon[3] = (double)M4_PID.Motor->GetPosition();
+      xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
+      freq_div_ptr = 0;
+    }
+    freq_div_ptr++;
   }
 }
 
@@ -404,6 +414,24 @@ static void power_board_task(void *p){
     vTaskDelay(150);
   }
 }
+
+// static void motors_response_task(void *p){
+//   TickType_t xLastWakeTime = xTaskGetTickCount();
+//   static motor_state_queue_t motor_state;
+//   while(1){
+//     // Serial.printf("motors response task executed./r/n");
+//     motor_state.velocity[0] = (double)M1_PID.Motor->GetVelocity();
+//     motor_state.velocity[1] = (double)M2_PID.Motor->GetVelocity();
+//     motor_state.velocity[2] = (double)M3_PID.Motor->GetVelocity();
+//     motor_state.velocity[3] = (double)M4_PID.Motor->GetVelocity();
+//     motor_state.positon[0] = (double)M1_PID.Motor->GetPosition();
+//     motor_state.positon[1] = (double)M2_PID.Motor->GetPosition();
+//     motor_state.positon[2] = (double)M3_PID.Motor->GetPosition();
+//     motor_state.positon[3] = (double)M4_PID.Motor->GetPosition();
+//     vTaskDelayUntil(&xLastWakeTime, (1000/MOTORS_RESPONSE_FREQ*portTICK_PERIOD_MS));
+//     xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
+//   }
+// }
 
 
 /*============== LOOP - IDDLE TASK ===============*/

@@ -61,6 +61,9 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
 //     msg->name.data = msg_name_tab;
 // }
 
+
+
+
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     static char tab[4][24];
     static double pos[10]; 

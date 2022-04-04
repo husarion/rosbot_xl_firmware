@@ -87,6 +87,9 @@
 #define MOT_CMD_MSG_FR_ID_LEN   20
 #define MOT_RESP_MSG_LEN        4
 
+//ANOTHER DEFINES
+#define MOTORS_RESPONSE_FREQ    50
+
 
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
