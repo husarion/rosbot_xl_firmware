@@ -244,7 +244,7 @@ void setup() {
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   // init timer
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(50),
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(20),
                                   timer_callback));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
