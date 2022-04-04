@@ -270,8 +270,6 @@ void setup() {
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
-  // RCCHECK(rclc_executor_add_subscription(&executor, &cmd_vel_subscriber, &msgs,
-  //                                       &cmd_vel_callback, ON_NEW_DATA));   
   RCCHECK(rclc_executor_add_subscription(&executor, &motors_cmd_subscriber, &motors_cmd_msg,
                                         &motors_cmd_callback, ON_NEW_DATA));                                 
   if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
@@ -336,7 +334,6 @@ static void imu_task(void *p){
   while(1){
     queue_imu = ImuBno.LoopHandler();
     xQueueSendToFront(ImuQueue, (void*) &queue_imu, TickType_t(0));
-    // vTaskDelay(1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS);
     vTaskDelayUntil(&xLastWakeTime, (1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS));
   }
 }

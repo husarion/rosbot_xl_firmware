@@ -63,10 +63,6 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
 
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     static char tab[4][24];
-    // static char tab0[24];
-    // static char tab1[24];
-    // static char tab2[24];
-    // static char tab3[24];
     static double pos[10]; 
     static double vel[10];
     static double eff[10];
