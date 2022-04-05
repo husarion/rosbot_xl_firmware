@@ -11,6 +11,16 @@
 
 #include "motors.h"
 
+//MOTORS
+MotorClass Motor1(M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1_ILIM, M1A_IN, M1B_IN, M1_ENC_TIM, M1_ENC_A, M1_ENC_B, M1_DEFAULT_DIR);
+MotorClass Motor2(M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2_ILIM, M2A_IN, M2B_IN, M2_ENC_TIM, M2_ENC_A, M2_ENC_B, M2_DEFAULT_DIR);
+MotorClass Motor3(M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3_ILIM, M3A_IN, M3B_IN, M3_ENC_TIM, M3_ENC_A, M3_ENC_B, M3_DEFAULT_DIR);
+MotorClass Motor4(M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4_ILIM, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B, M4_DEFAULT_DIR);
+MotorPidClass M1_PID(&Motor1);
+MotorPidClass M2_PID(&Motor2);
+MotorPidClass M3_PID(&Motor3);
+MotorPidClass M4_PID(&Motor4);
+
 
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
     static double msg_data_tab[3][MOT_RESP_MSG_LEN];
