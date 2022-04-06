@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
+#include <micro_ros_cfg.h>
 /*===== HARDEWARE =====*/
 #include <hardware_cfg.h>
-#include <motors.h>
 #include <bsp.h>
+//MOTORS
+#include <motors.h>
 //IMU
 #include <ImuLib_cfg.h>
 //PIXEL
@@ -12,13 +14,8 @@
 #include <LwIP.h>
 #include <STM32Ethernet.h>
 #include <UartLib.h>
-
-#include <micro_ros_cfg.h>
-
 /* DEFINES */
-#define CLIENT_IP "192.168.1.177"
-#define AGENT_IP "192.168.1.176"
-#define AGENT_PORT 8888
+
 
 
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
@@ -29,33 +26,36 @@ typedef struct {
   double positon[4];
 } motor_state_queue_t;
 
-/* VARIABLES */
+/* RTOS VARIABLES */
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
+portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
+
+/* EXTERN VARIABLES */
+extern UartProtocolClass PowerBoardSerial;
+//IMU
+extern ImuDriver ImuBno;
+//microROS
 extern std_msgs__msg__String msgs;
 extern sensor_msgs__msg__Imu imu_msg;
 extern sensor_msgs__msg__JointState motors_cmd_msg;
 extern sensor_msgs__msg__JointState motors_response_msg;
-extern rcl_publisher_t publisher;
 extern rcl_publisher_t imu_publisher;
 extern rcl_publisher_t motor_state_publisher;
-
-//ETHERNET
-IPAddress client_ip;
-IPAddress agent_ip;
-byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 //MOTORS
 extern MotorPidClass M1_PID;
 extern MotorPidClass M2_PID;
 extern MotorPidClass M3_PID;
 extern MotorPidClass M4_PID;
-//IMU
-extern ImuDriver ImuBno;
+
+//ETHERNET
+IPAddress client_ip;
+IPAddress agent_ip;
+byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
+
 //PIXEL LED
 PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
-//REST
-extern UartProtocolClass PowerBoardSerial;
 
 /* TASKS DECLARATION */
 static void rclc_spin_task(void *p);
@@ -70,28 +70,28 @@ static void motors_response_task(void *p);
 /* FUNCTIONS */
 void error_loop() {
   while (1) {
-    // Serial.printf("in error loop");
+    if(BOARD_MODE_DEBUG) Serial.printf("in error loop");
     SetRedLed(Toggle);
     delay(100);
   }
 }
 
-extern void motors_cmd_callback(const void *msgin){
+extern void uRosMotorsCmdCallback(const void *msgin){
   static double Setpoint[] = {0,0,0,0};
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
   String motor_name;
   for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
     motor_name = (String)setpoint_msg->name.data[i].data;
-    if(motor_name == "rear_right_wheel_joint")  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "rear_left_wheel_joint")   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "front_right_wheel_joint") Setpoint[2] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == "front_left_wheel_joint")  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == REAR_LEFT_MOTOR_NAME)   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_RIGHT_MOTOR_NAME) Setpoint[2] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_LEFT_MOTOR_NAME)  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
   }
   xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
 }
 
-extern void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
+extern void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   static imu_queue_t queue_imu;
   static motor_state_queue_t motor_state_queue;
@@ -133,12 +133,10 @@ void setup() {
   BoardPheripheralsInit();
   SetLocalPower(On);
   delay(1000);
-  portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
-
+  
   //Pixel Led
   PixelStrip.Init();
   ImuBno.Init();
-  delay(1000);
 
   client_ip.fromString(CLIENT_IP);
   agent_ip.fromString(AGENT_IP);
@@ -157,16 +155,13 @@ void setup() {
     delay(100);
     continue;
   }
-  //Allocate memory for motors response message
-  MotorsResponseMsgInit(&motors_response_msg);
-  MotorsCmdMsgInit(&motors_cmd_msg);
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
-  create_entities();
+  uRosCreateEntities();
 
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
@@ -209,8 +204,8 @@ static void rclc_spin_task(void *p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
-    executor_loop_handler();
-    vTaskDelayUntil(&xLastWakeTime, 2);
+    uRosExecutorLoopHandler();
+    vTaskDelayUntil(&xLastWakeTime, 1);
   }
 }
 

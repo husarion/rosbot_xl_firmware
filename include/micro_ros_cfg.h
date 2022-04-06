@@ -28,6 +28,19 @@
 /*===== REST =====*/
 #include "hardware_cfg.h"
 
+//Motors msgs defines
+#define MOT_CMD_MSG_LEN         4
+#define MOT_CMD_MSG_NAMES_LEN   25
+#define MOT_CMD_MSG_FR_ID_LEN   20
+#define MOT_RESP_MSG_LEN        4
+#define FRONT_LEFT_MOTOR_NAME   "front_left_wheel_joint"
+#define FRONT_RIGHT_MOTOR_NAME  "front_right_wheel_joint"
+#define REAR_LEFT_MOTOR_NAME    "rear_left_wheel_joint"
+#define REAR_RIGHT_MOTOR_NAME   "rear_right_wheel_joint"
+#define MOTORS_RESPONSE_FREQ    50
+//Anoter defines
+#define NODE_NAME "stm32_node"
+
 #define RCCHECK(fn)                \
   {                                \
     rcl_ret_t temp_rc = fn;        \
@@ -42,16 +55,14 @@
       Serial.printf("!");          \
     }                              \
   }
-#define NODE_NAME "stm32_node"
-
-
 
 // extern void error_loop()
-void motors_cmd_callback(const void *msgin);
-void timer_callback(rcl_timer_t *timer, int64_t last_call_time);
-bool create_entities(void);
-bool destroy_entities(void);
-void executor_loop_handler(void);
-
+void uRosMotorsCmdCallback(const void *msgin);
+void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time);
+bool uRosCreateEntities(void);
+bool uRosDestroyEntities(void);
+void uRosExecutorLoopHandler(void);
+void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
+void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
 
 #endif /* MICRO_ROC_CFG_H */
