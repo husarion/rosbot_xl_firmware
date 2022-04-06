@@ -26,7 +26,9 @@
 #include <sensor_msgs/msg/battery_state.h>
 #include <sensor_msgs/msg/joint_state.h>
 /*===== REST =====*/
-#include "hardware_cfg.h"
+#include <hardware_cfg.h>
+#include <STM32FreeRTOS.h>
+#include <ImuLib_cfg.h>
 
 //Motors msgs defines
 #define MOT_CMD_MSG_LEN         4
@@ -55,6 +57,19 @@
       Serial.printf("!");          \
     }                              \
   }
+
+
+typedef struct {
+  uint8_t size = 4;
+  double velocity[4];
+  double positon[4];
+} motor_state_queue_t;
+
+extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
+//extern variables
+extern QueueHandle_t SetpointQueue;
+extern QueueHandle_t MotorStateQueue;
+extern QueueHandle_t ImuQueue;
 
 // extern void error_loop()
 void uRosMotorsCmdCallback(const void *msgin);

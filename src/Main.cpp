@@ -14,19 +14,10 @@
 #include <LwIP.h>
 #include <STM32Ethernet.h>
 #include <UartLib.h>
-/* DEFINES */
 
-
-
-extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
-
-typedef struct {
-  uint8_t size = 4;
-  double velocity[4];
-  double positon[4];
-} motor_state_queue_t;
-
-/* RTOS VARIABLES */
+/* VARIABLES */
+bool uRosInitSuccesfull = false;
+//RTOS
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
@@ -73,56 +64,7 @@ void error_loop() {
     if(BOARD_MODE_DEBUG) Serial.printf("in error loop");
     SetRedLed(Toggle);
     delay(100);
-  }
-}
-
-extern void uRosMotorsCmdCallback(const void *msgin){
-  static double Setpoint[] = {0,0,0,0};
-  static sensor_msgs__msg__JointState * setpoint_msg;
-  setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
-  String motor_name;
-  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
-    motor_name = (String)setpoint_msg->name.data[i].data;
-    if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == REAR_LEFT_MOTOR_NAME)   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == FRONT_RIGHT_MOTOR_NAME) Setpoint[2] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == FRONT_LEFT_MOTOR_NAME)  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
-  }
-  xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
-}
-
-extern void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
-  RCLC_UNUSED(last_call_time);
-  static imu_queue_t queue_imu;
-  static motor_state_queue_t motor_state_queue;
-  if (timer != NULL) {
-    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      imu_msg.header.stamp.sec = ts.tv_sec;
-      imu_msg.header.stamp.nanosec = ts.tv_nsec;
-      imu_msg.header.frame_id.data = (char *) "imu";
-      imu_msg.orientation.x = queue_imu.Orientation[0];
-      imu_msg.orientation.y = queue_imu.Orientation[1];
-      imu_msg.orientation.z = queue_imu.Orientation[2];
-      imu_msg.orientation.w = queue_imu.Orientation[3];
-      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
-      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
-      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
-      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
-      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
-      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
-      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
-    }
-    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response_msg.header.stamp.sec = ts.tv_sec;
-      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.positon;
-      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
-    }
+    // clock_gettime(CLOCK_REALTIME, &ts);
   }
 }
 
@@ -161,8 +103,7 @@ void setup() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
-  uRosCreateEntities();
-
+  uRosInitSuccesfull = uRosCreateEntities();
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
                    configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
@@ -195,6 +136,7 @@ void setup() {
   
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
+  SetRedLed(Off);
   /* START RTOS */
   if(BOARD_MODE_DEBUG) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
@@ -203,12 +145,32 @@ void setup() {
 static void rclc_spin_task(void *p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  while (1) {
-    uRosExecutorLoopHandler();
+  while(1) {
     vTaskDelayUntil(&xLastWakeTime, 1);
+    if(rmw_uros_ping_agent(50, 2) == RMW_RET_OK){
+      if(uRosInitSuccesfull == false){
+        uRosInitSuccesfull = uRosCreateEntities();
+      }
+      else{
+        SetRedLed(Off);
+        SetGreenLed(On);
+        uRosExecutorLoopHandler();
+      }
+    }
+    else{
+      uRosInitSuccesfull = uRosDestroyEntities();
+      SetGreenLed(Off);
+      SetRedLed(Toggle);
+      vTaskDelay(100);
+    }
   }
+  // while (1) {
+  //   uRosExecutorLoopHandler();
+  //   vTaskDelayUntil(&xLastWakeTime, 1);
+  // }
 }
 
+    // 
 static void imu_task(void *p){
   static imu_queue_t queue_imu;
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -293,8 +255,7 @@ static void power_board_task(void *p){
 /*============== LOOP - IDDLE TASK ===============*/
 
 void loop() {
-  SetGreenLed(Toggle);
-  delay(1000);
+  ;
 }
 
 /*=========== Runtime stats ====================*/

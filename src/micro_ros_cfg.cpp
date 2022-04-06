@@ -71,12 +71,12 @@ bool uRosCreateEntities(void){
     if(BOARD_MODE_DEBUG) Serial.printf("Executor started\r\n");
     RCCHECK(rmw_uros_sync_session(1000));
     if(BOARD_MODE_DEBUG) Serial.printf("Clocks synchronised\r\n");
-    return false;
+    return true;
 }
 
 bool uRosDestroyEntities(void){
-    rcl_publisher_fini(&imu_publisher, &node);
-    rcl_publisher_fini(&motor_state_publisher, &node);
+  rcl_publisher_fini(&imu_publisher, &node);
+  rcl_publisher_fini(&motor_state_publisher, &node);
 	rcl_node_fini(&node);
 	rcl_timer_fini(&timer);
 	rclc_executor_fini(&executor);
@@ -85,7 +85,8 @@ bool uRosDestroyEntities(void){
 }
 
 void uRosExecutorLoopHandler(void){
-    RCSOFTCHECK(rclc_executor_spin(&executor));
+    // RCSOFTCHECK(rclc_executor_spin(&executor));
+    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
 }
 
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
@@ -172,4 +173,54 @@ void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     msg->name.capacity = 4;
     msg->name.data->capacity = 24;
     msg->name.data = str_name_tab;
+}
+
+void uRosMotorsCmdCallback(const void *msgin){
+  static double Setpoint[] = {0,0,0,0};
+  static sensor_msgs__msg__JointState * setpoint_msg;
+  setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
+  String motor_name;
+  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
+    motor_name = (String)setpoint_msg->name.data[i].data;
+    if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == REAR_LEFT_MOTOR_NAME)   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_RIGHT_MOTOR_NAME) Setpoint[2] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_LEFT_MOTOR_NAME)  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+  }
+  xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
+}
+
+void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
+  RCLC_UNUSED(last_call_time);
+  static imu_queue_t queue_imu;
+  static motor_state_queue_t motor_state_queue;
+  if (timer != NULL) {
+    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      imu_msg.header.stamp.sec = ts.tv_sec;
+      imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      imu_msg.header.frame_id.data = (char *) "imu";
+      imu_msg.orientation.x = queue_imu.Orientation[0];
+      imu_msg.orientation.y = queue_imu.Orientation[1];
+      imu_msg.orientation.z = queue_imu.Orientation[2];
+      imu_msg.orientation.w = queue_imu.Orientation[3];
+      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
+      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
+      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
+      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
+      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
+      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
+      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
+    }
+    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      motors_response_msg.header.stamp.sec = ts.tv_sec;
+      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.position.data = motor_state_queue.positon;
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
+    }
+  }
 }
