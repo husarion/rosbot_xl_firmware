@@ -29,7 +29,12 @@
 #include <hardware_cfg.h>
 #include <STM32FreeRTOS.h>
 #include <ImuLib_cfg.h>
+#include <bsp.h>
 
+/* DEFINES */
+#define NODE_NAME                   "stm32_node"
+#define AGENT_RECONNECTION_TIMEOUT  50
+#define AGENT_RECONNECTION_ATTEMPTS 2
 //Motors msgs defines
 #define MOT_CMD_MSG_LEN         4
 #define MOT_CMD_MSG_NAMES_LEN   25
@@ -40,13 +45,12 @@
 #define REAR_LEFT_MOTOR_NAME    "rear_left_wheel_joint"
 #define REAR_RIGHT_MOTOR_NAME   "rear_right_wheel_joint"
 #define MOTORS_RESPONSE_FREQ    50
-//Anoter defines
-#define NODE_NAME "stm32_node"
 
 #define RCCHECK(fn)                \
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
+      ErrorLoop();                \
       Serial.printf("o");          \
     }                              \
   }
@@ -58,25 +62,37 @@
     }                              \
   }
 
-
+/* TYPE DEF */
 typedef struct {
   uint8_t size = 4;
   double velocity[4];
   double positon[4];
 } motor_state_queue_t;
 
-extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
+typedef enum{
+  Ok            = 0,
+  Error         = 1,
+  InvalidInput  = 2,
+  Pending       = 3
+}uRosFunctionStatus;
+
+/* EXTERN */
 //extern variables
 extern QueueHandle_t SetpointQueue;
 extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t ImuQueue;
+extern QueueHandle_t ImuQueue;\
+//extern functions
+extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 
-// extern void error_loop()
+/* FUNCTIONS */
+void ErrorLoop(void);
+uRosFunctionStatus uRosPingAgent(void);
+uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_);
+uRosFunctionStatus uRosLoopHandler(void);
 void uRosMotorsCmdCallback(const void *msgin);
 void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time);
 bool uRosCreateEntities(void);
 bool uRosDestroyEntities(void);
-void uRosExecutorLoopHandler(void);
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
 

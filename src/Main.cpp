@@ -39,16 +39,15 @@ extern MotorPidClass M1_PID;
 extern MotorPidClass M2_PID;
 extern MotorPidClass M3_PID;
 extern MotorPidClass M4_PID;
+//LED
+extern PixelLedClass PixelStrip;
 
 //ETHERNET
 IPAddress client_ip;
 IPAddress agent_ip;
 byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 
-//PIXEL LED
-PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
-
-/* TASKS DECLARATION */
+/* RTOS TASKS DECLARATIONS */
 static void rclc_spin_task(void *p);
 static void imu_task(void *p);
 static void runtime_stats_task(void *p);
@@ -59,13 +58,17 @@ static void power_board_task(void *p);
 static void motors_response_task(void *p);
 
 /* FUNCTIONS */
-void error_loop() {
-  while (1) {
-    if(BOARD_MODE_DEBUG) Serial.printf("in error loop");
-    SetRedLed(Toggle);
-    delay(100);
-    // clock_gettime(CLOCK_REALTIME, &ts);
+
+void EthernetInit(){
+  client_ip.fromString(CLIENT_IP);
+  agent_ip.fromString(AGENT_IP);
+  if(BOARD_MODE_DEBUG){
+    Serial.printf("Connecting to agent: \r\n");
+    Serial.println(agent_ip);
   }
+  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
+                                              AGENT_PORT);
+  delay(1000);
 }
 
 /*==================== SETUP ========================*/
@@ -76,26 +79,13 @@ void setup() {
   SetLocalPower(On);
   delay(1000);
   
-  //Pixel Led
   PixelStrip.Init();
   ImuBno.Init();
+  EthernetInit();
 
-  client_ip.fromString(CLIENT_IP);
-  agent_ip.fromString(AGENT_IP);
-
-  if(BOARD_MODE_DEBUG){
-    Serial.printf("Connecting to agent: \r\n");
-    Serial.println(agent_ip);
-  }
-
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
-                                              AGENT_PORT);
-  delay(1000);
-
-  while(rmw_uros_ping_agent(50, 2) != RMW_RET_OK) {
+  while(uRosPingAgent() != Ok){
     SetRedLed(Toggle);
     delay(100);
-    continue;
   }
 
   /* RTOS QUEUES CREATION */
@@ -103,7 +93,7 @@ void setup() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
-  uRosInitSuccesfull = uRosCreateEntities();
+  // uRosInitSuccesfull = uRosCreateEntities();
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(rclc_spin_task, "rclc_spin_task",
                    configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
@@ -147,30 +137,23 @@ static void rclc_spin_task(void *p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while(1) {
     vTaskDelayUntil(&xLastWakeTime, 1);
-    if(rmw_uros_ping_agent(50, 2) == RMW_RET_OK){
-      if(uRosInitSuccesfull == false){
-        uRosInitSuccesfull = uRosCreateEntities();
-      }
-      else{
-        SetRedLed(Off);
-        SetGreenLed(On);
-        uRosExecutorLoopHandler();
-      }
-    }
-    else{
-      uRosInitSuccesfull = uRosDestroyEntities();
+    switch (uRosLoopHandler())
+    {
+    case Ok:
+      SetGreenLed(On);
+      SetRedLed(Off);
+      break;
+    case Error:
       SetGreenLed(Off);
-      SetRedLed(Toggle);
+      SetRedLed(On);
       vTaskDelay(100);
+      break;
+    default:
+      break;
     }
   }
-  // while (1) {
-  //   uRosExecutorLoopHandler();
-  //   vTaskDelayUntil(&xLastWakeTime, 1);
-  // }
 }
 
-    // 
 static void imu_task(void *p){
   static imu_queue_t queue_imu;
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -232,7 +215,6 @@ static void pixel_led_task(void *p){
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x00, 0x00, 0x0F, 50);
   }
 }
-
 
 static void board_support_task(void *p){
   while(1){

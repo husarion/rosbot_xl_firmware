@@ -24,6 +24,7 @@
 
 SPIClass PixelSpi(PIXEL_MOSI, PB14, PIXEL_SCK);
 uint8_t VirtualLeds[VIRTUAL_LED_LENGTH] = {5, 6, 7, 8, 9, 18, 19, 20, 21, 22};
+PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
 
 /* PIXEL LED LIBRARY PORT */
 

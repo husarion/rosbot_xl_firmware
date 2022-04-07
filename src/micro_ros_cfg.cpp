@@ -30,6 +30,98 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
 
+
+void ErrorLoop(void){
+  while (1) {
+    if(BOARD_MODE_DEBUG) Serial.printf("In error loop");
+    SetRedLed(Toggle);
+    SetGreenLed(Off);
+    delay(1000);
+  }
+}
+
+uRosFunctionStatus uRosPingAgent(void){
+  if(rmw_uros_ping_agent(AGENT_RECONNECTION_TIMEOUT, AGENT_RECONNECTION_ATTEMPTS) == RMW_RET_OK)
+      return Ok;
+  else
+    return Error;  //if false
+}
+
+uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_){
+  if(rmw_uros_ping_agent((int)Timeout_, Attempts_) == RMW_RET_OK)
+      return Ok;
+    else
+      return Error;  //if false
+}
+
+uRosFunctionStatus uRosLoopHandler(void){
+  static bool uRosInitSuccesfull = false;
+  if(uRosPingAgent() == Ok){
+    if(uRosInitSuccesfull == false){
+      uRosInitSuccesfull = uRosCreateEntities();
+      return Pending;
+    }
+    else{
+      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
+      return Ok;
+    }
+  }
+  else{
+    uRosInitSuccesfull = uRosDestroyEntities();
+    return Error;
+  }
+}
+
+void uRosMotorsCmdCallback(const void *msgin){
+  static double Setpoint[] = {0,0,0,0};
+  static sensor_msgs__msg__JointState * setpoint_msg;
+  setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
+  String motor_name;
+  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
+    motor_name = (String)setpoint_msg->name.data[i].data;
+    if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == REAR_LEFT_MOTOR_NAME)   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_RIGHT_MOTOR_NAME) Setpoint[2] = (double)setpoint_msg->velocity.data[i];
+    if(motor_name == FRONT_LEFT_MOTOR_NAME)  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
+  }
+  xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
+}
+
+void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
+  RCLC_UNUSED(last_call_time);
+  static imu_queue_t queue_imu;
+  static motor_state_queue_t motor_state_queue;
+  if (timer != NULL) {
+    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      imu_msg.header.stamp.sec = ts.tv_sec;
+      imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      imu_msg.header.frame_id.data = (char *) "imu";
+      imu_msg.orientation.x = queue_imu.Orientation[0];
+      imu_msg.orientation.y = queue_imu.Orientation[1];
+      imu_msg.orientation.z = queue_imu.Orientation[2];
+      imu_msg.orientation.w = queue_imu.Orientation[3];
+      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
+      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
+      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
+      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
+      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
+      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
+      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
+    }
+    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
+      struct timespec ts = {0};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      motors_response_msg.header.stamp.sec = ts.tv_sec;
+      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.position.data = motor_state_queue.positon;
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
+    }
+  }
+}
+
 bool uRosCreateEntities(void){
     //Allocate memory for motors response message
     MotorsResponseMsgInit(&motors_response_msg);
@@ -84,11 +176,6 @@ bool uRosDestroyEntities(void){
     return false;
 }
 
-void uRosExecutorLoopHandler(void){
-    // RCSOFTCHECK(rclc_executor_spin(&executor));
-    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
-}
-
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
     static double msg_data_tab[3][MOT_RESP_MSG_LEN];
     static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
@@ -113,33 +200,6 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
     msg->name.capacity = msg->name.size = MOT_RESP_MSG_LEN;
     msg->name.data = msg_name_tab;
 }
-
-// void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
-//     static double msg_data_tab[3][MOT_CMD_MSG_LEN];
-//     static rosidl_runtime_c__String msg_name_tab[MOT_CMD_MSG_LEN];
-//     static char msg_name_data_tab[MOT_CMD_MSG_LEN][MOT_CMD_MSG_NAMES_LEN];
-//     static char msg_frame_id_data[MOT_CMD_MSG_FR_ID_LEN];
-
-//     msg->position.data = msg_data_tab[0];
-//     msg->position.capacity = MOT_CMD_MSG_LEN;
-//     msg->velocity.data = msg_data_tab[1];
-//     msg->velocity.capacity = MOT_CMD_MSG_LEN;
-//     msg->effort.data = msg_data_tab[2];
-//     msg->effort.capacity = MOT_CMD_MSG_LEN;
-//     msg->header.frame_id.data = msg_frame_id_data;
-//     msg->header.frame_id.capacity = MOT_CMD_MSG_FR_ID_LEN;
-//     msg_name_tab->capacity = msg_name_tab->size = MOT_CMD_MSG_LEN;
-
-//     for(uint8_t i = 0; i < MOT_CMD_MSG_LEN; i++){
-//         msg_name_tab->capacity = MOT_CMD_MSG_NAMES_LEN;
-//         msg_name_tab->data = (char*)msg_name_data_tab[i];
-//     }
-//     msg->name.capacity = MOT_CMD_MSG_LEN;
-//     msg->name.data = msg_name_tab;
-// }
-
-
-
 
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     static char tab[4][24];
@@ -175,52 +235,26 @@ void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
     msg->name.data = str_name_tab;
 }
 
-void uRosMotorsCmdCallback(const void *msgin){
-  static double Setpoint[] = {0,0,0,0};
-  static sensor_msgs__msg__JointState * setpoint_msg;
-  setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
-  String motor_name;
-  for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
-    motor_name = (String)setpoint_msg->name.data[i].data;
-    if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == REAR_LEFT_MOTOR_NAME)   Setpoint[1] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == FRONT_RIGHT_MOTOR_NAME) Setpoint[2] = (double)setpoint_msg->velocity.data[i];
-    if(motor_name == FRONT_LEFT_MOTOR_NAME)  Setpoint[3] = (double)setpoint_msg->velocity.data[i];
-  }
-  xQueueSendToFront(SetpointQueue, (void*) Setpoint, (TickType_t) 0);
-}
+// void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
+//     static double msg_data_tab[3][MOT_CMD_MSG_LEN];
+//     static rosidl_runtime_c__String msg_name_tab[MOT_CMD_MSG_LEN];
+//     static char msg_name_data_tab[MOT_CMD_MSG_LEN][MOT_CMD_MSG_NAMES_LEN];
+//     static char msg_frame_id_data[MOT_CMD_MSG_FR_ID_LEN];
 
-void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
-  RCLC_UNUSED(last_call_time);
-  static imu_queue_t queue_imu;
-  static motor_state_queue_t motor_state_queue;
-  if (timer != NULL) {
-    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      imu_msg.header.stamp.sec = ts.tv_sec;
-      imu_msg.header.stamp.nanosec = ts.tv_nsec;
-      imu_msg.header.frame_id.data = (char *) "imu";
-      imu_msg.orientation.x = queue_imu.Orientation[0];
-      imu_msg.orientation.y = queue_imu.Orientation[1];
-      imu_msg.orientation.z = queue_imu.Orientation[2];
-      imu_msg.orientation.w = queue_imu.Orientation[3];
-      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
-      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
-      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
-      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
-      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
-      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
-      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
-    }
-    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response_msg.header.stamp.sec = ts.tv_sec;
-      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.positon;
-      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
-    }
-  }
-}
+//     msg->position.data = msg_data_tab[0];
+//     msg->position.capacity = MOT_CMD_MSG_LEN;
+//     msg->velocity.data = msg_data_tab[1];
+//     msg->velocity.capacity = MOT_CMD_MSG_LEN;
+//     msg->effort.data = msg_data_tab[2];
+//     msg->effort.capacity = MOT_CMD_MSG_LEN;
+//     msg->header.frame_id.data = msg_frame_id_data;
+//     msg->header.frame_id.capacity = MOT_CMD_MSG_FR_ID_LEN;
+//     msg_name_tab->capacity = msg_name_tab->size = MOT_CMD_MSG_LEN;
+
+//     for(uint8_t i = 0; i < MOT_CMD_MSG_LEN; i++){
+//         msg_name_tab->capacity = MOT_CMD_MSG_NAMES_LEN;
+//         msg_name_tab->data = (char*)msg_name_data_tab[i];
+//     }
+//     msg->name.capacity = MOT_CMD_MSG_LEN;
+//     msg->name.data = msg_name_tab;
+// }
