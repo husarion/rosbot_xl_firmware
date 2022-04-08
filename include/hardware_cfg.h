@@ -116,5 +116,52 @@
 #define EXT_GPIO2           PG3
 #define EXT_GPIO3           PG4
 
+//BATTERY STATE
+#define BATTERY_STATE_MSG_LENGTH 17
+
+typedef enum{
+	unknown_status = 0,
+	charging = 1,
+	discharging = 2,
+	not_charging = 3,
+	full = 4
+}BatteryStatusTypeDef;
+
+typedef enum{
+	unknown_health = 0,
+	good = 1,
+	overhaet = 2,
+	dead = 3,
+	overvoltage = 4,
+	unspec_failure = 5,
+	cold = 6,
+	watchdog_timer_expire = 7,
+	safety_timer_expire = 8
+}BatteryHealthTypeDef;
+
+typedef enum{
+	unknown_type = 0,
+	NIMH = 1,
+	LION = 2,
+	LIPO = 3,
+	LIFE = 4,
+	NICD = 5,
+	LIMN = 6
+}BatteryTechnologyTypeDef;
+
+typedef struct{
+	//ROS battery msgs variables
+	uint16_t					Voltage;
+	uint16_t					Temperature;
+	uint16_t					Current;
+	uint16_t					ChargeCurrent;
+	uint16_t					Capacity;
+	uint16_t					DesignCapacity;
+	uint8_t						Percentage;
+	BatteryStatusTypeDef 		Status;
+	BatteryHealthTypeDef		Health;
+	BatteryTechnologyTypeDef 	Technology;
+	uint8_t						Present;
+}battery_state_queue_t;
 
 #endif /* HARDWARE_CFG */

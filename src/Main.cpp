@@ -21,6 +21,7 @@ bool uRosInitSuccesfull = false;
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
+QueueHandle_t BatteryStateQueue;
 portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
 
 /* EXTERN VARIABLES */
@@ -92,6 +93,7 @@ void setup() {
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
+  BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
   // uRosInitSuccesfull = uRosCreateEntities();
   /* RTOS TASKS CREATION */
