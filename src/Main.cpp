@@ -164,7 +164,7 @@ static void imu_task(void *p){
   while(1){
     queue_imu = ImuBno.LoopHandler();
     xQueueSendToFront(ImuQueue, (void*) &queue_imu, TickType_t(0));
-    vTaskDelayUntil(&xLastWakeTime, (1000/IMU_SAMPLE_FREQ*portTICK_PERIOD_MS));
+    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TIME(IMU_SAMPLE_FREQ));
   }
 }
 
@@ -180,12 +180,23 @@ static void runtime_stats_task(void *p) {
 
 static void pid_handler_task(void *p){
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  TickType_t ActualSetpointUpdateTime = xTaskGetTickCount();
+  TickType_t LastSetpointUpdateTime = xTaskGetTickCount();
   double setpoint[] = {0,0,0,0};
   static motor_state_queue_t motor_state;
   static uint8_t freq_div_ptr = 0;
   while(1){
-    vTaskDelayUntil(&xLastWakeTime, (1000/PID_FREQ*portTICK_PERIOD_MS));
-    xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0);
+    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TIME(PID_FREQ));
+    if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
+      LastSetpointUpdateTime = xTaskGetTickCount();
+    }
+    ActualSetpointUpdateTime = xTaskGetTickCount();
+    if(ActualSetpointUpdateTime - LastSetpointUpdateTime > MOTORS_PID_SETPOINT_TIMEOUT){
+      setpoint[0] = 0;
+      setpoint[1] = 0;
+      setpoint[2] = 0;
+      setpoint[3] = 0;
+    }
     M4_PID.SetSetpoint(setpoint[3]);
     M4_PID.Handler();
     M2_PID.SetSetpoint(setpoint[1]);

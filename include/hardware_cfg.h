@@ -17,7 +17,9 @@
 // Define all inputs/outputs etc.
 
 /* OTHERS */
-#define BOARD_MODE_DEBUG    true    //if true - debug mode is active
+#define BOARD_MODE_DEBUG    		true    //if true - debug mode is active
+#define RTOS_FREQUENCY				1000	//hz
+#define FREQ_TO_DELAY_TIME(freq)	(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
 
 /* REAR PANEL */
 #define GRN_LED             PE3

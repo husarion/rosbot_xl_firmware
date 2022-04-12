@@ -67,6 +67,7 @@
 #define PID_DEFAULT_KI              0
 #define PID_DEFAULT_KD              0
 #define MOTORS_PWM_FREQUENCY        15000   //Hz
+#define MOTORS_PID_SETPOINT_TIMEOUT 3000    //ms
 
 
 //HARDWARE DEFINES
