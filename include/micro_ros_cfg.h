@@ -76,6 +76,12 @@ typedef enum{
   Pending       = 3
 }uRosFunctionStatus;
 
+typedef enum{
+  NotCreated    = 0,
+  Created       = 1,
+  Destroyed     = 3
+}uRosEntitiesStatus;
+
 /* EXTERN */
 //extern variables
 extern QueueHandle_t SetpointQueue;
@@ -91,8 +97,8 @@ uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_);
 uRosFunctionStatus uRosLoopHandler(void);
 void uRosMotorsCmdCallback(const void *msgin);
 void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time);
-bool uRosCreateEntities(void);
-bool uRosDestroyEntities(void);
+uRosEntitiesStatus uRosCreateEntities(void);
+uRosEntitiesStatus uRosDestroyEntities(void);
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
 void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
 

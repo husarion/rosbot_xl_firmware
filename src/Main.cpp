@@ -149,6 +149,8 @@ static void rclc_spin_task(void *p) {
       SetGreenLed(Off);
       SetRedLed(On);
       vTaskDelay(100);
+      SetRedLed(Off);
+      vTaskDelay(100);
       break;
     default:
       break;
