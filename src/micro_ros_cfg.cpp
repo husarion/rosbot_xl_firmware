@@ -64,7 +64,7 @@ uRosFunctionStatus uRosLoopHandler(void){
       return Pending;
     }
     else{
-      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
+      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
       return Ok;
     }
   }
