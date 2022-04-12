@@ -14,15 +14,17 @@
 //ROS PUBLISHERS
 rcl_publisher_t imu_publisher;
 rcl_publisher_t motor_state_publisher;
+rcl_publisher_t battery_state_publisher;
 //ROS SUBSCRIPTIONS
 rcl_subscription_t subscriber;
 rcl_subscription_t motors_cmd_subscriber;
 //ROS MESSAGES
-uint8_t ros_msgs_cnt = 0;
+
 std_msgs__msg__String msgs;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__JointState motors_cmd_msg;
 sensor_msgs__msg__JointState motors_response_msg;
+sensor_msgs__msg__BatteryState battery_state_msg;
 //ROS
 rclc_executor_t executor;
 rclc_support_t support;
@@ -91,9 +93,20 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   static imu_queue_t queue_imu;
   static motor_state_queue_t motor_state_queue;
+  static battery_state_queue_t battery_state_queue;
+  struct timespec ts = {0};
   if (timer != NULL) {
+    //QOS best effort
+    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
+      clock_gettime(CLOCK_REALTIME, &ts);
+      motors_response_msg.header.stamp.sec = ts.tv_sec;
+      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.position.data = motor_state_queue.positon;
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
+    }
+    //QOS default
     if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
       clock_gettime(CLOCK_REALTIME, &ts);
       imu_msg.header.stamp.sec = ts.tv_sec;
       imu_msg.header.stamp.nanosec = ts.tv_nsec;
@@ -110,20 +123,30 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
       imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
       RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
     }
-    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
-      struct timespec ts = {0};
+    //QOS default
+    if(xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) == pdPASS){
       clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response_msg.header.stamp.sec = ts.tv_sec;
-      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.positon;
-      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
+      battery_state_msg.header.stamp.sec = ts.tv_sec;
+      battery_state_msg.header.stamp.nanosec = ts.tv_nsec;
+      battery_state_msg.voltage = battery_state_queue.Voltage;
+      battery_state_msg.temperature = battery_state_queue.Temperature;
+      battery_state_msg.current = battery_state_queue.Current;
+      battery_state_msg.charge = battery_state_queue.ChargeCurrent;
+      battery_state_msg.capacity = battery_state_queue.Capacity;
+      battery_state_msg.design_capacity = battery_state_queue.DesignCapacity;
+      battery_state_msg.percentage = battery_state_queue.Percentage;
+      battery_state_msg.power_supply_status = battery_state_queue.Status;
+      battery_state_msg.power_supply_health = battery_state_queue.Health;
+      battery_state_msg.power_supply_technology = battery_state_queue.Technology;
+      battery_state_msg.present = battery_state_queue.Present;
+      RCSOFTCHECK(rcl_publish(&battery_state_publisher, &battery_state_msg, NULL));
     }
   }
 }
 
 bool uRosCreateEntities(void){
-    //Allocate memory for motors response message
+    uint8_t ros_msgs_cnt = 0;
+    /*===== ALLCOATE MEMORY FOR MSGS =====*/
     MotorsResponseMsgInit(&motors_response_msg);
     MotorsCmdMsgInit(&motors_cmd_msg);
     allocator = rcl_get_default_allocator();
@@ -131,30 +154,36 @@ bool uRosCreateEntities(void){
     RCCHECK(rclc_support_init(&support, 0, NULL, &allocator))
     // create node
     RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-    // init timer
+    /*===== INIT TIMERS =====*/
     RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
                                     uRosTimerCallback));
     ros_msgs_cnt++;
     if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
-    // Init subscribers
+    /*===== INIT SUBSCRIBERS ===== */
     RCCHECK(rclc_subscription_init_default(
         &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
         "motors_cmd"));
     ros_msgs_cnt++;
     if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_cmd' subscriber\r\n");
-
-    RCCHECK(rclc_publisher_init_default(
+    /*===== INIT PUBLISHERS ===== */
+    //IMU
+    RCCHECK(rclc_publisher_init_best_effort(
         &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
         "imu/data_raw"));
     ros_msgs_cnt++;
     if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
-
+    //MOTORS RESPONSE
     RCCHECK(rclc_publisher_init_best_effort(
         &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
         "motors_response"));
     ros_msgs_cnt++;
     if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_response' publisher.\r\n");
-
+    //BATTERY STATE
+    RCCHECK(rclc_publisher_init_default(
+        &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
+        "battery_state"));
+    ros_msgs_cnt++;
+    if(BOARD_MODE_DEBUG) Serial.printf("Created 'battery_state' publisher.\r\n");
     // create executor
     RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
     RCCHECK(rclc_executor_add_timer(&executor, &timer));

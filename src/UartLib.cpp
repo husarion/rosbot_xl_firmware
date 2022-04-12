@@ -134,7 +134,7 @@ void UartProtocolClass:: ExecuteFrame(){
         for(uint8_t i = 0; i < 17; i++){
             temp = this->ProcessedFrame.Arg[i];
         }
-        BatteryState.Voltage = this->ProcessedFrame.Arg[0]  | this->ProcessedFrame.Arg[1] << 8;
+        BatteryState.Voltage = this->ProcessedFrame.Arg[0] << 8 | this->ProcessedFrame.Arg[1];
         BatteryState.Temperature = this->ProcessedFrame.Arg[2] << 8 | this->ProcessedFrame.Arg[3];
         BatteryState.Current = this->ProcessedFrame.Arg[4] << 8 | this->ProcessedFrame.Arg[5];
         BatteryState.ChargeCurrent = this->ProcessedFrame.Arg[6] << 8 | this->ProcessedFrame.Arg[7];
