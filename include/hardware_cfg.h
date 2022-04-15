@@ -72,8 +72,9 @@
 #define PIXEL_SPI_SPEED     4000000
 
 /* ETHERNET */
-#define CLIENT_IP "192.168.1.177"
-#define AGENT_IP "192.168.1.176"
+#define CLIENT_IP "192.168.77.3"
+#define AGENT_IP "192.168.77.2" //Rpi
+// #define AGENT_IP "192.168.77.5"	//Computer
 #define AGENT_PORT 8888
 
 

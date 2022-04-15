@@ -98,33 +98,6 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   static battery_state_queue_t battery_state_queue;
   struct timespec ts = {0};
   if (timer != NULL) {
-    //QOS best effort
-    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
-      clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response_msg.header.stamp.sec = ts.tv_sec;
-      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.positon;
-      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
-    }
-    //QOS default
-    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
-      clock_gettime(CLOCK_REALTIME, &ts);
-      imu_msg.header.stamp.sec = ts.tv_sec;
-      imu_msg.header.stamp.nanosec = ts.tv_nsec;
-      imu_msg.header.frame_id.data = (char *) "imu";
-      imu_msg.orientation.x = queue_imu.Orientation[0];
-      imu_msg.orientation.y = queue_imu.Orientation[1];
-      imu_msg.orientation.z = queue_imu.Orientation[2];
-      imu_msg.orientation.w = queue_imu.Orientation[3];
-      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
-      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
-      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
-      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
-      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
-      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
-      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
-    }
     //QOS default
     if(xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) == pdPASS){
       clock_gettime(CLOCK_REALTIME, &ts);
@@ -143,6 +116,33 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
       battery_state_msg.present = battery_state_queue.Present;
       RCSOFTCHECK(rcl_publish(&battery_state_publisher, &battery_state_msg, NULL));
     }
+    //QOS best effort
+    if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
+      clock_gettime(CLOCK_REALTIME, &ts);
+      motors_response_msg.header.stamp.sec = ts.tv_sec;
+      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      motors_response_msg.velocity.data = motor_state_queue.velocity;
+      motors_response_msg.position.data = motor_state_queue.positon;
+      RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
+    }
+    //QOS best effort
+    if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
+      clock_gettime(CLOCK_REALTIME, &ts);
+      imu_msg.header.stamp.sec = ts.tv_sec;
+      imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      imu_msg.header.frame_id.data = (char *) "imu";
+      imu_msg.orientation.x = queue_imu.Orientation[0];
+      imu_msg.orientation.y = queue_imu.Orientation[1];
+      imu_msg.orientation.z = queue_imu.Orientation[2];
+      imu_msg.orientation.w = queue_imu.Orientation[3];
+      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
+      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
+      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
+      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
+      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
+      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
+      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
+    }
   }
 }
 
@@ -155,6 +155,11 @@ uRosEntitiesStatus uRosCreateEntities(void){
   // create init_options
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator))
   // create node
+
+  // Get default node options and modify them
+  // rcl_node_options_t node_ops = rcl_node_get_default_options();
+  // node_ops.domain_id = (size_t)(138);
+
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
