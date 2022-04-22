@@ -3,11 +3,11 @@
 ## Creatin a release
 
 ```
-git add f1.jpg
+git add *
 git commit -m "First image added."
 git tag v0.0.1
 git tag -n
-git push --tag
+git push origin SplitedCode v0.0.1
 ```
 
 ## Default config
