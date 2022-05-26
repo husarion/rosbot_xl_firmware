@@ -11,6 +11,8 @@
 
 #include "ImuLib_cfg.h"
 
+#define DEGREESPERSEC_TO_RADPERSEC 0.017453293
+
 TwoWire ImuWire(IMU_SDA, IMU_SCL);
 ImuDriver ImuBno(IMU_ID, IMU_ADDR_B, &ImuWire);
 
@@ -23,7 +25,8 @@ ImuDriver::~ImuDriver(){
 }
 
 bool ImuDriver::Init(){
-    if(this->ImuBno->begin()){
+    // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for orientation
+    if(this->ImuBno->begin(Adafruit_BNO055::OPERATION_MODE_IMUPLUS)){
         this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
         this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
         this->ImuBno->setExtCrystalUse(true);
@@ -40,9 +43,12 @@ imu_queue_t ImuDriver::LoopHandler(){
     ImuQueue.LinearAcceleration[1] = (float)buffer[1];
     ImuQueue.LinearAcceleration[2] = (float)buffer[2];
     buffer = &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE))[0];
-    ImuQueue.AngularVelocity[0] = (float)buffer[0];
-    ImuQueue.AngularVelocity[1] = (float)buffer[1];
-    ImuQueue.AngularVelocity[2] = (float)buffer[2];
+
+    // by default ang vel is in deg/s
+    ImuQueue.AngularVelocity[0] = (float)buffer[0]*DEGREESPERSEC_TO_RADPERSEC;
+    ImuQueue.AngularVelocity[1] = (float)buffer[1]*DEGREESPERSEC_TO_RADPERSEC;
+    ImuQueue.AngularVelocity[2] = (float)buffer[2]*DEGREESPERSEC_TO_RADPERSEC;
+    
     Quaternion = this->ImuBno->getQuat();
     ImuQueue.Orientation[0] = Quaternion.x();
     ImuQueue.Orientation[1] = Quaternion.y();
