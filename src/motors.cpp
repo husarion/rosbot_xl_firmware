@@ -11,92 +11,16 @@
 
 #include "motors.h"
 
+//MOTORS
+MotorClass Motor1(M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1_ILIM, M1A_IN, M1B_IN, M1_ENC_TIM, M1_ENC_A, M1_ENC_B, M1_DEFAULT_DIR);
+MotorClass Motor2(M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2_ILIM, M2A_IN, M2B_IN, M2_ENC_TIM, M2_ENC_A, M2_ENC_B, M2_DEFAULT_DIR);
+MotorClass Motor3(M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3_ILIM, M3A_IN, M3B_IN, M3_ENC_TIM, M3_ENC_A, M3_ENC_B, M3_DEFAULT_DIR);
+MotorClass Motor4(M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4_ILIM, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B, M4_DEFAULT_DIR);
+MotorPidClass M1_PID(&Motor1);
+MotorPidClass M2_PID(&Motor2);
+MotorPidClass M3_PID(&Motor3);
+MotorPidClass M4_PID(&Motor4);
 
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
-    static double msg_data_tab[3][MOT_RESP_MSG_LEN];
-    static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
-    char* frame_id = (char*)"motors_response";
-    msg->position.data = msg_data_tab[0];
-    msg->position.capacity = msg->position.size = MOT_RESP_MSG_LEN;
-    msg->velocity.data = msg_data_tab[1];
-    msg->velocity.capacity = msg->velocity.size = MOT_RESP_MSG_LEN;
-    msg->effort.data = msg_data_tab[2];
-    msg->effort.capacity = msg->effort.size = MOT_RESP_MSG_LEN;
-    msg->header.frame_id.data = frame_id;
-    msg->header.frame_id.capacity = msg->header.frame_id.size = strlen((const char*)frame_id);
-    
-    msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
-    msg_name_tab[0].data = (char*)"rear_right_wheel_joint";
-    msg_name_tab[1].data = (char*)"rear_left_wheel_joint";
-    msg_name_tab[2].data = (char*)"front_right_wheel_joint";
-    msg_name_tab[3].data = (char*)"front_left_wheel_joint";
-    for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
-        msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
-    }
-    msg->name.capacity = msg->name.size = MOT_RESP_MSG_LEN;
-    msg->name.data = msg_name_tab;
-}
-
-// void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
-//     static double msg_data_tab[3][MOT_CMD_MSG_LEN];
-//     static rosidl_runtime_c__String msg_name_tab[MOT_CMD_MSG_LEN];
-//     static char msg_name_data_tab[MOT_CMD_MSG_LEN][MOT_CMD_MSG_NAMES_LEN];
-//     static char msg_frame_id_data[MOT_CMD_MSG_FR_ID_LEN];
-
-//     msg->position.data = msg_data_tab[0];
-//     msg->position.capacity = MOT_CMD_MSG_LEN;
-//     msg->velocity.data = msg_data_tab[1];
-//     msg->velocity.capacity = MOT_CMD_MSG_LEN;
-//     msg->effort.data = msg_data_tab[2];
-//     msg->effort.capacity = MOT_CMD_MSG_LEN;
-//     msg->header.frame_id.data = msg_frame_id_data;
-//     msg->header.frame_id.capacity = MOT_CMD_MSG_FR_ID_LEN;
-//     msg_name_tab->capacity = msg_name_tab->size = MOT_CMD_MSG_LEN;
-
-//     for(uint8_t i = 0; i < MOT_CMD_MSG_LEN; i++){
-//         msg_name_tab->capacity = MOT_CMD_MSG_NAMES_LEN;
-//         msg_name_tab->data = (char*)msg_name_data_tab[i];
-//     }
-//     msg->name.capacity = MOT_CMD_MSG_LEN;
-//     msg->name.data = msg_name_tab;
-// }
-
-
-
-
-void MotorsCmdMsgInit(sensor_msgs__msg__JointState * msg){
-    static char tab[4][24];
-    static double pos[10]; 
-    static double vel[10];
-    static double eff[10];
-    static rosidl_runtime_c__String str_name_tab[10];
-
-    msg->position.capacity = 10;
-    msg->position.data = pos;
-    msg->effort.capacity = 10;
-    msg->effort.data = eff;
-    msg->velocity.capacity = 10;
-    msg->velocity.data = vel;
-    msg->header.frame_id.capacity = 20;
-
-    str_name_tab->capacity = 4;
-    
-    str_name_tab[0].capacity = 24;
-    str_name_tab[0].data = tab[0];
-    
-    str_name_tab[1].capacity = 24;
-    str_name_tab[1].data = tab[1];
-    
-    str_name_tab[2].capacity = 24;
-    str_name_tab[2].data = tab[2];
-    
-    str_name_tab[3].capacity = 24;
-    str_name_tab[3].data = tab[3];
-
-    msg->name.capacity = 4;
-    msg->name.data->capacity = 24;
-    msg->name.data = str_name_tab;
-}
 
 MotorClass::MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_tim_channel_, uint32_t Ilim_pin_, uint32_t A_channel_mot_,
              uint32_t B_channel_mot_, TIM_TypeDef *Enc_timer_, uint32_t A_channel_enc_, uint32_t B_channel_enc_, int8_t DefaultDir_){

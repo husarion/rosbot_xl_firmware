@@ -17,7 +17,9 @@
 // Define all inputs/outputs etc.
 
 /* OTHERS */
-#define BOARD_MODE_DEBUG    true    //if true - debug mode is active
+#define BOARD_MODE_DEBUG    		true    //if true - debug mode is active
+#define RTOS_FREQUENCY				1000	//hz
+#define FREQ_TO_DELAY_TIME(freq)	(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
 
 /* REAR PANEL */
 #define GRN_LED             PE3
@@ -69,8 +71,11 @@
 #define VIRTUAL_LED_LENGTH  10
 #define PIXEL_SPI_SPEED     4000000
 
-/* KINEMATICS */
-#define KINEMATIC_TASK_FREQ     25 //Hz
+/* ETHERNET */
+#define CLIENT_IP "192.168.77.3"
+#define AGENT_IP "192.168.77.2" //Rpi
+// #define AGENT_IP "192.168.77.5"	//Computer
+#define AGENT_PORT 8888
 
 
 /* EXTERNAL PERIPHERALS */
@@ -114,5 +119,52 @@
 #define EXT_GPIO2           PG3
 #define EXT_GPIO3           PG4
 
+//BATTERY STATE
+#define BATTERY_STATE_MSG_LENGTH 17
+
+typedef enum{
+	unknown_status = 0,
+	charging = 1,
+	discharging = 2,
+	not_charging = 3,
+	full = 4
+}BatteryStatusTypeDef;
+
+typedef enum{
+	unknown_health = 0,
+	good = 1,
+	overhaet = 2,
+	dead = 3,
+	overvoltage = 4,
+	unspec_failure = 5,
+	cold = 6,
+	watchdog_timer_expire = 7,
+	safety_timer_expire = 8
+}BatteryHealthTypeDef;
+
+typedef enum{
+	unknown_type = 0,
+	NIMH = 1,
+	LION = 2,
+	LIPO = 3,
+	LIFE = 4,
+	NICD = 5,
+	LIMN = 6
+}BatteryTechnologyTypeDef;
+
+typedef struct{
+	//ROS battery msgs variables
+	uint16_t					Voltage;
+	uint16_t					Temperature;
+	uint16_t					Current;
+	uint16_t					ChargeCurrent;
+	uint16_t					Capacity;
+	uint16_t					DesignCapacity;
+	uint8_t						Percentage;
+	BatteryStatusTypeDef 		Status;
+	BatteryHealthTypeDef		Health;
+	BatteryTechnologyTypeDef 	Technology;
+	uint8_t						Present;
+}battery_state_queue_t;
 
 #endif /* HARDWARE_CFG */

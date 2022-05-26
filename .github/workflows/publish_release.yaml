@@ -1,0 +1,30 @@
+name: Firmware Release
+
+on:
+  push:
+    branches:
+      - 'SplitedCode'
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Installing platformio
+      run: pip3 install -U platformio
+
+    - name: Building a firmware for STM32
+      run: pio run
+
+    - name: Release a firmware
+      uses: softprops/action-gh-release@v1
+      # if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          .pio/build/olimex_e407/firmware.bin
+          LICENSE

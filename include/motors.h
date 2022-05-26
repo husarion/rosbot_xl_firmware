@@ -15,7 +15,6 @@
 #include <Arduino.h>
 #include <PID_v1.h>
 #include <STM32FreeRTOS.h>
-#include <sensor_msgs/msg/joint_state.h>
 
 #define M1_ENC_TIM      TIM1
 #define M1_ENC_A        PE9
@@ -68,6 +67,7 @@
 #define PID_DEFAULT_KI              0
 #define PID_DEFAULT_KD              0
 #define MOTORS_PWM_FREQUENCY        15000   //Hz
+#define MOTORS_PID_SETPOINT_TIMEOUT 3000    //ms
 
 
 //HARDWARE DEFINES
@@ -80,19 +80,6 @@
 #define RAMP_FLAG           false   // if true - use ramp, it false - without ramp
 #define MAX_CURRENT         0x01
 #define REDUCED_CURRENT     0x00
-
-//MOTORS ROS MSGS DEFINES
-#define MOT_CMD_MSG_LEN         4
-#define MOT_CMD_MSG_NAMES_LEN   25
-#define MOT_CMD_MSG_FR_ID_LEN   20
-#define MOT_RESP_MSG_LEN        4
-
-//ANOTHER DEFINES
-#define MOTORS_RESPONSE_FREQ    50
-
-
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
-void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
 
 class MotorClass {
     public:

@@ -14,7 +14,7 @@
 
 #include <Arduino.h>
 #include <bsp.h>
-
+#include <STM32FreeRTOS.h>
 
 #define FRAME_START_BIT                 '<'
 #define FRAME_STOP_BIT                  '>'
@@ -25,6 +25,14 @@
 #define UART_FRAME_DATA_LENGTH(arg)     (arg + 3) * 2 
 #define UART_FRAME_LENGTH(arg)          UART_FRAME_DATA_LENGTH(arg) + 2               
 #define UART_MAX_FRAME_DATA_LENGTH      UART_FRAME_DATA_LENGTH(MAX_ARGS_SIZE)
+
+//extern variables
+extern QueueHandle_t BatteryStateQueue;
+
+typedef enum{
+    ConversionOk    = 0,
+    ConversionError = 1
+}UartConvStatusTypeDef;
 
 
 struct UartProtocolFrame{
@@ -40,14 +48,14 @@ class UartProtocolClass: public HardwareSerial{
     ~UartProtocolClass();
     void UartProtocolLoopHandler();
     int8_t StreamParse();
-    uint16_t HexToByte(uint8_t* byte_);
+    UartConvStatusTypeDef HexToByte(uint8_t* byte_, uint8_t* result);
     uint8_t* ByteToHex(uint8_t byte_, uint8_t* buffer_);
     uint8_t DecodeHex(uint8_t byte_);
     uint8_t EncodeHex(uint8_t byte_);
     void ExecuteFrame();
     void SendFrame(UartProtocolFrame frame_);
     void SendBuffer(uint8_t size_, uint8_t* buffer_);
-
+    void SendBuffer(uint8_t size_, String buffer_);
     private:
     UartProtocolFrame ProcessedFrame;
     uint8_t RxBuffer[RX_BUFF_CAPACITY];

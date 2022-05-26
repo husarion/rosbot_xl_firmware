@@ -1,5 +1,15 @@
 **STM32 + Ethernet + micro-ROS + FreeRTOS + Arduino + PlatformIO**  
 
+## Creatin a release
+
+```
+git add *
+git commit -m "First image added."
+git tag v0.0.1
+git tag -n
+git push origin SplitedCode v0.0.1
+```
+
 ## Default config
 
 STM32F407 + Ethernet (eg. STM32-E407 Olimex board) directly connected with Ethernet cable to a computer.
