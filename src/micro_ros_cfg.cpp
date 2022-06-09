@@ -65,7 +65,8 @@ uRosFunctionStatus uRosLoopHandler(void){
     }
     else{
       if(EntitiesStatus == Created)
-      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+      // rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+      rclc_executor_spin(&executor);
       return Ok;
     }
   }
@@ -186,7 +187,7 @@ uRosEntitiesStatus uRosCreateEntities(void){
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_response' publisher.\r\n");
   //BATTERY STATE
-  RCCHECK(rclc_publisher_init_default(
+  RCCHECK(rclc_publisher_init_best_effort(
       &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
       "battery_state"));
   ros_msgs_cnt++;

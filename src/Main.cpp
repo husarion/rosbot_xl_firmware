@@ -174,7 +174,7 @@ static void runtime_stats_task(void *p) {
   while (1) {
     vTaskGetRunTimeStats(buf);
     Serial.printf("\r\n%s\r\n-------------", buf);
-    vTaskDelay(2000);
+    vTaskDelay(100);
   }
 }
 
