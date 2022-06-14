@@ -28,6 +28,10 @@ void BoardGpioInit(void){
     pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
     digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
     pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
+    pinMode(AUDIO_SHDN, OUTPUT);
+    digitalWrite(AUDIO_SHDN, HIGH);
+    pinMode(FAN, OUTPUT);
+    digitalWrite(FAN, HIGH);
 }
 
 void SetLocalPower(SwitchStateTypeDef State_){

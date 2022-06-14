@@ -58,15 +58,15 @@ uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_){
 
 uRosFunctionStatus uRosLoopHandler(void){
   static uRosEntitiesStatus EntitiesStatus = NotCreated;
-  if(uRosPingAgent() == Ok){
+  if(uRosPingAgent(100, 2) == Ok){
     if(EntitiesStatus != Created){
       EntitiesStatus = uRosCreateEntities();
       return Pending;
     }
     else{
       if(EntitiesStatus == Created)
-      // rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
-      rclc_executor_spin(&executor);
+      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+      // rclc_executor_spin(&executor);
       return Ok;
     }
   }
@@ -82,6 +82,10 @@ void uRosMotorsCmdCallback(const void *msgin){
   static sensor_msgs__msg__JointState * setpoint_msg;
   setpoint_msg = (sensor_msgs__msg__JointState *)msgin;
   String motor_name;
+  Setpoint[0] = 0;
+  Setpoint[1] = 0;
+  Setpoint[2] = 0;
+  Setpoint[3] = 0;
   for(uint8_t i = 0; i < (uint8_t)setpoint_msg->name.size; i++){
     motor_name = (String)setpoint_msg->name.data[i].data;
     if(motor_name == REAR_RIGHT_MOTOR_NAME)  Setpoint[0] = (double)setpoint_msg->velocity.data[i];
@@ -98,12 +102,17 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
   static motor_state_queue_t motor_state_queue;
   static battery_state_queue_t battery_state_queue;
   struct timespec ts = {0};
+  // RCCHECK(rmw_uros_sync_session(1000));
   if (timer != NULL) {
     //QOS default
     if(xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) == pdPASS){
       clock_gettime(CLOCK_REALTIME, &ts);
-      battery_state_msg.header.stamp.sec = ts.tv_sec;
-      battery_state_msg.header.stamp.nanosec = ts.tv_nsec;
+      // battery_state_msg.header.stamp.sec = ts.tv_sec;
+      // battery_state_msg.header.stamp.nanosec = ts.tv_nsec;
+      if(rmw_uros_epoch_synchronized()){
+        battery_state_msg.header.stamp.sec = rmw_uros_epoch_millis()/1000;
+        battery_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+      }
       battery_state_msg.voltage = battery_state_queue.Voltage;
       battery_state_msg.temperature = battery_state_queue.Temperature;
       battery_state_msg.current = battery_state_queue.Current;
@@ -120,8 +129,12 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
     //QOS best effort
     if(xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t) 0) == pdPASS){
       clock_gettime(CLOCK_REALTIME, &ts);
-      motors_response_msg.header.stamp.sec = ts.tv_sec;
-      motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      // motors_response_msg.header.stamp.sec = ts.tv_sec;
+      // motors_response_msg.header.stamp.nanosec = ts.tv_nsec;
+      if(rmw_uros_epoch_synchronized()){
+        motors_response_msg.header.stamp.sec = rmw_uros_epoch_millis()/1000;
+        motors_response_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+      }
       motors_response_msg.velocity.data = motor_state_queue.velocity;
       motors_response_msg.position.data = motor_state_queue.positon;
       RCSOFTCHECK(rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
@@ -129,8 +142,12 @@ void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
     //QOS best effort
     if(xQueueReceive(ImuQueue, &queue_imu, (TickType_t) 0) == pdPASS){
       clock_gettime(CLOCK_REALTIME, &ts);
-      imu_msg.header.stamp.sec = ts.tv_sec;
-      imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      // imu_msg.header.stamp.sec = ts.tv_sec;
+      // imu_msg.header.stamp.nanosec = ts.tv_nsec;
+      if(rmw_uros_epoch_synchronized()){
+        imu_msg.header.stamp.sec = rmw_uros_epoch_millis()/1000;
+        imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+      }
       imu_msg.header.frame_id.data = (char *) "imu";
       imu_msg.orientation.x = queue_imu.Orientation[0];
       imu_msg.orientation.y = queue_imu.Orientation[1];
@@ -163,12 +180,12 @@ uRosEntitiesStatus uRosCreateEntities(void){
 
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   /*===== INIT TIMERS =====*/
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(1),
                                   uRosTimerCallback));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
   /*===== INIT SUBSCRIBERS ===== */
-  RCCHECK(rclc_subscription_init_default(
+  RCCHECK(rclc_subscription_init_best_effort(
       &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
       "motors_cmd"));
   ros_msgs_cnt++;
@@ -178,19 +195,19 @@ uRosEntitiesStatus uRosCreateEntities(void){
   RCCHECK(rclc_publisher_init_best_effort(
       &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
       "imu/data_raw"));
-  ros_msgs_cnt++;
+  // ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
   //MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
       &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
       "motors_response"));
-  ros_msgs_cnt++;
+  // ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_response' publisher.\r\n");
   //BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
       &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
       "battery_state"));
-  ros_msgs_cnt++;
+  // ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'battery_state' publisher.\r\n");
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
