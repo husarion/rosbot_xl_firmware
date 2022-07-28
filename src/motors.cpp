@@ -112,7 +112,16 @@ void MotorClass::SoftStop(void){
 double MotorClass::VelocityUpdate(void){
     ActualTime = xTaskGetTickCount();
     ActualEncVal = this->EncValUpdate();
-    TimeChange = double(ActualTime-PrevTime)/1000; //in seconds
+
+    uint32_t timeDiff = ActualTime-PrevTime;
+    if(timeDiff == 0)
+    {   
+        // drop this measurement and use last one - time diff is 0
+        PrevEncVal = ActualEncVal;
+        return this->Velocity*this->DefaultDir;
+    }
+    
+    TimeChange = double(timeDiff)/1000; //in seconds
     this->Velocity = double(ActualEncVal-PrevEncVal)/(IMP_PER_RAD)/TimeChange;
     PrevEncVal = ActualEncVal;
     PrevTime = ActualTime;
