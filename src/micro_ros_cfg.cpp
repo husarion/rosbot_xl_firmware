@@ -187,20 +187,20 @@ uRosEntitiesStatus uRosCreateEntities(void){
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
       &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-      "motors_cmd"));
+      "_motors_cmd"));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_cmd' subscriber\r\n");
   /*===== INIT PUBLISHERS ===== */
   //IMU
   RCCHECK(rclc_publisher_init_best_effort(
       &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-      "imu/data_raw"));
+      "_imu/data_raw"));
   // ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
   //MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
       &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-      "motors_response"));
+      "_motors_response"));
   // ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created 'motors_response' publisher.\r\n");
   //BATTERY STATE
