@@ -65,8 +65,9 @@ uRosFunctionStatus uRosLoopHandler(void){
     }
     else{
       if(EntitiesStatus == Created)
-      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
-      // rclc_executor_spin(&executor);
+      // rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+      // using spin_some causes oscillations of publication frequency
+      rclc_executor_spin(&executor);
       return Ok;
     }
   }
