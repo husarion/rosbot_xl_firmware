@@ -181,7 +181,8 @@ uRosEntitiesStatus uRosCreateEntities(void){
 
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   /*===== INIT TIMERS =====*/
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(1),
+  // when timeout is set to 1 motors cmd subscription doesn't work, with 10 it works
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
                                   uRosTimerCallback));
   ros_msgs_cnt++;
   if(BOARD_MODE_DEBUG) Serial.printf("Created timer\r\n");
