@@ -22,6 +22,7 @@ QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
+QueueHandle_t uRosPingAgentStatusQueue;
 portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
 
 /* EXTERN VARIABLES */
@@ -57,6 +58,7 @@ static void pixel_led_task(void *p);
 static void board_support_task(void *p);
 static void power_board_task(void *p);
 static void motors_response_task(void *p);
+static void uros_ping_agent_task(void *p);
 
 /* FUNCTIONS */
 
@@ -94,6 +96,7 @@ void setup() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
+  uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
   if(BOARD_MODE_DEBUG) Serial.printf("Queues created\r\n");
   // uRosInitSuccesfull = uRosCreateEntities();
   /* RTOS TASKS CREATION */
@@ -125,6 +128,10 @@ void setup() {
                           configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n"); 
+  s9 = xTaskCreate(uros_ping_agent_task, "uros_ping_agent_task",
+                        configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
+                        NULL);
+  if(s9 != pdPASS)  Serial.printf("S9 creation problem\r\n"); 
   
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
@@ -137,9 +144,12 @@ void setup() {
 static void rclc_spin_task(void *p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  static uRosFunctionStatus uRosPingAgentStatus;
   while(1) {
+    xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus, (TickType_t) 0); // get status from ping uros agent task
+    // Serial.printf("Agent status = %d \n\r", (uint8_t)uRosPingAgentStatus);
     vTaskDelayUntil(&xLastWakeTime, 1);
-    switch (uRosLoopHandler())
+    switch (uRosLoopHandler(uRosPingAgentStatus))
     {
     case Ok:
       SetGreenLed(On);
@@ -246,6 +256,15 @@ static void power_board_task(void *p){
   while(1){
     PowerBoardSerial.UartProtocolLoopHandler();
     vTaskDelay(150);
+  }
+}
+
+static void uros_ping_agent_task(void *p){
+  static uRosFunctionStatus uRosPingAgentStatus;
+  while(1){
+    vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
+    uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
+    xQueueSendToFront(uRosPingAgentStatusQueue, (void*) &uRosPingAgentStatus, (TickType_t) 0);
   }
 }
 

@@ -35,6 +35,9 @@
 #define NODE_NAME                   "stm32_node"
 #define AGENT_RECONNECTION_TIMEOUT  50
 #define AGENT_RECONNECTION_ATTEMPTS 2
+#define PING_AGENT_TIMEOUT          50
+#define PING_AGENT_ATTEMPTS         2
+#define PING_AGENT_FREQUENCY        (double)0.25    //Hz
 //Motors msgs defines
 #define MOT_CMD_MSG_LEN         4
 #define MOT_CMD_MSG_NAMES_LEN   25
@@ -94,7 +97,7 @@ extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 void ErrorLoop(void);
 uRosFunctionStatus uRosPingAgent(void);
 uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_);
-uRosFunctionStatus uRosLoopHandler(void);
+uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus AgentPingStatus);
 void uRosMotorsCmdCallback(const void *msgin);
 void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time);
 uRosEntitiesStatus uRosCreateEntities(void);

@@ -19,7 +19,7 @@
 /* OTHERS */
 #define BOARD_MODE_DEBUG    		true    //if true - debug mode is active
 #define RTOS_FREQUENCY				1000	//hz
-#define FREQ_TO_DELAY_TIME(freq)	(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
+#define FREQ_TO_DELAY_TIME(freq)	(TickType_t)(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
 
 /* REAR PANEL */
 #define GRN_LED             PE3
@@ -73,8 +73,8 @@
 
 /* ETHERNET */
 #define CLIENT_IP "192.168.77.3"
-// #define AGENT_IP "192.168.77.2" //Rpi
-#define AGENT_IP "192.168.77.5"	//Computer
+#define AGENT_IP "192.168.77.2" //Rpi
+// #define AGENT_IP "192.168.77.5"	//Computer
 #define AGENT_PORT 8888
 
 

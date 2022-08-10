@@ -31,7 +31,7 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-
+uRosFunctionStatus ping_agent_status;
 
 void ErrorLoop(void){
   while (1) {
@@ -56,18 +56,19 @@ uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_){
       return Error;  //if false
 }
 
-uRosFunctionStatus uRosLoopHandler(void){
+uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus AgentPingStatus){
   static uRosEntitiesStatus EntitiesStatus = NotCreated;
-  if(uRosPingAgent(100, 2) == Ok){
+  // if(uRosPingAgent(100, 2) == Ok){
+  if(AgentPingStatus == Ok){
     if(EntitiesStatus != Created){
       EntitiesStatus = uRosCreateEntities();
       return Pending;
     }
     else{
       if(EntitiesStatus == Created)
-      // rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
       // using spin_some causes oscillations of publication frequency
-      rclc_executor_spin(&executor);
+      // rclc_executor_spin(&executor);
       return Ok;
     }
   }
