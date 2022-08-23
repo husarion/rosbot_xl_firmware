@@ -73,8 +73,8 @@
 
 /* ETHERNET */
 #define CLIENT_IP "192.168.77.3"
-// #define AGENT_IP "192.168.77.2" //Rpi
-#define AGENT_IP "192.168.77.5"	//Computer
+#define AGENT_IP "192.168.77.2" //Rpi
+// #define AGENT_IP "192.168.77.5"	//Computer
 #define AGENT_PORT 8888
 
 
