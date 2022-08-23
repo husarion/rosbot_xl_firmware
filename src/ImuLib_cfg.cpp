@@ -26,7 +26,7 @@ ImuDriver::~ImuDriver(){
 
 bool ImuDriver::Init(){
     // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for orientation
-    if(this->ImuBno->begin(Adafruit_BNO055::OPERATION_MODE_IMUPLUS)){
+    if(this->ImuBno->begin(OPERATION_MODE_IMUPLUS)){
         this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
         this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
         this->ImuBno->setExtCrystalUse(true);
