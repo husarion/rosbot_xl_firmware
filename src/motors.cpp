@@ -20,7 +20,7 @@ MotorPidClass M1_PID(&Motor1);
 MotorPidClass M2_PID(&Motor2);
 MotorPidClass M3_PID(&Motor3);
 MotorPidClass M4_PID(&Motor4);
-
+MotorPidClass wheel_motors[] = {M1_PID, M2_PID, M3_PID, M4_PID};
 
 MotorClass::MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_tim_channel_, uint32_t Ilim_pin_, uint32_t A_channel_mot_,
              uint32_t B_channel_mot_, TIM_TypeDef *Enc_timer_, uint32_t A_channel_enc_, uint32_t B_channel_enc_, int8_t DefaultDir_){
@@ -49,8 +49,8 @@ MotorClass::MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_t
     pinMode(this->Ilim_pin, OUTPUT);
     this->SoftStop();
     this->SetCurrentLimit(MAX_CURRENT);
-    PrevEncVal = ActualEncVal = this->EncValUpdate();
-    PrevTime = ActualTime = xTaskGetTickCount();
+    prev_enc_val_ = actual_enc_val_ = this->EncValUpdate();
+    prev_time_ = actual_time_ = xTaskGetTickCount();
 }
 
 MotorClass::~MotorClass(){
@@ -59,19 +59,21 @@ MotorClass::~MotorClass(){
 
 int64_t MotorClass::EncValUpdate(void){
     int8_t flag = Enc_tim->getUnderOverFlow(ENC_MAX_CNT);
-    if(flag == 1)
+    if(flag == 1){
         Enc_value += ENC_MAX_CNT;
-    if(flag == -1)
+    }
+    if(flag == -1){
         Enc_value -= ENC_MAX_CNT;
+    }
     return (Enc_value + Enc_tim->getCount()-ENC_CNT_OFFSET);
 }
 
 
 void MotorClass::SetPWM(uint16_t setpoint){
-    uint32_t PwmTimMax = this->GetPwmTimerOverflow();
-    uint32_t power = uint32_t(constrain(setpoint, 0, PwmTimMax));
+    uint32_t pwm_tim_max = this->GetPwmTimerOverflow();
+    uint32_t power = uint32_t(constrain(setpoint, 0, pwm_tim_max));
     // Serial.printf("PWM timer value: %d, PWM timer max value: %d\r\n", uint16_t(power), uint16_t(this->GetPwmTimerOverflow()));
-    this->Pwm_tim->setCaptureCompare(this->PWM_tim_channel, PwmTimMax - power, TICK_COMPARE_FORMAT);
+    this->Pwm_tim->setCaptureCompare(this->PWM_tim_channel, pwm_tim_max - power, TICK_COMPARE_FORMAT);
 }
 
 
@@ -110,12 +112,12 @@ void MotorClass::SoftStop(void){
 }
 
 double MotorClass::VelocityUpdate(void){
-    ActualTime = xTaskGetTickCount();
-    ActualEncVal = this->EncValUpdate();
-    TimeChange = double(ActualTime-PrevTime)/1000; //in seconds
-    this->Velocity = double(ActualEncVal-PrevEncVal)/(IMP_PER_RAD)/TimeChange;
-    PrevEncVal = ActualEncVal;
-    PrevTime = ActualTime;
+    actual_time_ = xTaskGetTickCount();
+    actual_enc_val_ = this->EncValUpdate();
+    time_change_ = double(actual_time_ - prev_time_)/1000; //in seconds
+    this->Velocity = double(actual_enc_val_ - prev_enc_val_) / (IMP_PER_RAD) / time_change_;
+    prev_enc_val_ = actual_enc_val_;
+    prev_time_ = actual_time_;
     return this->Velocity*this->DefaultDir;
 }
 
@@ -124,13 +126,13 @@ double MotorClass::GetVelocity(void){
 }
 
 double MotorClass::GetPosition(void){
-    return (double(this->ActualEncVal) / (double(ENC_RESOLUTION) * double(GEARBOX_RATIO)))*2*PI*(double)this->DefaultDir;
+    return (double(this->actual_enc_val_) / (double(ENC_RESOLUTION) * double(GEARBOX_RATIO)))*2*PI*(double)this->DefaultDir;
 }
 
 double MotorClass::GetWheelAngle(void){
-    int16_t act_angle = ActualEncVal%(ENC_RESOLUTION*GEARBOX_RATIO);
+    int16_t act_angle = actual_enc_val_ % (ENC_RESOLUTION*GEARBOX_RATIO);
     double pos_rad = double(act_angle)/double(ENC_RESOLUTION)/double(GEARBOX_RATIO)*PI;
-    if (ActualEncVal >= 0) {
+    if (actual_enc_val_ >= 0) {
         return pos_rad - PI/2;
     }
     else {
@@ -156,18 +158,8 @@ void MotorClass::SetCurrentLimit(uint8_t CurrentMode_){
 
 MotorPidClass::MotorPidClass(MotorClass* Motor_){
     Motor = Motor_;
-    uint8_t PidDirection;
-    if(this->Motor->GetDefaultDir() == 1)
-        PidDirection = REVERSE;
-    if(this->Motor->GetDefaultDir() == -1)
-        PidDirection = DIRECT;
-    PID myPID(&Input, &Output, &PidSetpoint, Kp, Ki, Kd, P_ON_E, PidDirection);
-    MotorPID = new PID(myPID);
     OutputMax = double(this->Motor->GetPwmTimerOverflow()-1);
     OutputMin = OutputMax * (-1);
-    MotorPID->SetOutputLimits(OutputMin, OutputMax);
-    MotorPID->SetSampleTime(1000/PID_FREQ);         
-    MotorPID->SetMode(AUTOMATIC);
 }
 
 MotorPidClass::~MotorPidClass(){
@@ -184,20 +176,21 @@ void MotorPidClass::Handler(void){
             if((ActualSetpoint + RAMP_ACCELERATION) > Setpoint)
                 ActualSetpoint = Setpoint;
             else
-                ActualSetpoint += (RAMP_ACCELERATION)/(PID_FREQ);
+                ActualSetpoint += (double)((RAMP_ACCELERATION) / (PID_FREQ));
         }
         if(ActualSetpoint > Setpoint){
             if((ActualSetpoint - RAMP_ACCELERATION < Setpoint))
                 ActualSetpoint = Setpoint;
             else
-                ActualSetpoint -= (RAMP_ACCELERATION)/(PID_FREQ);
+                ActualSetpoint -= (double)((RAMP_ACCELERATION)/(PID_FREQ));
         }
     }
     else{
         ActualSetpoint = Setpoint;
     }
-    PidSetpoint = (ActualSetpoint*OutputMax)/(MAX_ANG_VEL);
-    Input = double((Motor->VelocityUpdate()*OutputMax)/(MAX_ANG_VEL));
-    MotorPID->Compute();
-    Motor->SetMove(int16_t(this->Output));
+    double Error = ActualSetpoint - Motor->VelocityUpdate();
+    double U = Kp * Error + Ki * ErrorSum + Kd * (Error - LastError);
+    LastError = Error;
+    ErrorSum += Error;
+    Motor->SetMove(int16_t(U * OutputMax * this->Motor->GetDefaultDir() * (-1)));
 }

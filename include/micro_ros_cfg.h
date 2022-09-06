@@ -21,7 +21,8 @@
 #include <rclc/rclc.h>
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/string.h>
-#include <std_msgs/msg/int64.h>
+// #include <std_msgs/msg/int64.h>
+#include <std_msgs/msg/float32_multi_array.h>
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/battery_state.h>
 #include <sensor_msgs/msg/joint_state.h>
@@ -40,8 +41,6 @@
 #define PING_AGENT_FREQUENCY        (double)0.25    //Hz
 //Motors msgs defines
 #define MOT_CMD_MSG_LEN         4
-#define MOT_CMD_MSG_NAMES_LEN   25
-#define MOT_CMD_MSG_FR_ID_LEN   20
 #define MOT_RESP_MSG_LEN        4
 #define FRONT_LEFT_MOTOR_NAME   "front_left_wheel_joint"
 #define FRONT_RIGHT_MOTOR_NAME  "front_right_wheel_joint"
@@ -96,13 +95,13 @@ extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 /* FUNCTIONS */
 void ErrorLoop(void);
 uRosFunctionStatus uRosPingAgent(void);
-uRosFunctionStatus uRosPingAgent(uint8_t Timeout_, uint8_t Attempts_);
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus AgentPingStatus);
-void uRosMotorsCmdCallback(const void *msgin);
-void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time);
+uRosFunctionStatus uRosPingAgent(uint8_t, uint8_t);
+uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus);
+void uRosMotorsCmdCallback(const void *);
+void uRosTimerCallback(rcl_timer_t *, int64_t);
 uRosEntitiesStatus uRosCreateEntities(void);
 uRosEntitiesStatus uRosDestroyEntities(void);
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* msg);
-void MotorsCmdMsgInit(sensor_msgs__msg__JointState* msg);
+void MotorsResponseMsgInit(sensor_msgs__msg__JointState*);
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray*);
 
 #endif /* MICRO_ROC_CFG_H */

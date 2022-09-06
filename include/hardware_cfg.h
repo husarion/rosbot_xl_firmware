@@ -17,7 +17,7 @@
 // Define all inputs/outputs etc.
 
 /* OTHERS */
-#define BOARD_MODE_DEBUG    		true    //if true - debug mode is active
+#define DEFAULT_FIRMWARE_MODE  		2    	//0 - normal; 1 - error; 2 - debug
 #define RTOS_FREQUENCY				1000	//hz
 #define FREQ_TO_DELAY_TIME(freq)	(TickType_t)(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
 
@@ -64,18 +64,19 @@
 #define IMU_ADDR_B          0x29
 
 /* PIXEL LED */
-#define PIXEL_SPI           SPI2  
-#define PIXEL_MOSI          PB15
-#define PIXEL_SCK           PB10
-#define PIXEL_LENGTH        18
-#define VIRTUAL_LED_LENGTH  10
-#define PIXEL_SPI_SPEED     4000000
+#define PIXEL_SPI           	SPI2  
+#define PIXEL_MOSI          	PB15
+#define PIXEL_SCK           	PB10
+#define PIXEL_LENGTH        	18
+#define VIRTUAL_LED_LENGTH  	10
+#define PIXEL_SPI_SPEED     	4000000
+#define PIXEL_ANIMATION_FREQ	0.5
 
 /* ETHERNET */
-#define CLIENT_IP "192.168.77.3"
-#define AGENT_IP "192.168.77.2" //Rpi
-// #define AGENT_IP "192.168.77.5"	//Computer
-#define AGENT_PORT 8888
+#define CLIENT_IP 		"192.168.77.3"
+#define SBC_AGENT_IP 	"192.168.77.2"	//Rpi
+#define EXT_AGENT_IP 	"192.168.77.5"	//Computer
+#define AGENT_PORT 		8888
 
 
 /* EXTERNAL PERIPHERALS */
@@ -123,23 +124,23 @@
 #define BATTERY_STATE_MSG_LENGTH 17
 
 typedef enum{
-	unknown_status = 0,
-	charging = 1,
-	discharging = 2,
-	not_charging = 3,
-	full = 4
+	unknown_status 	= 0,
+	charging 		= 1,
+	discharging 	= 2,
+	not_charging 	= 3,
+	full 			= 4
 }BatteryStatusTypeDef;
 
 typedef enum{
-	unknown_health = 0,
-	good = 1,
-	overhaet = 2,
-	dead = 3,
-	overvoltage = 4,
-	unspec_failure = 5,
-	cold = 6,
-	watchdog_timer_expire = 7,
-	safety_timer_expire = 8
+	unknown_health 			= 0,
+	good 					= 1,
+	overhaet 				= 2,
+	dead 					= 3,
+	overvoltage 			= 4,
+	unspec_failure 			= 5,
+	cold 					= 6,
+	watchdog_timer_expire 	= 7,
+	safety_timer_expire 	= 8
 }BatteryHealthTypeDef;
 
 typedef enum{
@@ -152,19 +153,26 @@ typedef enum{
 	LIMN = 6
 }BatteryTechnologyTypeDef;
 
+typedef enum{
+	fw_normal 	= 0,
+	fw_error 	= 1,
+	fw_debug 	= 2
+}FirmwareModeTypeDef;
+
 typedef struct{
 	//ROS battery msgs variables
-	uint16_t					Voltage;
-	uint16_t					Temperature;
-	uint16_t					Current;
-	uint16_t					ChargeCurrent;
-	uint16_t					Capacity;
-	uint16_t					DesignCapacity;
-	uint8_t						Percentage;
-	BatteryStatusTypeDef 		Status;
-	BatteryHealthTypeDef		Health;
-	BatteryTechnologyTypeDef 	Technology;
-	uint8_t						Present;
+	uint16_t					voltage;
+	uint16_t					temperature;
+	uint16_t					current;
+	uint16_t					charge_current;
+	uint16_t					capacity;
+	uint16_t					design_capacity;
+	uint8_t						percentage;
+	BatteryStatusTypeDef 		status;
+	BatteryHealthTypeDef		health;
+	BatteryTechnologyTypeDef 	technology;
+	uint8_t						present;
 }battery_state_queue_t;
+
 
 #endif /* HARDWARE_CFG */

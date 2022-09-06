@@ -36,30 +36,30 @@ typedef enum{
 
 
 struct UartProtocolFrame{
-    uint8_t Cmd;
-    uint8_t ArgSize;
-    uint8_t Arg[MAX_ARGS_SIZE];
-    uint8_t CheckSum;
+    uint8_t cmd;
+    uint8_t arg_size;
+    uint8_t args[MAX_ARGS_SIZE];
+    uint8_t check_sum;
 };
 
 class UartProtocolClass: public HardwareSerial{
     public:
-    UartProtocolClass(uint32_t _rx, uint32_t _tx, uint32_t baudrate_, uint8_t config_);
+    UartProtocolClass(uint32_t arg_rx, uint32_t arg_tx, uint32_t arg_baudrate, uint8_t arg_config);
     ~UartProtocolClass();
     void UartProtocolLoopHandler();
-    int8_t StreamParse();
-    UartConvStatusTypeDef HexToByte(uint8_t* byte_, uint8_t* result);
-    uint8_t* ByteToHex(uint8_t byte_, uint8_t* buffer_);
-    uint8_t DecodeHex(uint8_t byte_);
-    uint8_t EncodeHex(uint8_t byte_);
-    void ExecuteFrame();
-    void SendFrame(UartProtocolFrame frame_);
-    void SendBuffer(uint8_t size_, uint8_t* buffer_);
-    void SendBuffer(uint8_t size_, String buffer_);
+    void SendFrame(UartProtocolFrame arg_frame);
+    void SendBuffer(uint8_t arg_size, uint8_t* arg_buffer);
+    void SendBuffer(uint8_t arg_size, String arg_buffer);
     private:
-    UartProtocolFrame ProcessedFrame;
-    uint8_t RxBuffer[RX_BUFF_CAPACITY];
-    volatile uint16_t RxBufferSize = 0;
+    void ExecuteFrame();
+    int8_t StreamParse();
+    UartConvStatusTypeDef HexToByte(uint8_t* arg_byte_, uint8_t* arg_result);
+    uint8_t* ByteToHex(uint8_t arg_byte, uint8_t* arg_buffer);
+    uint8_t DecodeHex(uint8_t arg_byte);
+    uint8_t EncodeHex(uint8_t arg_byte);
+    UartProtocolFrame processed_frame_;
+    uint8_t rx_buffer_[RX_BUFF_CAPACITY];
+    volatile uint16_t rx_buffer_size_ = 0;
 };
 
 #endif /* UartLib_H */
