@@ -14,7 +14,7 @@
 #include <LwIP.h>
 #include <STM32Ethernet.h>
 #include <UartLib.h>
-
+#include "stm32f407xx.h"
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
 //RTOS
@@ -42,6 +42,7 @@ extern MotorPidClass M2_PID;
 extern MotorPidClass M3_PID;
 extern MotorPidClass M4_PID;
 extern MotorPidClass wheel_motors[];
+extern TimebaseTimerClass timebase_timer;
 //LED
 extern PixelLedClass pixel_strip;
 
@@ -80,6 +81,9 @@ void EthernetInit(const char* agent_ip_address,const char* client_ip_address){
 
 /*==================== SETUP ========================*/
 void setup() {
+
+  DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;
+  
   //Hardware init
   BoardGpioInit();
   BoardPheripheralsInit();
@@ -206,8 +210,12 @@ static void pid_handler_task(void *p){
   double setpoint[] = {0,0,0,0};
   static motor_state_queue_t motor_state;
   static uint8_t freq_div_ptr = 0;
+  volatile static uint64_t last_time = 0;
+  volatile static uint64_t time = 0;
   while(1){
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
+    time = timebase_timer.GetTimeChange(last_time);
+    last_time = timebase_timer.GetAbsTimeValue();
     if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
       last_setpoint_update_time = xTaskGetTickCount();
     }

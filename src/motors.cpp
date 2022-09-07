@@ -17,10 +17,11 @@ MotorClass Motor2(M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2_ILIM, M2A_IN, M2B_IN
 MotorClass Motor3(M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3_ILIM, M3A_IN, M3B_IN, M3_ENC_TIM, M3_ENC_A, M3_ENC_B, M3_DEFAULT_DIR);
 MotorClass Motor4(M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4_ILIM, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B, M4_DEFAULT_DIR);
 MotorPidClass M1_PID(&Motor1);
-MotorPidClass M2_PID(&Motor2);
+MotorPidClass M2_PID(&Motor1);
 MotorPidClass M3_PID(&Motor3);
 MotorPidClass M4_PID(&Motor4);
 MotorPidClass wheel_motors[] = {M1_PID, M2_PID, M3_PID, M4_PID};
+TimebaseTimerClass timebase_timer(TIMEBASE_TIMER);
 
 MotorClass::MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_tim_channel_, uint32_t Ilim_pin_, uint32_t A_channel_mot_,
              uint32_t B_channel_mot_, TIM_TypeDef *Enc_timer_, uint32_t A_channel_enc_, uint32_t B_channel_enc_, int8_t DefaultDir_){
@@ -194,3 +195,31 @@ void MotorPidClass::Handler(void){
     ErrorSum += Error;
     Motor->SetMove(int16_t(U * OutputMax * this->Motor->GetDefaultDir() * (-1)));
 }
+
+TimebaseTimerClass::TimebaseTimerClass(TIM_TypeDef* arg_timer){
+    this->timebase_timer_ = new HardwareTimer(arg_timer);
+    this->timebase_timer_->setPrescaleFactor(TIMEBASE_TIMER_PSC);
+    this->timebase_timer_->setOverflow(TIMEBASE_TIMER_OVERFLOW_VALUE, TICK_FORMAT);
+    this->timebase_timer_->refresh();
+    this->timebase_timer_->resume();
+}
+
+TimebaseTimerClass::~TimebaseTimerClass(){
+    ;
+}
+
+uint64_t TimebaseTimerClass::GetAbsTimeValue(){
+    int8_t flag = this->timebase_timer_->getUnderOverFlow(TIMEBASE_TIMER_OVERFLOW_VALUE);
+    if(flag == 1){
+        time_counter_ += TIMEBASE_TIMER_OVERFLOW_VALUE;
+    }
+    if(flag == -1){
+        time_counter_ -= TIMEBASE_TIMER_OVERFLOW_VALUE;
+    }
+    return (time_counter_ + this->timebase_timer_->getCount());
+}
+
+uint64_t TimebaseTimerClass::GetTimeChange(uint64_t arg_last_time){
+    return this->GetAbsTimeValue() - arg_last_time;
+}
+

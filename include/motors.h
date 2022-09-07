@@ -59,21 +59,24 @@
 #define M4_ILIM         PD14
 #define M4_DEFAULT_DIR  1          // 1 (CW) or -1 (CCW)
 
-#define ENC_MAX_CNT                 0xFFFF
-#define ENC_CNT_OFFSET              ENC_MAX_CNT/2
-#define PID_FREQ                    300     //max 1000Hz
-#define PID_DEFAULT_KP              0.3
-#define PID_DEFAULT_KI              0
-#define PID_DEFAULT_KD              0
-#define MOTORS_PWM_FREQUENCY        15000   //Hz
-#define MOTORS_PID_SETPOINT_TIMEOUT 3000    //ms
-
+#define ENC_MAX_CNT                         0xFFFF
+#define ENC_CNT_OFFSET                      (ENC_MAX_CNT / 2)
+#define PID_FREQ                            300     //max 1000Hz
+#define PID_DEFAULT_KP                      0.3
+#define PID_DEFAULT_KI                      0
+#define PID_DEFAULT_KD                      0
+#define MOTORS_PWM_FREQUENCY                15000   //Hz
+#define MOTORS_PID_SETPOINT_TIMEOUT         3000    //ms
+#define TIMEBASE_TIMER                      TIM6
+#define TIMEBASE_TIMER_FREQ                 10000
+#define TIMEBASE_TIMER_CLOCKSOURCE_FREQ     168000000
+#define TIMEBASE_TIMER_PSC                  ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
+#define TIMEBASE_TIMER_OVERFLOW_VALUE       0xFFFF
 
 //HARDWARE DEFINES
 #define ENC_RESOLUTION      64
 #define GEARBOX_RATIO       50
-#define WHEEL_DIAM          0.105   
-#define IMP_PER_RAD         ENC_RESOLUTION*GEARBOX_RATIO/(2*PI)
+#define IMP_PER_RAD         (ENC_RESOLUTION*GEARBOX_RATIO / (2*PI))
 #define MAX_ANG_VEL         20.0    // rad/s
 #define RAMP_ACCELERATION   2.0     // rad/s^2
 #define RAMP_FLAG           false   // if true - use ramp, it false - without ramp
@@ -101,20 +104,21 @@ class MotorClass {
     private:
         HardwareTimer* Pwm_tim;
         HardwareTimer* Enc_tim;
-        int64_t Enc_value;
+        HardwareTimer* timebase_tim;
+        int8_t DefaultDir;
         uint32_t A_channel_mot;
         uint32_t B_channel_mot;
         uint32_t A_channel_enc;
         uint32_t B_channel_enc;
-        uint32_t Ilim_pin;
-        uint32_t PWM_pin;
         uint8_t PWM_tim_channel;
-        double Velocity = 0; //r ad/s
-        int8_t DefaultDir;
+        uint32_t PWM_pin;
+        uint32_t Ilim_pin;
+        int64_t Enc_value;
         int64_t prev_enc_val_ = ENC_CNT_OFFSET;
         int64_t actual_enc_val_ = ENC_CNT_OFFSET;
         uint32_t prev_time_;
         uint32_t actual_time_;
+        double Velocity = 0; //rad/s
         double time_change_;
     protected:
     ;
@@ -140,6 +144,17 @@ class MotorPidClass {
         double OutputMax;
         double ErrorSum;
         double LastError;
+};
+
+class TimebaseTimerClass {
+    public:
+        TimebaseTimerClass(TIM_TypeDef* arg_timer);
+        ~TimebaseTimerClass();
+        uint64_t GetAbsTimeValue();
+        uint64_t GetTimeChange(uint64_t arg_last_time);
+    private:
+        HardwareTimer* timebase_timer_ = 0;
+        uint64_t time_counter_ = 0;
 };
 
 

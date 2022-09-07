@@ -211,19 +211,14 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";
-
   msg->position.data = msg_data_tab[0];
   msg->position.capacity = msg->position.size = MOT_RESP_MSG_LEN;
-
   msg->velocity.data = msg_data_tab[1];
   msg->velocity.capacity = msg->velocity.size = MOT_RESP_MSG_LEN;
-
   msg->effort.data = msg_data_tab[2];
   msg->effort.capacity = msg->effort.size = MOT_RESP_MSG_LEN;
-
   msg->header.frame_id.data = frame_id;
   msg->header.frame_id.capacity = msg->header.frame_id.size = strlen((const char*)frame_id);
-
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
   msg_name_tab[0].data = (char*)"rear_right_wheel_joint";
   msg_name_tab[1].data = (char*)"rear_left_wheel_joint";
