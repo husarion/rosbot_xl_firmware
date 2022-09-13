@@ -95,13 +95,13 @@ extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 /* FUNCTIONS */
 void ErrorLoop(void);
 uRosFunctionStatus uRosPingAgent(void);
-uRosFunctionStatus uRosPingAgent(uint8_t, uint8_t);
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus);
-void uRosMotorsCmdCallback(const void *);
-void uRosTimerCallback(rcl_timer_t *, int64_t);
+uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
+uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);
+void uRosMotorsCmdCallback(const void *arg_input_message);
+void uRosTimerCallback(rcl_timer_t *arg_timer, int64_t arg_last_call_time);
 uRosEntitiesStatus uRosCreateEntities(void);
 uRosEntitiesStatus uRosDestroyEntities(void);
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState*);
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray*);
+void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message);
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message);
 
 #endif /* MICRO_ROC_CFG_H */

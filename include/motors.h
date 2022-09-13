@@ -59,102 +59,116 @@
 #define M4_ILIM         PD14
 #define M4_DEFAULT_DIR  1          // 1 (CW) or -1 (CCW)
 
-#define ENC_MAX_CNT                         0xFFFF
-#define ENC_CNT_OFFSET                      (ENC_MAX_CNT / 2)
-#define PID_FREQ                            300     //max 1000Hz
-#define PID_DEFAULT_KP                      0.3
-#define PID_DEFAULT_KI                      0
-#define PID_DEFAULT_KD                      0
-#define MOTORS_PWM_FREQUENCY                15000   //Hz
-#define MOTORS_PID_SETPOINT_TIMEOUT         3000    //ms
+
+//MOTORS TIMEBASE TIMER
 #define TIMEBASE_TIMER                      TIM6
 #define TIMEBASE_TIMER_FREQ                 10000
 #define TIMEBASE_TIMER_CLOCKSOURCE_FREQ     168000000
 #define TIMEBASE_TIMER_PSC                  ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
 #define TIMEBASE_TIMER_OVERFLOW_VALUE       0xFFFF
 
+//PID PARAMETERS
+#define PID_FREQ                            100     //max 1000Hz
+#define PID_DEFAULT_KP                      49      //KP * 1000
+#define PID_DEFAULT_KI                      8       //KI * 1000
+#define PID_DEFAULT_KD                      0       
+#define MAX_ERR_SUM                         (1000000 / PID_DEFAULT_KI)
+
+//MOTORS ENCODERS PARAMETERS
+#define ENC_RESOLUTION              64
+#define ENCODER_COUNTER_MAX_VALUE   0xFFFF
+#define ENCODER_COUNTER_OFFSET      (ENCODER_COUNTER_MAX_VALUE / 2)
+#define TICK_PER_REAR               (ENC_RESOLUTION * GEARBOX_RATIO)
+#define TICK_PER_RADIAN             TICK_PER_REAR / (2*PI)
+#define TICK_PER_RADIAN_X_1000      TICK_PER_RADIAN * 1000
+#define TICK_TO_RAD_X_1000(arg)     (int64_t((arg) * 1000 * 2 * PI) / TICK_PER_REAR)
+
 //HARDWARE DEFINES
-#define ENC_RESOLUTION      64
-#define GEARBOX_RATIO       50
-#define IMP_PER_RAD         (ENC_RESOLUTION*GEARBOX_RATIO / (2*PI))
-#define MAX_ANG_VEL         20.0    // rad/s
-#define RAMP_ACCELERATION   2.0     // rad/s^2
-#define RAMP_FLAG           false   // if true - use ramp, it false - without ramp
-#define MAX_CURRENT         0x01
-#define REDUCED_CURRENT     0x00
+#define MOTORS_SETPOINT_TIMEOUT     3000    //ms
+#define MOTORS_PWM_FREQUENCY        15000   //Hz
+#define GEARBOX_RATIO               50
+#define MAX_ANG_VEL                 20000   // rad/s * 1000
+#define MAX_CURRENT                 0x01
+#define REDUCED_CURRENT             0x00
+#define RAMP_ACCELERATION           2000   // rad/s^2 * 1000
+#define RAMP_FLAG                   false   // if true - use ramp, it false - without ramp
+
+
+
+
+class TimebaseTimerClass {
+    public:
+        TimebaseTimerClass();
+        TimebaseTimerClass(TIM_TypeDef* arg_timer);
+        ~TimebaseTimerClass();
+        uint64_t GetAbsTimeValue();
+        uint64_t GetTimeChange(uint64_t* arg_last_time);
+    private:
+        HardwareTimer* timebase_timer_ = 0;
+        uint64_t time_counter_ = 0;
+};
 
 class MotorClass {
     public:
         MotorClass();
-        MotorClass(uint32_t Pwm_pin_, TIM_TypeDef *Pwm_timer_, uint8_t PWM_tim_channel_, uint32_t Ilim_pin_, uint32_t A_channel_mot_,
-              uint32_t B_channel_mot_, TIM_TypeDef *Enc_timer_, uint32_t A_channel_enc_, uint32_t B_channel_enc_, int8_t DefaultDir_);
+        MotorClass( uint32_t arg_pwm_pin,           TIM_TypeDef *arg_pwm_timer,         uint8_t arg_pwm_tim_channel,
+                    uint32_t arg_ilim_pin,          uint32_t arg_a_channel_motor_pin,   uint32_t arg_b_channel_motor_pin, 
+                    TIM_TypeDef *arg_encoder_timer, uint32_t arg_a_channel_encoder_pin, uint32_t arg_b_channel_encoder_pin,
+                    int8_t arg_default_direction,   TimebaseTimerClass *arg_timebase_timer);
         ~MotorClass();
+        //basic motor controll methods
         void SoftStop(void);
         void EmgStop(void);
-        int64_t EncValUpdate(void);
-        void SetMove(int16_t vel);
-        void SetPWM(uint16_t setpoint);
-        void SetCurrentLimit(uint8_t CurrentMode_);
-        double GetVelocity(void);
-        double GetPosition(void);
-        double GetWheelAngle(void);
-        double VelocityUpdate(void);
-        int8_t GetDefaultDir(void);
-        uint32_t GetPwmTimerOverflow(void);
+        void SetMove(int32_t arg_velocity);
+        void SetPwm(uint32_t arg_value);
+        void SetCurrentLimit(uint8_t arg_current_mode);
+        //motor feedback methods
+        int32_t GetVelocity(void);
+        int64_t GetWheelAbsPosition(void);
+        int16_t GetWheelAngle(void);
+        int8_t GetDefaultDirection(void);
+        //PID methods
+        void SetPidSetpoint(int32_t arg_setpoint);
+        void SetPidSetpoint(float arg_setpoint);
+        void PidLoopHandler();
+        void PidLoopHandler(int32_t arg_setpoint);
+        void PidLoopHandler(float arg_setpoint);
+        void SetPidParameters(uint16_t arg_kp_gain, uint16_t arg_ki_gain, uint16_t arg_kd_gain);
+        void SetPidAcceleration(uint16_t arg_ramp_acceleration);
     private:
-        HardwareTimer* Pwm_tim;
-        HardwareTimer* Enc_tim;
-        HardwareTimer* timebase_tim;
-        int8_t DefaultDir;
-        uint32_t A_channel_mot;
-        uint32_t B_channel_mot;
-        uint32_t A_channel_enc;
-        uint32_t B_channel_enc;
-        uint8_t PWM_tim_channel;
-        uint32_t PWM_pin;
-        uint32_t Ilim_pin;
-        int64_t Enc_value;
-        int64_t prev_enc_val_ = ENC_CNT_OFFSET;
-        int64_t actual_enc_val_ = ENC_CNT_OFFSET;
-        uint32_t prev_time_;
-        uint32_t actual_time_;
-        double Velocity = 0; //rad/s
-        double time_change_;
+        int32_t VelocityUpdate(void);
+        uint32_t GetPwmTimerOverflow(void);
+        int64_t GetEncoderValue(void);
+        HardwareTimer* pwm_timer_;
+        HardwareTimer* encoder_timer_;
+        TimebaseTimerClass* timebase_tim_;
+        int64_t last_encoder_value_;
+        int64_t actual_encoder_value_;
+        int64_t encoder_value_;
+        uint64_t last_time_;
+        uint64_t time_change_;
+        uint16_t acceleration_;
+        int32_t input_;
+        int32_t actual_input_;
+        int32_t actual_velocity_;
+        int32_t last_error_;
+        int32_t error_sum_;
+        int32_t actual_error_;
+        uint16_t kp_gain_ = PID_DEFAULT_KP;
+        uint16_t ki_gain_ = PID_DEFAULT_KI;
+        uint16_t kd_gain_ = PID_DEFAULT_KD;
+        int64_t max_error_sum_ = (1000000 / PID_DEFAULT_KI);
+        int32_t output_;
+        int8_t default_direction_;
+        uint8_t a_channel_motor_pin_;
+        uint8_t b_channel_motor_pin_;
+        uint8_t a_channel_encoder_pin_;
+        uint8_t b_channel_encoder_pin_;
+        uint8_t pwm_timer_channel_;
+        uint8_t ilim_pin_;
+        uint8_t pwm_pin_;
     protected:
     ;
-};
-
-class MotorPidClass {
-    public:
-        MotorPidClass(MotorClass* Motor_);
-        ~MotorPidClass();
-        void Handler(void);
-        void SetSetpoint(double);
-        MotorClass *Motor;
-    private:
-        double Kp = PID_DEFAULT_KP;
-        double Ki = PID_DEFAULT_KI;
-        double Kd = PID_DEFAULT_KD;
-        double Input = 0;
-        double Output = 0;
-        double Setpoint = 0;           //velocity rad/s
-        double ActualSetpoint = 0;     //velocity rad/s
-        double PidSetpoint = 0;       
-        double OutputMin;
-        double OutputMax;
-        double ErrorSum;
-        double LastError;
-};
-
-class TimebaseTimerClass {
-    public:
-        TimebaseTimerClass(TIM_TypeDef* arg_timer);
-        ~TimebaseTimerClass();
-        uint64_t GetAbsTimeValue();
-        uint64_t GetTimeChange(uint64_t arg_last_time);
-    private:
-        HardwareTimer* timebase_timer_ = 0;
-        uint64_t time_counter_ = 0;
 };
 
 

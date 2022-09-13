@@ -50,16 +50,16 @@ uRosFunctionStatus uRosPingAgent(void){
     return Error;  //if false
 }
 
-uRosFunctionStatus uRosPingAgent(uint8_t timeout, uint8_t attempts){
-  if(rmw_uros_ping_agent((int)timeout, attempts) == RMW_RET_OK)
+uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts){
+  if(rmw_uros_ping_agent((int)arg_timeout, arg_attempts) == RMW_RET_OK)
       return Ok;
     else
       return Error;  //if false
 }
 
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus agent_ping_status){
+uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status){
   static uRosEntitiesStatus entities_status = NotCreated;
-  if(agent_ping_status == Ok){
+  if(arg_agent_ping_status == Ok){
     if(entities_status != Created){
       entities_status = uRosCreateEntities();
       return Pending;
@@ -77,10 +77,10 @@ uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus agent_ping_status){
   }
 }
 
-void uRosMotorsCmdCallback(const void *msgin){
+void uRosMotorsCmdCallback(const void *arg_input_message){
   static double setpoint[] = {0,0,0,0};
   static std_msgs__msg__Float32MultiArray* setpoint_msg;
-  setpoint_msg = (std_msgs__msg__Float32MultiArray*) msgin;
+  setpoint_msg = (std_msgs__msg__Float32MultiArray*) arg_input_message;
   if(setpoint_msg->data.size == 4){
     for(uint8_t i = 0; i < setpoint_msg->data.size; i++){
       setpoint[i] = (double)setpoint_msg->data.data[i];
@@ -89,12 +89,12 @@ void uRosMotorsCmdCallback(const void *msgin){
   xQueueSendToFront(SetpointQueue, (void*) setpoint, (TickType_t) 0);
 }
 
-void uRosTimerCallback(rcl_timer_t *timer, int64_t last_call_time) {
-  RCLC_UNUSED(last_call_time);
+void uRosTimerCallback(rcl_timer_t *arg_timer, int64_t arg_last_call_time) {
+  RCLC_UNUSED(arg_last_call_time);
   static imu_queue_t queue_imu;
   static motor_state_queue_t motor_state_queue;
   static battery_state_queue_t battery_state_queue;
-  if (timer != NULL) {
+  if (arg_timer != NULL) {
     //QOS default
     if(xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) == pdPASS){
       if(rmw_uros_epoch_synchronized()){
@@ -207,18 +207,18 @@ uRosEntitiesStatus uRosDestroyEntities(void){
   return Destroyed;
 }
 
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
+void MotorsResponseMsgInit(sensor_msgs__msg__JointState * arg_message){
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";
-  msg->position.data = msg_data_tab[0];
-  msg->position.capacity = msg->position.size = MOT_RESP_MSG_LEN;
-  msg->velocity.data = msg_data_tab[1];
-  msg->velocity.capacity = msg->velocity.size = MOT_RESP_MSG_LEN;
-  msg->effort.data = msg_data_tab[2];
-  msg->effort.capacity = msg->effort.size = MOT_RESP_MSG_LEN;
-  msg->header.frame_id.data = frame_id;
-  msg->header.frame_id.capacity = msg->header.frame_id.size = strlen((const char*)frame_id);
+  arg_message->position.data = msg_data_tab[0];
+  arg_message->position.capacity = arg_message->position.size = MOT_RESP_MSG_LEN;
+  arg_message->velocity.data = msg_data_tab[1];
+  arg_message->velocity.capacity = arg_message->velocity.size = MOT_RESP_MSG_LEN;
+  arg_message->effort.data = msg_data_tab[2];
+  arg_message->effort.capacity = arg_message->effort.size = MOT_RESP_MSG_LEN;
+  arg_message->header.frame_id.data = frame_id;
+  arg_message->header.frame_id.capacity = arg_message->header.frame_id.size = strlen((const char*)frame_id);
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
   msg_name_tab[0].data = (char*)"rear_right_wheel_joint";
   msg_name_tab[1].data = (char*)"rear_left_wheel_joint";
@@ -227,13 +227,13 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * msg){
   for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
       msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
   }
-  msg->name.capacity = msg->name.size = MOT_RESP_MSG_LEN;
-  msg->name.data = msg_name_tab;
+  arg_message->name.capacity = arg_message->name.size = MOT_RESP_MSG_LEN;
+  arg_message->name.data = msg_name_tab;
 }
 
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg){
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message){
   static float data[MOT_CMD_MSG_LEN] = {0,0,0,0};
-  msg->data.capacity = MOT_CMD_MSG_LEN;
-  msg->data.size = MOT_CMD_MSG_LEN;
-  msg->data.data = (float*)data;
+  arg_message->data.capacity = MOT_CMD_MSG_LEN;
+  arg_message->data.size = MOT_CMD_MSG_LEN;
+  arg_message->data.data = (float*)data;
 }

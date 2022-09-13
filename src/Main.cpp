@@ -37,12 +37,8 @@ extern sensor_msgs__msg__JointState motors_response_msg;
 extern rcl_publisher_t imu_publisher;
 extern rcl_publisher_t motor_state_publisher;
 //MOTORS
-extern MotorPidClass M1_PID;
-extern MotorPidClass M2_PID;
-extern MotorPidClass M3_PID;
-extern MotorPidClass M4_PID;
-extern MotorPidClass wheel_motors[];
 extern TimebaseTimerClass timebase_timer;
+extern MotorClass wheel_motors[];
 //LED
 extern PixelLedClass pixel_strip;
 
@@ -71,8 +67,8 @@ void EthernetInit(const char* agent_ip_address,const char* client_ip_address){
   client_ip.fromString(client_ip_address);
   agent_ip.fromString(agent_ip_address);
   if(firmware_mode == fw_debug){
-    Serial.printf("Connecting to agent: \r\n");
-    Serial.println(agent_ip);
+    if(firmware_mode == fw_debug) Serial.printf("Connecting to agent: \r\n");
+    if(firmware_mode == fw_debug) Serial.println(agent_ip);
   }
   set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
                                               AGENT_PORT);
@@ -119,36 +115,43 @@ void setup() {
   s1 = xTaskCreate(RclcSpinTask, "RclcSpinTask",
                    configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s1 != pdPASS)  Serial.printf("S1 creation problem\r\n");
+  if(s1 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(imu_task, "imu_task",
                    configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s2 != pdPASS)  Serial.printf("S2 creation problem\r\n");
+  if(s2 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(runtime_stats_task, "runtime_stats_task",
                    configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
-  if(s3 != pdPASS)  Serial.printf("S3 creation problem\r\n");
+  if(s3 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(pid_handler_task, "pid_handler_task",
                             configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
                             NULL);
-  if(s4 != pdPASS)  Serial.printf("S4 creation problem\r\n");
+  if(s4 != pdPASS)  
+    if(firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(pixel_led_task, "pixel_led_task",
                           configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
-  if(s5 != pdPASS)  Serial.printf("S5 creation problem\r\n");
+  if(s5 != pdPASS)  
+    if(firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
   s7 = xTaskCreate(BoardSupportTask, "BoardSupportTask",
                           configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
-  if(s7 != pdPASS)  Serial.printf("S7 creation problem\r\n");
+  if(s7 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S7 creation problem\r\n");
   s8 = xTaskCreate(power_board_task, "power_board_task",
                           configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
-  if(s8 != pdPASS)  Serial.printf("S8 creation problem\r\n"); 
+  if(s8 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S8 creation problem\r\n"); 
   s9 = xTaskCreate(uros_ping_agent_task, "uros_ping_agent_task",
                         configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
                         NULL);
-  if(s9 != pdPASS)  Serial.printf("S9 creation problem\r\n"); 
-  
+  if(s9 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
   /* HARDWARE ACTIONS BEFORE RTOS STARTING */
   SetGreenLed(On);
   SetRedLed(Off);
@@ -195,10 +198,12 @@ static void imu_task(void *p){
 
 static void runtime_stats_task(void *p) {
   char buf[2000];
-  Serial.printf("runtime stats task started\r\n");
+  if(firmware_mode == fw_debug) Serial.printf("runtime stats task started\r\n");
   while (1) {
-    vTaskGetRunTimeStats(buf);
-    Serial.printf("\r\n%s\r\n-------------", buf);
+    if(firmware_mode == fw_debug){
+      vTaskGetRunTimeStats(buf);
+      Serial.printf("\r\n%s\r\n-------------", buf);
+    }
     vTaskDelay(100);
   }
 }
@@ -210,27 +215,22 @@ static void pid_handler_task(void *p){
   double setpoint[] = {0,0,0,0};
   static motor_state_queue_t motor_state;
   static uint8_t freq_div_ptr = 0;
-  volatile static uint64_t last_time = 0;
-  volatile static uint64_t time = 0;
   while(1){
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
-    time = timebase_timer.GetTimeChange(last_time);
-    last_time = timebase_timer.GetAbsTimeValue();
     if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
-    if(actual_setpoint_update_time - last_setpoint_update_time > MOTORS_PID_SETPOINT_TIMEOUT){
+    if(actual_setpoint_update_time - last_setpoint_update_time > MOTORS_SETPOINT_TIMEOUT){
       for(uint8_t i = 0; i < 4; i++) setpoint[i] = 0;
     }
     for(uint8_t i = 0; i < 4; i++){
-      wheel_motors[i].SetSetpoint(setpoint[i]);
-      wheel_motors[i].Handler();
+      wheel_motors[i].PidLoopHandler((float)setpoint[i]);
     }
     if(freq_div_ptr > (PID_FREQ/MOTORS_RESPONSE_FREQ)){
       for(uint8_t i = 0; i < 4; i++){
-        motor_state.velocity[i] = (double)wheel_motors[i].Motor->GetVelocity();
-        motor_state.positon[i] = (double)wheel_motors[i].Motor->GetPosition();
+        motor_state.velocity[i] = ((double)wheel_motors[i].GetVelocity()) / 1000;
+        motor_state.positon[i] = ((double)(wheel_motors[i].GetWheelAbsPosition()) / 1000);
       }
       xQueueSendToFront(MotorStateQueue, (void*) &motor_state, (TickType_t) 0);
       freq_div_ptr = 0;
