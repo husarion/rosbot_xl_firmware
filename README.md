@@ -1,6 +1,6 @@
 **STM32 + Ethernet + micro-ROS + FreeRTOS + Arduino + PlatformIO**  
 
-## Creatin a release
+## Creating a release
 
 ```
 git add *
