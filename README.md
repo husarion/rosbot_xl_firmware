@@ -1,13 +1,13 @@
 **STM32 + Ethernet + micro-ROS + FreeRTOS + Arduino + PlatformIO**  
 
-## Creatin a release
+## Creating a release
 
 ```
 git add *
-git commit -m "First image added."
-git tag v0.0.1
+git commit -m "release v0.0.2"
+git tag v0.0.2
 git tag -n
-git push origin SplitedCode v0.0.1
+git push origin master v0.0.2
 ```
 
 ## Default config
