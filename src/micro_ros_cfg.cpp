@@ -200,9 +200,10 @@ uRosEntitiesStatus uRosCreateEntities(void){
 uRosEntitiesStatus uRosDestroyEntities(void){
   rcl_publisher_fini(&imu_publisher, &node);
   rcl_publisher_fini(&motor_state_publisher, &node);
+  rcl_publisher_fini(&battery_state_publisher, &node);
 	rcl_node_fini(&node);
-	rcl_timer_fini(&timer);
 	rclc_executor_fini(&executor);
+	rcl_timer_fini(&timer);
 	rclc_support_fini(&support);
   return Destroyed;
 }
