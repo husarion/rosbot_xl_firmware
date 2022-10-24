@@ -1,15 +1,5 @@
 **STM32 + Ethernet + micro-ROS + FreeRTOS + Arduino + PlatformIO**  
 
-## Creating a release
-
-```
-git add *
-git commit -m "release v0.0.2"
-git tag v0.0.2
-git tag -n
-git push origin master v0.0.2
-```
-
 ## Default config
 
 STM32F407 + Ethernet (eg. STM32-E407 Olimex board) directly connected with Ethernet cable to a computer.
@@ -147,3 +137,7 @@ After that, unplug your stlink (or development board) for 5 seconds and plugin i
 Now you can retry uploading the firmware from PlatformIO.
 
 [*Source](https://techoverflow.net/2021/09/22/how-to-fix-platformio-stm32-error-libusb_open-failed-with-libusb_error_access/)
+
+## Creating a release
+
+Release is created automatically after PR with bump command is merged to the master branch. Available bump commands are: `bump::major`, `bump::minor` and `bump::patch` (simply add them to the description of your PR). 
