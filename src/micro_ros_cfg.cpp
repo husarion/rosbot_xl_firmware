@@ -130,7 +130,7 @@ void uRosTimerCallback(rcl_timer_t *arg_timer, int64_t arg_last_call_time) {
         imu_msg.header.stamp.sec = rmw_uros_epoch_millis()/1000;
         imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
       }
-      imu_msg.header.frame_id.data = (char *) "imu";
+      imu_msg.header.frame_id.data = (char *) "imu_link";
       imu_msg.orientation.x = queue_imu.Orientation[0];
       imu_msg.orientation.y = queue_imu.Orientation[1];
       imu_msg.orientation.z = queue_imu.Orientation[2];
@@ -221,10 +221,10 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * arg_message){
   arg_message->header.frame_id.data = frame_id;
   arg_message->header.frame_id.capacity = arg_message->header.frame_id.size = strlen((const char*)frame_id);
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
-  msg_name_tab[0].data = (char*)"rear_right_wheel_joint";
-  msg_name_tab[1].data = (char*)"rear_left_wheel_joint";
-  msg_name_tab[2].data = (char*)"front_right_wheel_joint";
-  msg_name_tab[3].data = (char*)"front_left_wheel_joint";
+  msg_name_tab[0].data = (char*)"rr_wheel_joint";
+  msg_name_tab[1].data = (char*)"rl_wheel_joint";
+  msg_name_tab[2].data = (char*)"fr_wheel_joint";
+  msg_name_tab[3].data = (char*)"fl_wheel_joint";
   for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
       msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
   }
