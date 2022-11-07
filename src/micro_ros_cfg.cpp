@@ -221,10 +221,10 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState * arg_message){
   arg_message->header.frame_id.data = frame_id;
   arg_message->header.frame_id.capacity = arg_message->header.frame_id.size = strlen((const char*)frame_id);
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
-  msg_name_tab[0].data = (char*)"rr_wheel_joint";
-  msg_name_tab[1].data = (char*)"rl_wheel_joint";
-  msg_name_tab[2].data = (char*)"fr_wheel_joint";
-  msg_name_tab[3].data = (char*)"fl_wheel_joint";
+  msg_name_tab[0].data = (char*)REAR_RIGHT_MOTOR_NAME;
+  msg_name_tab[1].data = (char*)REAR_LEFT_MOTOR_NAME;
+  msg_name_tab[2].data = (char*)FRONT_RIGHT_MOTOR_NAME;
+  msg_name_tab[3].data = (char*)FRONT_LEFT_MOTOR_NAME;
   for(uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++){
       msg_name_tab[i].capacity = msg_name_tab[i].size = strlen(msg_name_tab[i].data);
   }
