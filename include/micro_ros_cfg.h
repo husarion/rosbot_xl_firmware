@@ -42,10 +42,10 @@
 //Motors msgs defines
 #define MOT_CMD_MSG_LEN             4
 #define MOT_RESP_MSG_LEN            4
-#define FRONT_LEFT_MOTOR_NAME       "front_left_wheel_joint"
-#define FRONT_RIGHT_MOTOR_NAME      "front_right_wheel_joint"
-#define REAR_LEFT_MOTOR_NAME        "rear_left_wheel_joint"
-#define REAR_RIGHT_MOTOR_NAME       "rear_right_wheel_joint"
+#define FRONT_LEFT_MOTOR_NAME       "fl_wheel_joint"
+#define FRONT_RIGHT_MOTOR_NAME      "fr_wheel_joint"
+#define REAR_LEFT_MOTOR_NAME        "rl_wheel_joint"
+#define REAR_RIGHT_MOTOR_NAME       "rr_wheel_joint"
 #define MOTORS_RESPONSE_FREQ        50
 
 #define RCCHECK(fn)                \
