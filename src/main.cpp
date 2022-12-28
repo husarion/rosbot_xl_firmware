@@ -45,6 +45,7 @@ extern PixelLedClass pixel_strip;
 //ETHERNET
 IPAddress client_ip;
 IPAddress agent_ip;
+EthernetClient EthClient;
 byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 
 //REST
@@ -56,53 +57,26 @@ static void imu_task(void *p);
 static void runtime_stats_task(void *p);
 static void pid_handler_task(void *p);
 static void pixel_led_task(void *p);
-static void BoardSupportTask(void *p);
+static void SbcShutdownTask(void *p);
 static void power_board_task(void *p);
 static void motors_response_task(void *p);
 static void uros_ping_agent_task(void *p);
 
 /* FUNCTIONS */
 
-void EthernetInit(const char* agent_ip_address,const char* client_ip_address){
-  client_ip.fromString(client_ip_address);
-  agent_ip.fromString(agent_ip_address);
-  if(firmware_mode == fw_debug){
-    if(firmware_mode == fw_debug) Serial.printf("Connecting to agent: \r\n");
-    if(firmware_mode == fw_debug) Serial.println(agent_ip);
-  }
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
-                                              AGENT_PORT);
-  delay(500);
-}
-
 /*==================== SETUP ========================*/
 void setup() {
 
-  DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;
+  //set debug options
+  DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP; // only for debug
   
   //Hardware init
   BoardGpioInit();
   BoardPheripheralsInit();
   SetLocalPower(On);
-  delay(1000);
-  
+  delay(250);
   pixel_strip.Init();
   ImuBno.Init();
-
-  while(1){
-    EthernetInit(SBC_AGENT_IP, CLIENT_IP);
-    if(uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) == Ok){
-      SetRedLed(Off);
-      break;
-    }
-    SetRedLed(Toggle);
-    EthernetInit(EXT_AGENT_IP, CLIENT_IP);
-    if(uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) == Ok){
-      SetRedLed(Off);
-      break;  
-    }
-    SetRedLed(Toggle);
-  }
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
@@ -137,7 +111,7 @@ void setup() {
                           NULL);
   if(s5 != pdPASS)  
     if(firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
-  s7 = xTaskCreate(BoardSupportTask, "BoardSupportTask",
+  s7 = xTaskCreate(SbcShutdownTask, "SbcShutdownTask",
                           configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s7 != pdPASS) 
@@ -152,9 +126,6 @@ void setup() {
                         NULL);
   if(s9 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
-  /* HARDWARE ACTIONS BEFORE RTOS STARTING */
-  SetGreenLed(On);
-  SetRedLed(Off);
   /* START RTOS */
   if(firmware_mode == fw_debug) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
@@ -164,27 +135,13 @@ static void RclcSpinTask(void *p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
   static uRosFunctionStatus uRosPingAgentStatus;
-  while(1) {
+  while(1){
     xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus, (TickType_t) 0); 
     vTaskDelayUntil(&xLastWakeTime, 1);
-    switch (uRosLoopHandler(uRosPingAgentStatus))
-    {
-    case Ok:
-      SetGreenLed(On);
-      SetRedLed(Off);
-      break;
-    case Error:
-      SetGreenLed(Off);
-      SetRedLed(On);
-      vTaskDelay(100);
-      SetRedLed(Off);
-      vTaskDelay(100);
-      break;
-    default:
-      break;
-    }
+    uRosLoopHandler(uRosPingAgentStatus);
   }
 }
+
 
 static void imu_task(void *p){
   static imu_queue_t queue_imu;
@@ -248,14 +205,22 @@ static void pixel_led_task(void *p){
   }
 }
 
-static void BoardSupportTask(void *p){
+static void SbcShutdownTask(void *p){
+  IPAddress SbcIpAddr;
+  SbcIpAddr.fromString(SBC_AGENT_IP);
   while(1){
-    if(digitalRead(PWR_BRD_GPIO_INPUT)){
-      //send information to SBC to turn off
-    }
-    if(firmware_mode == fw_debug) EXT_SERIAL.println("Hello external device");
-    if(firmware_mode == fw_debug) SBC_SERIAL.println("Hello SBC");
     vTaskDelay(250);
+    if(digitalRead(PWR_BRD_GPIO_INPUT)){
+      while(1){
+        if(EthClient.connect(SbcIpAddr, SHUTDOWN_PORT, SBC_ETH_CONNECT_TIMEOUT)){
+          EthClient.println("GET /shutdown HTTP/1.1");
+          EthClient.stop();
+          vTaskDelay(POWEROFF_DELAY);
+          digitalWrite(PWR_BRD_GPIO_OUTPUT, HIGH);
+        }
+        vTaskDelay(10);
+      }
+    }
   }
 }
 
@@ -268,12 +233,34 @@ static void power_board_task(void *p){
 
 static void uros_ping_agent_task(void *p){
   static uRosFunctionStatus uRosPingAgentStatus;
+  client_ip.fromString(CLIENT_IP);
+  agent_ip.fromString(SBC_AGENT_IP);
+  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
   while(1){
-    vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
     uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
     xQueueSendToFront(uRosPingAgentStatusQueue, (void*) &uRosPingAgentStatus, (TickType_t) 0);
+    switch(uRosPingAgentStatus){
+      case Ok:
+        SetGreenLed(On);
+        SetRedLed(Off);
+        break;
+      case Error:
+        SetGreenLed(Off);
+        SetRedLed(Toggle);
+        break;
+      case Default:
+        SetGreenLed(Toggle);
+        SetRedLed(Off);
+        break;
+      default:
+        SetGreenLed(Off);
+        SetRedLed(Off);
+        break;
+    }
+    vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
   }
 }
+
 
 /*============== LOOP - IDDLE TASK ===============*/
 

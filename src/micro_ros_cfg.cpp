@@ -65,16 +65,18 @@ uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status){
       return Pending;
     }
     else{
-      if(entities_status == Created)
       rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
       return Ok;
     }
   }
   else{
-    if(entities_status != Destroyed)
+    if(entities_status != Destroyed && entities_status != NotCreated){
       entities_status = uRosDestroyEntities();
-    return Error;
+      entities_status = Destroyed;
+      return Error;
+    }
   }
+  return Default;
 }
 
 void uRosMotorsCmdCallback(const void *arg_input_message){
@@ -153,7 +155,7 @@ uRosEntitiesStatus uRosCreateEntities(void){
   MotorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
-  RCCHECK(rclc_support_init(&support, 0, NULL, &allocator))
+  RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   /*===== INIT TIMERS =====*/

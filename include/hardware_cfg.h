@@ -21,6 +21,10 @@
 #define RTOS_FREQUENCY				1000	//hz
 #define FREQ_TO_DELAY_TIME(freq)	(TickType_t)(RTOS_FREQUENCY/freq*portTICK_PERIOD_MS)
 
+//POWER OFF
+#define SBC_ETH_CONNECT_TIMEOUT	10			//ms
+#define POWEROFF_DELAY			5000		//ms
+
 /* REAR PANEL */
 #define GRN_LED             PE3
 #define RD_LED              PE4
@@ -48,10 +52,10 @@
 #define PWR_BRD_SERIAL_TIMEOUT      1   //ms
 
 /* SBC */
-#define SBC_SERIAL          Serial1
-#define SBC_SERIAL_BAUDRATE 460800
-#define SBC_SERIAL_RX       PA10
-#define SBC_SERIAL_TX       PA9
+#define SBC_SERIAL          	Serial1
+#define SBC_SERIAL_BAUDRATE 	460800
+#define SBC_SERIAL_RX       	PA10
+#define SBC_SERIAL_TX       	PA9
 
 /* IMU */
 #define IMU_I2C             I2C2
@@ -74,10 +78,14 @@
 
 /* ETHERNET */
 #define CLIENT_IP 		"192.168.77.3"
-#define SBC_AGENT_IP 	"192.168.77.2"	//Rpi
-#define EXT_AGENT_IP 	"192.168.77.5"	//Computer
+#define SBC_AGENT_IP 	"192.168.77.2"	//SBC
+// #define SBC_AGENT_IP 	"192.168.77.5"	//External device
 #define AGENT_PORT 		8888
+#define SHUTDOWN_PORT	3000
 
+//ETH LINK STATUS DEFINES
+#define ETH_LINK_STATUS_CONNECTED_BIT		(1 << 0)	//if set - connected
+#define ETH_LINK_STATUS_ERROR_BIT			(1 << 1)
 
 /* EXTERNAL PERIPHERALS */
 

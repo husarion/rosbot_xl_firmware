@@ -19,19 +19,19 @@ UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD
 
 
 void BoardGpioInit(void){
-    pinMode(GRN_LED, OUTPUT);
     digitalWrite(GRN_LED, LOW);
-    pinMode(EN_LOC_5V, OUTPUT);
+    pinMode(GRN_LED, OUTPUT);
     digitalWrite(EN_LOC_5V, LOW);
-    pinMode(RD_LED, OUTPUT);
+    pinMode(EN_LOC_5V, OUTPUT);
     digitalWrite(RD_LED, LOW);
-    pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
+    pinMode(RD_LED, OUTPUT);
     digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
+    pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
     pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
-    pinMode(AUDIO_SHDN, OUTPUT);
     digitalWrite(AUDIO_SHDN, HIGH);
-    pinMode(FAN, OUTPUT);
+    pinMode(AUDIO_SHDN, OUTPUT);
     digitalWrite(FAN, HIGH);
+    pinMode(FAN, OUTPUT);
 }
 
 void SetLocalPower(SwitchStateTypeDef State_){

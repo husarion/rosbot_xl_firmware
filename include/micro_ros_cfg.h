@@ -72,10 +72,11 @@ typedef struct {
 } motor_state_queue_t;
 
 typedef enum{
-  Ok            = 0,
-  Error         = 1,
-  InvalidInput  = 2,
-  Pending       = 3
+  Default       = 0,
+  Ok            = 1,
+  Error         = 2,
+  InvalidInput  = 3,
+  Pending       = 4
 }uRosFunctionStatus;
 
 typedef enum{
