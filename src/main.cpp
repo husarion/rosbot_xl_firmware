@@ -15,6 +15,8 @@
 #include <STM32Ethernet.h>
 #include <UartLib.h>
 #include "stm32f407xx.h"
+#include <hal_conf_custom.h>
+
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
 //RTOS
