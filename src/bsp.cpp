@@ -16,6 +16,10 @@
     HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 #endif
 UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD_SERIAL_BAUDRATE, PWR_BRD_SERIAL_CONFIG);
+String PowerBoardFirmwareVersion = "";
+String PowerBoardVersion = "";
+extern FirmwareModeTypeDef firmware_mode;
+
 
 
 void BoardGpioInit(void){
@@ -53,6 +57,10 @@ void SetRedLed(SwitchStateTypeDef State_){
 }
 
 void BoardPheripheralsInit(void){
+    BoardGpioInit();
+    if(firmware_mode == fw_debug){
+        DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP; // set debug options
+    }
     //SBC Serial port init
     SBC_SERIAL.setRx(SBC_SERIAL_RX);
     SBC_SERIAL.setTx(SBC_SERIAL_TX);
@@ -60,13 +68,49 @@ void BoardPheripheralsInit(void){
     SBC_SERIAL.println("Hello SBC");
     //Power Board Serial port init
     PowerBoardSerial.setTimeout(PWR_BRD_SERIAL_TIMEOUT);
-    PowerBoardSerial.println("Hello power board");
-    // PWR_BRD_SERIAL.begin(PWR_BRD_SERIAL_BAUDRATE);
+    PowerBoardSerial.begin(PWR_BRD_SERIAL_BAUDRATE);
     //External Serial port init
     #if EXT_SERIAL_EN_FLAG == 1
         EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
         EXT_SERIAL.println("Hello external device");
     #endif
+    IWatchdog.begin(WATCHDOG_TIMEOUT);
+    SetLocalPower(On);
+    delay(250);
 }
 
+PowerOffSignalTypeDef PowerOffSignalLoopHandler(void){
+    if(digitalRead(PWR_BRD_GPIO_INPUT))
+        return Shutdown;
+    else
+        return Idle;
+}
 
+void TestFunction(uint8_t state){
+    if(state == 1) SetGreenLed(On);
+    if(state == 0) SetGreenLed(Off);
+    UartProtocolFrame TestFrame;
+    TestFrame.arg_size = 12;
+    TestFrame.cmd = 25;
+    TestFrame.args[0] = 1;
+    TestFrame.args[1] = 1;
+    TestFrame.args[2] = 8;
+    TestFrame.args[11] = state;
+    PowerBoardSerial.SendFrame(TestFrame);
+}
+
+void PbInfoRequest(void){
+    UartProtocolFrame PbInfoReqFrame;
+    PbInfoReqFrame.arg_size = 1;
+    PbInfoReqFrame.cmd = 1;
+    PbInfoReqFrame.args[0] = 0;
+    PowerBoardSerial.SendFrame(PbInfoReqFrame);
+}
+
+void BatteryInfoRequest(void){
+    UartProtocolFrame PbInfoReqFrame;
+    PbInfoReqFrame.arg_size = 18;
+    PbInfoReqFrame.cmd = 2;
+    PbInfoReqFrame.args[0] = 0;
+    PowerBoardSerial.SendFrame(PbInfoReqFrame);
+}

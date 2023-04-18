@@ -17,6 +17,7 @@
 #include "stm32f407xx.h"
 #include <hal_conf_custom.h>
 
+
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
 //RTOS
@@ -29,6 +30,7 @@ portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
 
 /* EXTERN VARIABLES */
 extern UartProtocolClass PowerBoardSerial;
+
 //IMU
 extern ImuDriver ImuBno;
 //microROS
@@ -52,6 +54,8 @@ byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 
 //REST
 FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
+extern String PowerBoardFirmwareVersion;
+extern String PowerBoardVersion;
 
 /* RTOS TASKS DECLARATIONS */
 static void RclcSpinTask(void *p);
@@ -67,17 +71,19 @@ static void RuntimeStatsTask(void *p);
 
 /*==================== SETUP ========================*/
 void setup() {
-
-  //set debug options
-  DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP; // only for debug
   
   //Hardware init
-  BoardGpioInit();
   BoardPheripheralsInit();
-  SetLocalPower(On);
-  delay(250);
   PixelStrip.Init();
   ImuBno.Init();
+
+  SetGreenLed(On);
+  delay(150);
+  SetGreenLed(Off);
+  delay(150);
+  SetGreenLed(On);
+  delay(150);
+  SetGreenLed(Off);
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double)*4);
@@ -137,6 +143,7 @@ static void RclcSpinTask(void *p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   static uRosFunctionStatus uRosPingAgentStatus;
   while(1){
+    IWatchdog.reload();
     xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus, (TickType_t) 0); 
     vTaskDelayUntil(&xLastWakeTime, 1);
     uRosLoopHandler(uRosPingAgentStatus);
@@ -200,7 +207,7 @@ static void SbcShutdownTask(void *p){
   SbcIpAddr.fromString(SBC_AGENT_IP);
   while(1){
     vTaskDelay(250);
-    if(digitalRead(PWR_BRD_GPIO_INPUT)){
+    if(PowerOffSignalLoopHandler() == Shutdown){
       while(1){
         if(EthClient.connect(SbcIpAddr, SHUTDOWN_PORT, SBC_ETH_CONNECT_TIMEOUT)){
           EthClient.println("GET /shutdown HTTP/1.1");
@@ -215,7 +222,13 @@ static void SbcShutdownTask(void *p){
 }
 
 static void PowerBoardTask(void *p){
+  uint16_t TimeDivider = 0;
   while(1){
+    if(PowerBoardFirmwareVersion.length() == 0 || PowerBoardVersion.length() == 0){
+      PbInfoRequest();
+    }
+    TimeDivider++;
+    if(TimeDivider%5 != 0)  BatteryInfoRequest();
     PowerBoardSerial.UartProtocolLoopHandler();
     vTaskDelay(150);
   }

@@ -12,6 +12,9 @@
 #include <UartLib.h>
 #include <STM32FreeRTOS.h>
 
+extern String PowerBoardFirmwareVersion;
+extern String PowerBoardVersion;
+
 UartProtocolClass:: UartProtocolClass(uint32_t arg_rx, uint32_t arg_tx, uint32_t arg_baudrate, uint8_t arg_config)
     :
     HardwareSerial(arg_rx, arg_tx){
@@ -24,48 +27,42 @@ UartProtocolClass:: ~UartProtocolClass(){
 }
 
 void UartProtocolClass:: UartProtocolLoopHandler(){
-    this->rx_buffer_size_ = this->readBytes(rx_buffer_, RX_BUFF_CAPACITY);
-    static uint8_t marker = 0;
-    marker ++;
-    if(this->rx_buffer_size_ != 0){
+    this->CleanRxBuffer();
+    this->rx_buffer_size = this->readBytes(rx_buffer, RX_BUFF_CAPACITY);
+    if(this->rx_buffer_size != 0){
         this->StreamParse();
     }
-    UartProtocolFrame frame;
-    frame.cmd = 1;
-    frame.arg_size = 2;
-    frame.args[0] = 12;
-    frame.args[1] = 56;
-    this->SendFrame(frame);
 }
 
 int8_t UartProtocolClass:: StreamParse(){
     uint16_t frame_data_ptr;
     uint8_t counted_check_sum;
-    if(rx_buffer_size_ >= RX_BUFF_CAPACITY)    
+    if(rx_buffer_size >= RX_BUFF_CAPACITY)    
         return -1;
-    for(uint16_t i = 0; i < rx_buffer_size_ || i < RX_BUFF_CAPACITY; i++){
-        if(rx_buffer_[i] == '<'){
+    for(uint16_t i = 0; i < rx_buffer_size || i < RX_BUFF_CAPACITY; i++){
+        if(rx_buffer[i] == '<'){
             counted_check_sum = 0;
-            if(HexToByte(&rx_buffer_[i+1], &this->processed_frame_.cmd) == ConversionError) 
-                return -1;
-            counted_check_sum ^= this->processed_frame_.cmd;
-            if(HexToByte(&rx_buffer_[i+3], &this->processed_frame_.arg_size) == ConversionError)
-                return -1;
-            if(this->processed_frame_.arg_size > MAX_ARGS_SIZE)
-                return -1;
-            counted_check_sum ^= this->processed_frame_.arg_size;
-            frame_data_ptr = i+5; 
-            if(HexToByte(&rx_buffer_[i + this->processed_frame_.arg_size * 2 + 5], &processed_frame_.check_sum) == ConversionError) //1 byte of '<' + 2 bytes (CMD) + 2 bytes (ARG_SIZE)
-                return -1;
-            for(uint8_t j = 0; j < this->processed_frame_.arg_size; j++){
-                if(HexToByte(&rx_buffer_[frame_data_ptr + j * 2], &this->processed_frame_.args[j]) == ConversionError)
-                    return -1;
-                counted_check_sum ^= this->processed_frame_.args[j];
+            if(HexToByte(&rx_buffer[i+1], &this->processed_frame.cmd) != ConversionError){
+                counted_check_sum ^= this->processed_frame.cmd;
+                if(HexToByte(&rx_buffer[i+3], &this->processed_frame.arg_size) != ConversionError){
+                    if(this->processed_frame.arg_size <= MAX_ARGS_SIZE){
+                        counted_check_sum ^= this->processed_frame.arg_size;
+                        frame_data_ptr = i+5; 
+                        if(HexToByte(&rx_buffer[i + this->processed_frame.arg_size * 2 + 5], &processed_frame.check_sum) != ConversionError){ //1 byte of '<' + 2 bytes (CMD) + 2 bytes (ARG_SIZE)
+                            for(uint8_t j = 0; j < this->processed_frame.arg_size; j++){
+                                if(HexToByte(&rx_buffer[frame_data_ptr + j * 2], &this->processed_frame.args[j]) == ConversionError)
+                                    break;
+                                counted_check_sum ^= this->processed_frame.args[j];
+                            }
+                            if(counted_check_sum == this->processed_frame.check_sum){
+                                this->ExecuteFrame();
+                                i = i + this->processed_frame.arg_size * 2 + 7;//1 byte of '<' + 2 bytes (CMD) + 2 bytes (ARG_SIZE) 2 bytes of CRC + 1 byte of '>' -1 (i++ in for loop)
+                            }
+                        }
+                    }
+                }
             }
-            if(counted_check_sum == this->processed_frame_.check_sum){
-                this->ExecuteFrame();
-                i = i + this->processed_frame_.arg_size * 2 + 7;//1 byte of '<' + 2 bytes (CMD) + 2 bytes (ARG_SIZE) 2 bytes of CRC + 1 byte of '>' -1 (i++ in for loop)
-            }
+            
         }
     }
     return 0;
@@ -113,34 +110,37 @@ uint8_t UartProtocolClass:: EncodeHex(uint8_t arg_byte){
 }
 
 void UartProtocolClass:: ExecuteFrame(){
-    uint8_t frame_arg = 0;
-    if(this->processed_frame_.cmd > 1)
-        ;//send empty frame with the same cmd to confirm receiving
-    switch(this->processed_frame_.cmd){
+    switch(this->processed_frame.cmd){
     case 0:
         break;
-    case 1: // Battery State
-        if(this->processed_frame_.arg_size< BATTERY_STATE_MSG_LENGTH){
+    case 1: {//Power Board firmware version
+        if(processed_frame.arg_size != POWER_BOARD_VERSION_MSG_LENGTH)  break;
+        for(uint8_t i = 1; i < 12; i++){
+            PowerBoardFirmwareVersion = PowerBoardFirmwareVersion + (char)processed_frame.args[i];
+        }
+        for(uint8_t i = 13; i < 25; i++){
+            PowerBoardVersion = PowerBoardVersion + (char)processed_frame.args[i];
+        }
+        }
+        break;
+    case 2: {// Battery State
+        if(this->processed_frame.arg_size != BATTERY_STATE_MSG_LENGTH){
             break;
         }
         battery_state_queue_t battery_state;
-        for(uint8_t i = 0; i < 17; i++){
-            frame_arg = this->processed_frame_.args[i];
-        }
-        battery_state.voltage = this->processed_frame_.args[0] << 8 | this->processed_frame_.args[1];
-        battery_state.temperature = this->processed_frame_.args[2] << 8 | this->processed_frame_.args[3];
-        battery_state.current = this->processed_frame_.args[4] << 8 | this->processed_frame_.args[5];
-        battery_state.charge_current = this->processed_frame_.args[6] << 8 | this->processed_frame_.args[7];
-        battery_state.capacity = this->processed_frame_.args[8] << 8 | this->processed_frame_.args[9];
-        battery_state.design_capacity = this->processed_frame_.args[10] << 8 | this->processed_frame_.args[11];
-        battery_state.percentage = this->processed_frame_.args[12];
-        battery_state.status = (BatteryStatusTypeDef)this->processed_frame_.args[13];
-        battery_state.health = (BatteryHealthTypeDef)this->processed_frame_.args[14];
-        battery_state.technology = (BatteryTechnologyTypeDef)this->processed_frame_.args[15];
-        battery_state.present = this->processed_frame_.args[16];
+        battery_state.voltage = this->processed_frame.args[1] << 8 | this->processed_frame.args[2];
+        battery_state.temperature = this->processed_frame.args[3] << 8 | this->processed_frame.args[4];
+        battery_state.current = this->processed_frame.args[5] << 8 | this->processed_frame.args[6];
+        battery_state.charge_current = this->processed_frame.args[7] << 8 | this->processed_frame.args[8];
+        battery_state.capacity = this->processed_frame.args[9] << 8 | this->processed_frame.args[10];
+        battery_state.design_capacity = this->processed_frame.args[11] << 8 | this->processed_frame.args[12];
+        battery_state.percentage = this->processed_frame.args[13];
+        battery_state.status = (BatteryStatusTypeDef)this->processed_frame.args[14];
+        battery_state.health = (BatteryHealthTypeDef)this->processed_frame.args[15];
+        battery_state.technology = (BatteryTechnologyTypeDef)this->processed_frame.args[16];
+        battery_state.present = this->processed_frame.args[17];
         xQueueSendToFront(BatteryStateQueue, (void*) &battery_state, (TickType_t) 0);
-        break;
-    case 2:
+        }   
         break;
     default:
         break;
@@ -160,7 +160,7 @@ void UartProtocolClass:: SendFrame(UartProtocolFrame arg_frame){
     }
     tx_buff_ptr = ByteToHex(arg_frame.check_sum, tx_buff_ptr);
     *tx_buff_ptr++ = FRAME_STOP_BIT;
-    this->SendBuffer(UART_FRAME_LENGTH(arg_frame.arg_size), (char*)tx_buff_ptr);
+    this->SendBuffer(UART_FRAME_LENGTH(arg_frame.arg_size), tx_buff);
 }
 
 void UartProtocolClass:: SendBuffer(uint8_t arg_size, uint8_t* arg_buffer){
@@ -170,5 +170,9 @@ void UartProtocolClass:: SendBuffer(uint8_t arg_size, uint8_t* arg_buffer){
 }
 
 void UartProtocolClass:: SendBuffer(uint8_t arg_size, String arg_buffer){
-    this->print (arg_buffer.substring(0, arg_size));
+    this->print(arg_buffer.substring(0, arg_size));
+}
+
+void UartProtocolClass::CleanRxBuffer(void){
+    memset(this->rx_buffer, 0, RX_BUFF_CAPACITY);
 }
