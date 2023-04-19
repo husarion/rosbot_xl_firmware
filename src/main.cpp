@@ -76,11 +76,7 @@ void setup() {
   BoardPheripheralsInit();
   PixelStrip.Init();
   ImuBno.Init();
-
-  SetGreenLed(On);
-  delay(150);
-  SetGreenLed(Off);
-  delay(150);
+  
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);

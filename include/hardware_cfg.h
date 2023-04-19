@@ -78,8 +78,8 @@
 
 /* ETHERNET */
 #define CLIENT_IP 		"192.168.77.3"
-// #define SBC_AGENT_IP 	"192.168.77.2"	//SBC
-#define SBC_AGENT_IP 	"192.168.77.5"	//External device
+#define SBC_AGENT_IP 	"192.168.77.2"	//SBC
+// #define SBC_AGENT_IP 	"192.168.77.5"	//External device
 #define AGENT_PORT 		8888
 #define SHUTDOWN_PORT	3000
 
