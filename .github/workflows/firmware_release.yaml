@@ -1,5 +1,11 @@
 name: Firmware release
 on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Version to bump (major, minor, patch)"
+        default: "patch"
+        required: true
   pull_request:
     branches: master
     types: [closed]
