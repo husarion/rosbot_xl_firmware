@@ -74,6 +74,6 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          .pio/build/olimex_e407/firmware.bin
+          .pio/build/rosbot_xl_digital_board/firmware.bin
           LICENSE
         tag_name: ${{ needs.bump-version.outputs.new_version }}
