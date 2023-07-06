@@ -60,6 +60,11 @@
 #define M4_DEFAULT_DIR  1          // 1 (CW) or -1 (CCW)
 
 
+// #define ILIM1           PE10
+// #define ILIM2           PG15
+// #define ILIM3           PG7
+// #define ILIM4           PD14
+
 //MOTORS TIMEBASE TIMER
 #define TIMEBASE_TIMER                      TIM6
 #define TIMEBASE_TIMER_FREQ                 10000

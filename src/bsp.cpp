@@ -38,6 +38,11 @@ void BoardGpioInit(void){
     pinMode(FAN, OUTPUT);
 }
 
+// void MotorsPinInit(void){
+//     digitalWrite(GRN_LED, LOW);
+//     pinMode(ILIM1, INPUT);
+// }
+
 void SetLocalPower(SwitchStateTypeDef State_){
     if(State_ == Off)    digitalWrite(EN_LOC_5V, LOW);
     if(State_ == On)     digitalWrite(EN_LOC_5V, HIGH);
@@ -74,7 +79,7 @@ void BoardPheripheralsInit(void){
         EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
         EXT_SERIAL.println("Hello external device");
     #endif
-    IWatchdog.begin(WATCHDOG_TIMEOUT);
+    // IWatchdog.begin(WATCHDOG_TIMEOUT);
     SetLocalPower(On);
     delay(250);
 }

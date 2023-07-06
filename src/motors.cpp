@@ -42,7 +42,8 @@ MotorClass::MotorClass( uint32_t arg_pwm_pin,           TIM_TypeDef *arg_pwm_tim
     this->ilim_pin_ = arg_ilim_pin;
     this->a_channel_motor_pin_ = arg_a_channel_mot;
     this->b_channel_motor_pin_ = arg_b_channel_mot;
-    pinMode(this->ilim_pin_, OUTPUT);
+    // pinMode(this->ilim_pin_, OUTPUT);
+    pinMode(this->ilim_pin_, INPUT);
     pinMode(this->a_channel_motor_pin_, OUTPUT);
     pinMode(this->b_channel_motor_pin_, OUTPUT);
     this->SoftStop();

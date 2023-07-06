@@ -167,7 +167,7 @@ static void PidHandlerTask(void *p){
   static uint8_t freq_div_ptr = 0;
   while(1){
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
-    if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
+if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
