@@ -81,6 +81,7 @@ void BoardPheripheralsInit(void){
     #endif
     // IWatchdog.begin(WATCHDOG_TIMEOUT);
     SetLocalPower(On);
+    SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
     delay(250);
 }
 
@@ -89,6 +90,10 @@ PowerOffSignalTypeDef PowerOffSignalLoopHandler(void){
         return Shutdown;
     else
         return Idle;
+}
+
+String GetBoardVersion(void){
+    return "v1.3";
 }
 
 void TestFunction(uint8_t state){

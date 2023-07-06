@@ -16,6 +16,7 @@
 #include <Arduino.h>
 #include "UartLib.h"
 #include <IWatchdog.h>
+#include <motors.h>
 
 typedef enum{
     Off     = 0,
@@ -34,6 +35,7 @@ void SetGreenLed(SwitchStateTypeDef State_);
 void SetRedLed(SwitchStateTypeDef State_);
 void BoardPheripheralsInit(void);
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void);
+String GetBoardVersion(void);
 
 
 // POWER BOARD FUNCTIONS

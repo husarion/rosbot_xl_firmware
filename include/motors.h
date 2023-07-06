@@ -14,6 +14,7 @@
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
+#include <bsp.h>
 
 #define M1_ENC_TIM      TIM1
 #define M1_ENC_A        PE9
@@ -23,7 +24,6 @@
 #define M1_PWM_TIM_CH   1
 #define M1A_IN          PE12
 #define M1B_IN          PE13
-#define M1_ILIM         PE10
 #define M1_DEFAULT_DIR  -1           // 1 (CW) or -1 (CCW)
 
 #define M2_ENC_TIM      TIM2
@@ -34,7 +34,6 @@
 #define M2_PWM_TIM_CH   1
 #define M2A_IN          PG11
 #define M2B_IN          PG12
-#define M2_ILIM         PG15
 #define M2_DEFAULT_DIR  1           // 1 (CW) or -1 (CCW)
 
 #define M3_ENC_TIM      TIM3
@@ -45,7 +44,6 @@
 #define M3_PWM_TIM_CH   1
 #define M3A_IN          PG5
 #define M3B_IN          PG6
-#define M3_ILIM         PG7
 #define M3_DEFAULT_DIR  -1           // 1 (CW) or -1 (CCW)
 
 #define M4_ENC_TIM      TIM4
@@ -56,14 +54,13 @@
 #define M4_PWM_TIM_CH   1
 #define M4A_IN          PD10
 #define M4B_IN          PD11
-#define M4_ILIM         PD14
 #define M4_DEFAULT_DIR  1          // 1 (CW) or -1 (CCW)
 
 
-// #define ILIM1           PE10
-// #define ILIM2           PG15
-// #define ILIM3           PG7
-// #define ILIM4           PD14
+#define ILIM1           PE10
+#define ILIM2           PG15
+#define ILIM3           PG7
+#define ILIM4           PD14
 
 //MOTORS TIMEBASE TIMER
 #define TIMEBASE_TIMER                      TIM6
@@ -99,7 +96,7 @@
 #define RAMP_FLAG                   false   // if true - use ramp, it false - without ramp
 
 
-
+void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_);
 
 class TimebaseTimerClass {
     public:
@@ -117,7 +114,7 @@ class MotorClass {
     public:
         MotorClass();
         MotorClass( uint32_t arg_pwm_pin,           TIM_TypeDef *arg_pwm_timer,         uint8_t arg_pwm_tim_channel,
-                    uint32_t arg_ilim_pin,          uint32_t arg_a_channel_motor_pin,   uint32_t arg_b_channel_motor_pin, 
+                    uint32_t arg_a_channel_motor_pin,   uint32_t arg_b_channel_motor_pin, 
                     TIM_TypeDef *arg_encoder_timer, uint32_t arg_a_channel_encoder_pin, uint32_t arg_b_channel_encoder_pin,
                     int8_t arg_default_direction,   TimebaseTimerClass *arg_timebase_timer);
         ~MotorClass();
@@ -170,7 +167,6 @@ class MotorClass {
         uint8_t a_channel_encoder_pin_;
         uint8_t b_channel_encoder_pin_;
         uint8_t pwm_timer_channel_;
-        uint8_t ilim_pin_;
         uint8_t pwm_pin_;
     protected:
     ;
