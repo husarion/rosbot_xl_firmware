@@ -83,9 +83,27 @@
 #define AGENT_PORT 		8888
 #define SHUTDOWN_PORT	3000
 
-//ETH LINK STATUS DEFINES
+/* ETH LINK STATUS DEFINES */
 #define ETH_LINK_STATUS_CONNECTED_BIT		(1 << 0)	//if set - connected
 #define ETH_LINK_STATUS_ERROR_BIT			(1 << 1)
+
+/* EEPROM */
+#define EEPROM_BLOCK_ADDR_0     				0x00
+#define EEPROM_BLOCK_ADDR_1     				0x01
+#define EEPROM_BLOCK_ADDR_2     				0x02
+#define EEPROM_BLOCK_ADDR_3     				0x03
+#define EEPROM_BLOCK_ADDR_4     				0x04
+#define EEPROM_BLOCK_ADDR_5     				0x05
+#define EEPROM_BLOCK_ADDR_6     				0x06
+#define EEPROM_BLOCK_ADDR_7     				0x07
+#define EEPROM_DEV_ID							0x50
+#define EEPROM_CONTROL_BYTE(DevId, BlockAddr)	(DevId | BlockAddr)
+
+// Board version eepro defines
+#define BOARD_VER_MEM_BLOCK			0x00
+#define BOARD_VER_MEM_ADDR			0x00
+#define BOARD_VER_MEM_SIZE			0x04
+#define BOARD_VER_READ_ATTEMPTS		5
 
 /* EXTERNAL PERIPHERALS */
 

@@ -19,6 +19,7 @@ UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
+TwoWire I2cBus(IMU_SDA, IMU_SCL);
 
 
 
@@ -81,8 +82,9 @@ void BoardPheripheralsInit(void){
     #endif
     // IWatchdog.begin(WATCHDOG_TIMEOUT);
     SetLocalPower(On);
-    SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
+    I2cBusInit();
     delay(250);
+    SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void){
@@ -93,7 +95,24 @@ PowerOffSignalTypeDef PowerOffSignalLoopHandler(void){
 }
 
 String GetBoardVersion(void){
-    return "v1.3";
+    static String BoardVersion = "uknown";
+    if(BoardVersion == "uknown"){
+        char RetVal[BOARD_VER_MEM_SIZE + 1];
+        RetVal[BOARD_VER_MEM_SIZE] = '\0';
+        for(uint8_t i = 0; i < BOARD_VER_READ_ATTEMPTS; i++){
+            if(EepromReadPage(BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR, (uint8_t*)RetVal, BOARD_VER_MEM_SIZE) != -1){
+                BoardVersion = String(RetVal);
+                return BoardVersion;
+            }
+            break;
+        }
+        BoardVersion = "v1.1";
+    }
+    return BoardVersion;
+}
+
+void I2cBusInit(void){
+    I2cBus.begin();
 }
 
 void TestFunction(uint8_t state){
@@ -123,4 +142,55 @@ void BatteryInfoRequest(void){
     PbInfoReqFrame.cmd = 2;
     PbInfoReqFrame.args[0] = 0;
     PowerBoardSerial.SendFrame(PbInfoReqFrame);
+}
+
+uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value){
+    uint8_t DataToSend[] = {ByteAddr, Value};
+    I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
+    if(I2cBus.write(DataToSend, 2) == 2){
+        I2cBus.endTransmission();
+        return 0;
+    }
+    I2cBus.endTransmission();
+    return -1;
+}
+
+uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value){
+    I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
+    I2cBus.write(ByteAddr);
+    I2cBus.endTransmission();
+    I2cBus.requestFrom(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr), 1);
+    if(I2cBus.available()){
+        int RetVal = I2cBus.read();
+        if(RetVal == -1)
+            return -1;
+        *Value = (uint8_t)RetVal;
+        return 0;
+    }
+    return -1;
+}
+
+uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size){
+    uint8_t DataToSend[Size+1];
+    DataToSend[0] = ByteAddr;
+    memcpy(DataToSend + 1, Value, Size);
+    I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
+    if(I2cBus.write(DataToSend, Size + 1) == Size + 1){
+        I2cBus.endTransmission();
+        return 0;
+    }
+    I2cBus.endTransmission();
+    return -1;
+}
+
+uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size){
+    I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
+    I2cBus.write(ByteAddr);
+    I2cBus.endTransmission();
+    I2cBus.requestFrom(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr), (int)Size);
+    if(I2cBus.available()){
+        if(I2cBus.readBytes(Value, Size) == Size);
+            return 0;
+    }
+    return -1;
 }

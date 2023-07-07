@@ -10,11 +10,15 @@
  */
 
 #include "ImuLib_cfg.h"
+#include "bsp.h"
+#include <Wire.h>
 
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
-TwoWire ImuWire(IMU_SDA, IMU_SCL);
-ImuDriver ImuBno(IMU_ID, IMU_ADDR_B, &ImuWire);
+
+extern TwoWire I2cBus;
+
+ImuDriver ImuBno(IMU_ID, IMU_ADDR_B, &I2cBus);
 
 ImuDriver::ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_){
     this->ImuBno = new Adafruit_BNO055(ImuId_, ImuAddr_, ImuWire_);

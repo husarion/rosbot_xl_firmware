@@ -75,8 +75,11 @@ void setup() {
   //Hardware init
   BoardPheripheralsInit();
   PixelStrip.Init();
+  String BoardV;
+  BoardV = GetBoardVersion();
+  BoardV = GetBoardVersion();
+  BoardV = GetBoardVersion();
   ImuBno.Init();
-  
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);

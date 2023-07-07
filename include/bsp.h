@@ -17,6 +17,8 @@
 #include "UartLib.h"
 #include <IWatchdog.h>
 #include <motors.h>
+#include <Wire.h>
+
 
 typedef enum{
     Off     = 0,
@@ -36,6 +38,7 @@ void SetRedLed(SwitchStateTypeDef State_);
 void BoardPheripheralsInit(void);
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void);
 String GetBoardVersion(void);
+void I2cBusInit(void);
 
 
 // POWER BOARD FUNCTIONS
@@ -44,5 +47,12 @@ void TestFunction(uint8_t);
 void RoboticArmInvReset(void);
 void PbInfoRequest(void);
 void BatteryInfoRequest(void);
+
+// EEPROM FUNCTIONS
+
+uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t value);
+uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* value);
+uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size);
+uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size);
 
 #endif /* BSP_H */

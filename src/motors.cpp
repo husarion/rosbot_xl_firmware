@@ -24,7 +24,7 @@ MotorClass motor_4( M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN,
 MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
 
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_){
-    if(GetBoardVersion() == "v1.3"){
+    if(GetBoardVersion() == "v1.2"){
         pinMode(Ilim1_, INPUT);
         pinMode(Ilim2_, INPUT);
         pinMode(Ilim3_, INPUT);
