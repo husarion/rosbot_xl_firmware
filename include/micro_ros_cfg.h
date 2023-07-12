@@ -32,6 +32,8 @@
 #include <ImuLib_cfg.h>
 #include <bsp.h>
 
+#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255 // get ROS_DOMAIN_ID from Micro ROS Agent
+
 /* DEFINES */
 #define NODE_NAME                   "stm32_node"
 #define AGENT_RECONNECTION_TIMEOUT  50

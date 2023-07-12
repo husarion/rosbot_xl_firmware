@@ -155,7 +155,10 @@ uRosEntitiesStatus uRosCreateEntities(void){
   MotorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
-  RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+  rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+  RCCHECK(rcl_init_options_init(&init_options, allocator));
+  RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
+  RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   /*===== INIT TIMERS =====*/
