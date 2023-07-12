@@ -17,16 +17,9 @@
 #include "UartLib.h"
 #include <IWatchdog.h>
 
-typedef enum{
-    Off     = 0,
-    On      = 1,
-    Toggle  = 2
-}SwitchStateTypeDef;
+typedef enum { Off = 0, On = 1, Toggle = 2 } SwitchStateTypeDef;
 
-typedef enum{
-    Idle = 0,
-    Shutdown = 1
-}PowerOffSignalTypeDef;
+typedef enum { Idle = 0, Shutdown = 1 } PowerOffSignalTypeDef;
 
 void BoardGpioInit(void);
 void SetLocalPower(SwitchStateTypeDef State_);
@@ -34,7 +27,6 @@ void SetGreenLed(SwitchStateTypeDef State_);
 void SetRedLed(SwitchStateTypeDef State_);
 void BoardPheripheralsInit(void);
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void);
-
 
 // POWER BOARD FUNCTIONS
 

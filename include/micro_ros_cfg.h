@@ -32,29 +32,29 @@
 #include <ImuLib_cfg.h>
 #include <bsp.h>
 
-#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255 // get ROS_DOMAIN_ID from Micro ROS Agent
+#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
-#define NODE_NAME                   "stm32_node"
-#define AGENT_RECONNECTION_TIMEOUT  50
+#define NODE_NAME "stm32_node"
+#define AGENT_RECONNECTION_TIMEOUT 50
 #define AGENT_RECONNECTION_ATTEMPTS 2
-#define PING_AGENT_TIMEOUT          50
-#define PING_AGENT_ATTEMPTS         2
-#define PING_AGENT_FREQUENCY        (double)0.25    //Hz
+#define PING_AGENT_TIMEOUT 50
+#define PING_AGENT_ATTEMPTS 2
+#define PING_AGENT_FREQUENCY (double)0.25  //Hz
 //Motors msgs defines
-#define MOT_CMD_MSG_LEN             4
-#define MOT_RESP_MSG_LEN            4
-#define FRONT_LEFT_MOTOR_NAME       "fl_wheel_joint"
-#define FRONT_RIGHT_MOTOR_NAME      "fr_wheel_joint"
-#define REAR_LEFT_MOTOR_NAME        "rl_wheel_joint"
-#define REAR_RIGHT_MOTOR_NAME       "rr_wheel_joint"
-#define MOTORS_RESPONSE_FREQ        50
+#define MOT_CMD_MSG_LEN 4
+#define MOT_RESP_MSG_LEN 4
+#define FRONT_LEFT_MOTOR_NAME "fl_wheel_joint"
+#define FRONT_RIGHT_MOTOR_NAME "fr_wheel_joint"
+#define REAR_LEFT_MOTOR_NAME "rl_wheel_joint"
+#define REAR_RIGHT_MOTOR_NAME "rr_wheel_joint"
+#define MOTORS_RESPONSE_FREQ 50
 
 #define RCCHECK(fn)                \
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
-      ErrorLoop();                \
+      ErrorLoop();                 \
       Serial.printf("o");          \
     }                              \
   }
@@ -67,44 +67,34 @@
   }
 
 /* TYPE DEF */
-typedef struct {
+typedef struct
+{
   uint8_t size = 4;
   double velocity[4];
   double positon[4];
 } motor_state_queue_t;
 
-typedef enum{
-  Default       = 0,
-  Ok            = 1,
-  Error         = 2,
-  InvalidInput  = 3,
-  Pending       = 4
-}uRosFunctionStatus;
+typedef enum { Default = 0, Ok = 1, Error = 2, InvalidInput = 3, Pending = 4 } uRosFunctionStatus;
 
-typedef enum{
-  NotCreated    = 0,
-  Created       = 1,
-  Destroyed     = 3
-}uRosEntitiesStatus;
+typedef enum { NotCreated = 0, Created = 1, Destroyed = 3 } uRosEntitiesStatus;
 
 /* EXTERN */
 //extern variables
 extern QueueHandle_t SetpointQueue;
 extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t ImuQueue;\
-//extern functions
-extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
+extern QueueHandle_t ImuQueue;  //extern functions
+extern "C" int clock_gettime(clockid_t unused, struct timespec * tp);
 
 /* FUNCTIONS */
 void ErrorLoop(void);
 uRosFunctionStatus uRosPingAgent(void);
 uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
 uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);
-void uRosMotorsCmdCallback(const void *arg_input_message);
-void uRosTimerCallback(rcl_timer_t *arg_timer, int64_t arg_last_call_time);
+void uRosMotorsCmdCallback(const void * arg_input_message);
+void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time);
 uRosEntitiesStatus uRosCreateEntities(void);
 uRosEntitiesStatus uRosDestroyEntities(void);
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message);
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message);
+void MotorsResponseMsgInit(sensor_msgs__msg__JointState * arg_message);
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray * arg_message);
 
 #endif /* MICRO_ROC_CFG_H */
