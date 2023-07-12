@@ -1,7 +1,8 @@
-version: '2.3'
+# Why we are using micro-xrce-agent instead of micro-ros-agent
+# in the comment: https://github.com/husarion/rosbot_xl_firmware/pull/14#discussion_r1261113717
 
 services:
-  micro-ros-agent:
+  micro-xrce-agent:
     image: husarion/micro-xrce-agent
     ports:
       - "8888:8888/udp"
