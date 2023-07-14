@@ -11,6 +11,7 @@
 
 #include <UartLib.h>
 #include <STM32FreeRTOS.h>
+#include <math.h>
 
 extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;
@@ -128,17 +129,29 @@ void UartProtocolClass:: ExecuteFrame(){
             break;
         }
         battery_state_queue_t battery_state;
-        battery_state.voltage = this->processed_frame.args[1] << 8 | this->processed_frame.args[2];
-        battery_state.temperature = this->processed_frame.args[3] << 8 | this->processed_frame.args[4];
-        battery_state.current = this->processed_frame.args[5] << 8 | this->processed_frame.args[6];
-        battery_state.charge_current = this->processed_frame.args[7] << 8 | this->processed_frame.args[8];
-        battery_state.capacity = this->processed_frame.args[9] << 8 | this->processed_frame.args[10];
-        battery_state.design_capacity = this->processed_frame.args[11] << 8 | this->processed_frame.args[12];
-        battery_state.percentage = this->processed_frame.args[13];
+        battery_state.voltage = (float(this->processed_frame.args[1] << 8 | this->processed_frame.args[2])) * 0.001;
+        int32_t temperature = (this->processed_frame.args[3] << 8 | this->processed_frame.args[4]);
+        if(temperature > 200 || temperature < -100){
+            battery_state.temperature = NAN;
+        }
+        else
+            battery_state.temperature = (float)temperature;
+        battery_state.current = (float((this->processed_frame.args[7] << 8 | this->processed_frame.args[8]) - (this->processed_frame.args[5] << 8 | this->processed_frame.args[6]))) * 0.001;
+        // battery_state.charge_current = (this->processed_frame.args[7] << 8 | this->processed_frame.args[8]);
+        battery_state.charge_current = NAN;
+        // battery_state.capacity = (float(this->processed_frame.args[9] << 8 | this->processed_frame.args[10])) / 1000;
+        battery_state.capacity = NAN;
+        battery_state.design_capacity = (float(this->processed_frame.args[11] << 8 | this->processed_frame.args[12])) *0.001;
+        // battery_state.percentage = this->processed_frame.args[13];
+        battery_state.percentage = NAN;
         battery_state.status = (BatteryStatusTypeDef)this->processed_frame.args[14];
         battery_state.health = (BatteryHealthTypeDef)this->processed_frame.args[15];
         battery_state.technology = (BatteryTechnologyTypeDef)this->processed_frame.args[16];
-        battery_state.present = this->processed_frame.args[17];
+        battery_state.present = (bool)this->processed_frame.args[17];
+        battery_state.cell_temperature[0] = NAN;
+        battery_state.cell_voltage[0] = NAN;
+        // memset(battery_state.cell_temperature, NAN, sizeof(battery_state.cell_temperature));
+        // memset(battery_state.cell_voltage, NAN, sizeof(battery_state.cell_voltage));
         xQueueSendToFront(BatteryStateQueue, (void*) &battery_state, (TickType_t) 0);
         }   
         break;

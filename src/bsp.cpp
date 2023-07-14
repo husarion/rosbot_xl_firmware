@@ -80,7 +80,7 @@ void BoardPheripheralsInit(void){
         EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
         EXT_SERIAL.println("Hello external device");
     #endif
-    // IWatchdog.begin(WATCHDOG_TIMEOUT);
+    IWatchdog.begin(WATCHDOG_TIMEOUT);
     SetLocalPower(On);
     I2cBusInit();
     delay(250);

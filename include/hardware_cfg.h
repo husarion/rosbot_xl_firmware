@@ -99,7 +99,7 @@
 #define EEPROM_DEV_ID							0x50
 #define EEPROM_CONTROL_BYTE(DevId, BlockAddr)	(DevId | BlockAddr)
 
-// Board version eepro defines
+// Board version eeprom defines
 #define BOARD_VER_MEM_BLOCK			0x00
 #define BOARD_VER_MEM_ADDR			0x00
 #define BOARD_VER_MEM_SIZE			0x04
@@ -147,8 +147,17 @@
 #define EXT_GPIO3           PG4
 
 
-//WATCHDOG
+/* WATCHDOG */
 #define WATCHDOG_TIMEOUT	15000000	//microseconds
+
+/* BATTERY */
+
+#define BATTERY_CELLS_SERIES							3
+#define BATTERY_CELLS_PARALLEL							3
+#define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE 	1	// in unmeasured
+#define BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE 		1	// in unmeasured
+// #define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE 	(BATTERY_CELLS_PARALLEL * BATTERY_CELLS_SERIES)	
+// #define BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE 		(BATTERY_CELLS_PARALLEL * BATTERY_CELLS_SERIES)
 
 typedef enum{
 	unknown_status 	= 0,
@@ -180,26 +189,30 @@ typedef enum{
 	LIMN = 6
 }BatteryTechnologyTypeDef;
 
+typedef struct{
+	//ROS battery msgs variables
+	float						voltage;
+	float						temperature;
+	float						current;
+	float						charge_current;
+	float						capacity;
+	float						design_capacity;
+	float						percentage;
+	float						cell_temperature[BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE];
+	float						cell_voltage[BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE];
+	BatteryStatusTypeDef 		status;
+	BatteryHealthTypeDef		health;
+	BatteryTechnologyTypeDef 	technology;
+	bool						present;
+}battery_state_queue_t;
+
+/* FIRMWARE MODE */
+
 typedef enum{
 	fw_normal 	= 0,
 	fw_error 	= 1,
 	fw_debug 	= 2
 }FirmwareModeTypeDef;
-
-typedef struct{
-	//ROS battery msgs variables
-	uint16_t					voltage;
-	uint16_t					temperature;
-	uint16_t					current;
-	uint16_t					charge_current;
-	uint16_t					capacity;
-	uint16_t					design_capacity;
-	uint8_t						percentage;
-	BatteryStatusTypeDef 		status;
-	BatteryHealthTypeDef		health;
-	BatteryTechnologyTypeDef 	technology;
-	uint8_t						present;
-}battery_state_queue_t;
 
 
 #endif /* HARDWARE_CFG */
