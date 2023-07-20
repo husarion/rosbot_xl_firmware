@@ -26,7 +26,7 @@ QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
 QueueHandle_t uRosPingAgentStatusQueue;
-portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
+portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
 
 /* EXTERN VARIABLES */
 extern UartProtocolClass PowerBoardSerial;
@@ -65,6 +65,7 @@ static void PixelLedTask(void *p);
 static void SbcShutdownTask(void *p);
 static void PowerBoardTask(void *p);
 static void uRosPingTask(void *p);
+static void HardwareLoopTask(void *p);
 static void RuntimeStatsTask(void *p);
 
 /* FUNCTIONS */
@@ -75,10 +76,6 @@ void setup() {
   //Hardware init
   BoardPheripheralsInit();
   PixelStrip.Init();
-  String BoardV;
-  BoardV = GetBoardVersion();
-  BoardV = GetBoardVersion();
-  BoardV = GetBoardVersion();
   ImuBno.Init();
   SetGreenLed(On);
   delay(150);
@@ -132,6 +129,11 @@ void setup() {
                         NULL);
   if(s9 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
+  s10 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
+                        configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
+                        NULL);
+  if(s10 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S10 creation problem\r\n");
   /* START RTOS */
   if(firmware_mode == fw_debug) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
@@ -260,6 +262,15 @@ static void uRosPingTask(void *p){
         break;
     }
     vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
+  }
+}
+
+static void HardwareLoopTask(void *p){
+  vTaskDelay(1000);
+  FanHardwareInit();
+  while(1){
+    FanLoopHanlder();
+    vTaskDelay(100);
   }
 }
 

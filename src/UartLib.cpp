@@ -150,8 +150,6 @@ void UartProtocolClass:: ExecuteFrame(){
         battery_state.present = (bool)this->processed_frame.args[17];
         battery_state.cell_temperature[0] = NAN;
         battery_state.cell_voltage[0] = NAN;
-        // memset(battery_state.cell_temperature, NAN, sizeof(battery_state.cell_temperature));
-        // memset(battery_state.cell_voltage, NAN, sizeof(battery_state.cell_voltage));
         xQueueSendToFront(BatteryStateQueue, (void*) &battery_state, (TickType_t) 0);
         }   
         break;

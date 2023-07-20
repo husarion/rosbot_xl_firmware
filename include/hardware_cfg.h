@@ -31,9 +31,25 @@
 #define PUSH_BUTTON1        PF11
 #define PUSH_BUTTON2        PF12
 
+/* FAN	*/
+#define FAN_PP_PIN	    	PC13
+#define FAN_PWM_PIN			PB_0_ALT1
+#define FAN_PWM_TIMER		TIM3
+#define FAN_PWM_CHANNEL		3
+#define FAN_PWM_FREQUENCY	1000
+#define FAN_TEMP_THRSH_UP	35
+#define FAN_TEMP_THRSH_DOWN	30
+
+/* THERMISTOR NTC*/
+#define NTC_SENS_PIN				PB1				//ADC2 IN9
+#define NTC_SENS_C1					0.001112613927	
+#define NTC_SENS_C2					0.000237277392		
+#define NTC_SENS_C3					0.000000071670	
+#define NTC_PULLUP_RES				5230			//NTC pull up resisior
+#define NTC_OFFSET_VAL				(273.15 + 3)	//Kelvin to Celsius offset + calibration offset 
+
 /* PERIPHERALS */
 #define EN_LOC_5V           PF13
-#define FAN                 PC13
 #define DIP_SW              PD2     //or PD3 -> to check
 
 /* AUDIO */

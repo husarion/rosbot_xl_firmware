@@ -47,6 +47,9 @@ void TestFunction(uint8_t);
 void RoboticArmInvReset(void);
 void PbInfoRequest(void);
 void BatteryInfoRequest(void);
+void FanHardwareInit(void);
+void FanLoopHanlder(void);
+int8_t GetInsideTemperature(void);
 
 // EEPROM FUNCTIONS
 

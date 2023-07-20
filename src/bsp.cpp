@@ -11,7 +11,6 @@
 
 #include "bsp.h"
 
-// HardwareSerial PWR_BRD_SERIAL(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX);
 #if EXT_SERIAL_EN_FLAG == 1
     HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 #endif
@@ -20,8 +19,7 @@ String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
 TwoWire I2cBus(IMU_SDA, IMU_SCL);
-
-
+HardwareTimer FanTimer(FAN_PWM_TIMER);
 
 void BoardGpioInit(void){
     digitalWrite(GRN_LED, LOW);
@@ -35,14 +33,7 @@ void BoardGpioInit(void){
     pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
     digitalWrite(AUDIO_SHDN, HIGH);
     pinMode(AUDIO_SHDN, OUTPUT);
-    digitalWrite(FAN, HIGH);
-    pinMode(FAN, OUTPUT);
 }
-
-// void MotorsPinInit(void){
-//     digitalWrite(GRN_LED, LOW);
-//     pinMode(ILIM1, INPUT);
-// }
 
 void SetLocalPower(SwitchStateTypeDef State_){
     if(State_ == Off)    digitalWrite(EN_LOC_5V, LOW);
@@ -142,6 +133,41 @@ void BatteryInfoRequest(void){
     PbInfoReqFrame.cmd = 2;
     PbInfoReqFrame.args[0] = 0;
     PowerBoardSerial.SendFrame(PbInfoReqFrame);
+}
+
+void FanHardwareInit(void){
+    if(GetBoardVersion() == "v1.1"){
+        digitalWrite(FAN_PP_PIN, LOW);
+        pinMode(FAN_PP_PIN, OUTPUT);
+    }
+    if(GetBoardVersion() == "v1.2"){
+        analogReadResolution(ADC_RESOLUTION);
+        digitalWrite(FAN_PWM_PIN, LOW);
+        pinMode(FAN_PWM_PIN, OUTPUT);
+    }
+}
+
+void FanLoopHanlder(void){
+    if(GetBoardVersion() == "v1.1"){
+        digitalWrite(FAN_PP_PIN, HIGH);
+    }
+    if(GetBoardVersion() == "v1.2"){
+        if(GetInsideTemperature() < FAN_TEMP_THRSH_DOWN){
+            digitalWrite(FAN_PWM_PIN, LOW);
+        }
+        else if(GetInsideTemperature() > FAN_TEMP_THRSH_UP){
+            digitalWrite(FAN_PWM_PIN, HIGH);
+        }
+    }
+}
+
+int8_t GetInsideTemperature(void){
+    float InsideTemp, logR2, SensorResistance, AdcValue;
+    AdcValue = (float)analogRead(NTC_SENS_PIN);
+    SensorResistance = (AdcValue * NTC_PULLUP_RES) / (1023 - AdcValue);
+    logR2 = log(SensorResistance);
+    InsideTemp = (1.0 / (NTC_SENS_C1 + NTC_SENS_C2*logR2 + NTC_SENS_C3*logR2*logR2*logR2))- NTC_OFFSET_VAL; 
+    return (int8_t)InsideTemp;
 }
 
 uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value){
