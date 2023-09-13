@@ -1,11 +1,10 @@
 version: '2.3'
 
 services:
-  talker:
-    image: microros/micro-ros-agent:galactic
-    ports:
-      - "8888:8888/udp"
-    command: udp4 --port 8888 # -v6
-  listener:
-    image: osrf/ros:galactic-desktop
-    command: ros2 run demo_nodes_cpp listener
+  microros:
+    image: husarion/micro-ros-agent:humble-3.1.2-20230204-stable
+    network_mode: host
+    ipc: host
+    environment:
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    command: ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888

@@ -90,17 +90,17 @@ void setup() {
   if(firmware_mode == fw_debug) Serial.printf("Queues created\r\n");
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(RclcSpinTask, "RclcSpinTask",
-                   configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(ImuTask, "ImuTask",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s2 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(RuntimeStatsTask, "RuntimeStatsTask",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s3 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
@@ -110,7 +110,7 @@ void setup() {
   if(s4 != pdPASS)  
     if(firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(PixelLedTask, "PixelLedTask",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s5 != pdPASS)  
     if(firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
@@ -125,12 +125,12 @@ void setup() {
   if(s8 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S8 creation problem\r\n"); 
   s9 = xTaskCreate(uRosPingTask, "uRosPingTask",
-                        configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
+                        configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                         NULL);
   if(s9 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
   s10 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
-                        configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
+                        configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                         NULL);
   if(s10 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S10 creation problem\r\n");
