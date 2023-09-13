@@ -31,9 +31,25 @@
 #define PUSH_BUTTON1        PF11
 #define PUSH_BUTTON2        PF12
 
+/* FAN	*/
+#define FAN_PP_PIN	    	PC13
+#define FAN_PWM_PIN			PB_0_ALT1
+#define FAN_PWM_TIMER		TIM3
+#define FAN_PWM_CHANNEL		3
+#define FAN_PWM_FREQUENCY	1000
+#define FAN_TEMP_THRSH_UP	35
+#define FAN_TEMP_THRSH_DOWN	30
+
+/* THERMISTOR NTC*/
+#define NTC_SENS_PIN				PB1				//ADC2 IN9
+#define NTC_SENS_C1					0.001112613927	
+#define NTC_SENS_C2					0.000237277392		
+#define NTC_SENS_C3					0.000000071670	
+#define NTC_PULLUP_RES				5230			//NTC pull up resisior
+#define NTC_OFFSET_VAL				(273.15 + 3)	//Kelvin to Celsius offset + calibration offset 
+
 /* PERIPHERALS */
 #define EN_LOC_5V           PF13
-#define FAN                 PC13
 #define DIP_SW              PD2     //or PD3 -> to check
 
 /* AUDIO */
@@ -83,9 +99,27 @@
 #define AGENT_PORT 		8888
 #define SHUTDOWN_PORT	3000
 
-//ETH LINK STATUS DEFINES
+/* ETH LINK STATUS DEFINES */
 #define ETH_LINK_STATUS_CONNECTED_BIT		(1 << 0)	//if set - connected
 #define ETH_LINK_STATUS_ERROR_BIT			(1 << 1)
+
+/* EEPROM */
+#define EEPROM_BLOCK_ADDR_0     				0x00
+#define EEPROM_BLOCK_ADDR_1     				0x01
+#define EEPROM_BLOCK_ADDR_2     				0x02
+#define EEPROM_BLOCK_ADDR_3     				0x03
+#define EEPROM_BLOCK_ADDR_4     				0x04
+#define EEPROM_BLOCK_ADDR_5     				0x05
+#define EEPROM_BLOCK_ADDR_6     				0x06
+#define EEPROM_BLOCK_ADDR_7     				0x07
+#define EEPROM_DEV_ID							0x50
+#define EEPROM_CONTROL_BYTE(DevId, BlockAddr)	(DevId | BlockAddr)
+
+// Board version eeprom defines
+#define BOARD_VER_MEM_BLOCK			0x00
+#define BOARD_VER_MEM_ADDR			0x00
+#define BOARD_VER_MEM_SIZE			0x04
+#define BOARD_VER_READ_ATTEMPTS		5
 
 /* EXTERNAL PERIPHERALS */
 
@@ -129,8 +163,17 @@
 #define EXT_GPIO3           PG4
 
 
-//WATCHDOG
-#define WATCHDOG_TIMEOUT	15000000	//microseconds
+/* WATCHDOG */
+#define WATCHDOG_TIMEOUT	20000000	//microseconds
+
+/* BATTERY */
+
+#define BATTERY_CELLS_SERIES							3
+#define BATTERY_CELLS_PARALLEL							3
+#define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE 	1	// in unmeasured
+#define BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE 		1	// in unmeasured
+// #define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE 	(BATTERY_CELLS_PARALLEL * BATTERY_CELLS_SERIES)	
+// #define BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE 		(BATTERY_CELLS_PARALLEL * BATTERY_CELLS_SERIES)
 
 typedef enum{
 	unknown_status 	= 0,
@@ -162,26 +205,30 @@ typedef enum{
 	LIMN = 6
 }BatteryTechnologyTypeDef;
 
+typedef struct{
+	//ROS battery msgs variables
+	float						voltage;
+	float						temperature;
+	float						current;
+	float						charge_current;
+	float						capacity;
+	float						design_capacity;
+	float						percentage;
+	float						cell_temperature[BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE];
+	float						cell_voltage[BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE];
+	BatteryStatusTypeDef 		status;
+	BatteryHealthTypeDef		health;
+	BatteryTechnologyTypeDef 	technology;
+	bool						present;
+}battery_state_queue_t;
+
+/* FIRMWARE MODE */
+
 typedef enum{
 	fw_normal 	= 0,
 	fw_error 	= 1,
 	fw_debug 	= 2
 }FirmwareModeTypeDef;
-
-typedef struct{
-	//ROS battery msgs variables
-	uint16_t					voltage;
-	uint16_t					temperature;
-	uint16_t					current;
-	uint16_t					charge_current;
-	uint16_t					capacity;
-	uint16_t					design_capacity;
-	uint8_t						percentage;
-	BatteryStatusTypeDef 		status;
-	BatteryHealthTypeDef		health;
-	BatteryTechnologyTypeDef 	technology;
-	uint8_t						present;
-}battery_state_queue_t;
 
 
 #endif /* HARDWARE_CFG */

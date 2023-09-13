@@ -26,7 +26,7 @@ QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
 QueueHandle_t uRosPingAgentStatusQueue;
-portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
+portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
 
 /* EXTERN VARIABLES */
 extern UartProtocolClass PowerBoardSerial;
@@ -65,6 +65,7 @@ static void PixelLedTask(void *p);
 static void SbcShutdownTask(void *p);
 static void PowerBoardTask(void *p);
 static void uRosPingTask(void *p);
+static void HardwareLoopTask(void *p);
 static void RuntimeStatsTask(void *p);
 
 /* FUNCTIONS */
@@ -76,7 +77,6 @@ void setup() {
   BoardPheripheralsInit();
   PixelStrip.Init();
   ImuBno.Init();
-  
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);
@@ -90,17 +90,17 @@ void setup() {
   if(firmware_mode == fw_debug) Serial.printf("Queues created\r\n");
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(RclcSpinTask, "RclcSpinTask",
-                   configMINIMAL_STACK_SIZE + 3000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s1 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S1 creation problem\r\n");
   s2 = xTaskCreate(ImuTask, "ImuTask",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s2 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
   s3 = xTaskCreate(RuntimeStatsTask, "RuntimeStatsTask",
-                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if(s3 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
@@ -110,7 +110,7 @@ void setup() {
   if(s4 != pdPASS)  
     if(firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
   s5 = xTaskCreate(PixelLedTask, "PixelLedTask",
-                          configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1,
+                          configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1,
                           NULL);
   if(s5 != pdPASS)  
     if(firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
@@ -125,10 +125,15 @@ void setup() {
   if(s8 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S8 creation problem\r\n"); 
   s9 = xTaskCreate(uRosPingTask, "uRosPingTask",
-                        configMINIMAL_STACK_SIZE + 100, NULL, tskIDLE_PRIORITY + 1,
+                        configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                         NULL);
   if(s9 != pdPASS) 
     if(firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
+  s10 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
+                        configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                        NULL);
+  if(s10 != pdPASS) 
+    if(firmware_mode == fw_debug) Serial.printf("S10 creation problem\r\n");
   /* START RTOS */
   if(firmware_mode == fw_debug) Serial.printf("Tasks starting\r\n");
   vTaskStartScheduler();
@@ -167,7 +172,7 @@ static void PidHandlerTask(void *p){
   static uint8_t freq_div_ptr = 0;
   while(1){
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
-    if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
+if(xQueueReceive(SetpointQueue, (void*) setpoint, (TickType_t) 0)){
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
@@ -257,6 +262,15 @@ static void uRosPingTask(void *p){
         break;
     }
     vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
+  }
+}
+
+static void HardwareLoopTask(void *p){
+  vTaskDelay(1000);
+  FanHardwareInit();
+  while(1){
+    FanLoopHanlder();
+    vTaskDelay(100);
   }
 }
 

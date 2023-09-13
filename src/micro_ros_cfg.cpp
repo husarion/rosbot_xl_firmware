@@ -114,6 +114,12 @@ void uRosTimerCallback(rcl_timer_t *arg_timer, int64_t arg_last_call_time) {
       battery_state_msg.power_supply_health = battery_state_queue.health;
       battery_state_msg.power_supply_technology = battery_state_queue.technology;
       battery_state_msg.present = battery_state_queue.present;
+      battery_state_msg.cell_temperature.capacity = BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
+      battery_state_msg.cell_temperature.size = BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
+      battery_state_msg.cell_temperature.data = battery_state_queue.cell_temperature;
+      battery_state_msg.cell_voltage.capacity = BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
+      battery_state_msg.cell_voltage.size = BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
+      battery_state_msg.cell_voltage.data = battery_state_queue.cell_voltage;
       RCSOFTCHECK(rcl_publish(&battery_state_publisher, &battery_state_msg, NULL));
     }
     //QOS best effort

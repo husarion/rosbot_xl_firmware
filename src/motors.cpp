@@ -13,23 +13,40 @@
 
 //MOTORS
 TimebaseTimerClass timebase_timer(TIMEBASE_TIMER);
-MotorClass motor_1( M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1_ILIM, M1A_IN, M1B_IN, 
+MotorClass motor_1( M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1A_IN, M1B_IN, 
                     M1_ENC_TIM, M1_ENC_A, M1_ENC_B, M1_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_2( M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2_ILIM, M2A_IN, M2B_IN, 
+MotorClass motor_2( M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2A_IN, M2B_IN, 
                     M2_ENC_TIM, M2_ENC_A, M2_ENC_B, M2_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_3( M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3_ILIM, M3A_IN, M3B_IN,
+MotorClass motor_3( M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3A_IN, M3B_IN,
                     M3_ENC_TIM, M3_ENC_A, M3_ENC_B, M3_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_4( M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4_ILIM, M4A_IN, M4B_IN, 
+MotorClass motor_4( M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN, 
                     M4_ENC_TIM, M4_ENC_A, M4_ENC_B, M4_DEFAULT_DIR, &timebase_timer);
 MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
 
+void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_){
+    if(GetBoardVersion() == "v1.2"){
+        pinMode(Ilim1_, INPUT);
+        pinMode(Ilim2_, INPUT);
+        pinMode(Ilim3_, INPUT);
+        pinMode(Ilim4_, INPUT);
+    }
+    else{
+        pinMode(Ilim1_, OUTPUT);
+        pinMode(Ilim2_, OUTPUT);
+        pinMode(Ilim3_, OUTPUT);
+        pinMode(Ilim4_, OUTPUT);
+        digitalWrite(Ilim1_, HIGH);
+        digitalWrite(Ilim2_, HIGH);
+        digitalWrite(Ilim3_, HIGH);
+        digitalWrite(Ilim4_, HIGH);
+    }
+}
 
 MotorClass::MotorClass(){
-    ;
 }
 
 MotorClass::MotorClass( uint32_t arg_pwm_pin,           TIM_TypeDef *arg_pwm_timer,         uint8_t arg_pwm_tim_channel,
-                        uint32_t arg_ilim_pin,          uint32_t arg_a_channel_mot,         uint32_t arg_b_channel_mot, 
+                        uint32_t arg_a_channel_mot,         uint32_t arg_b_channel_mot, 
                         TIM_TypeDef *arg_encoder_timer, uint32_t arg_a_channel_encoder_pin,     uint32_t arg_b_channel_encoder_pin,
                         int8_t arg_default_direction,   TimebaseTimerClass *arg_timebase_timer){
     this->pwm_pin_ = arg_pwm_pin;
@@ -39,14 +56,11 @@ MotorClass::MotorClass( uint32_t arg_pwm_pin,           TIM_TypeDef *arg_pwm_tim
     this->pwm_timer_->setOverflow(MOTORS_PWM_FREQUENCY, HERTZ_FORMAT);
     this->pwm_timer_->setCaptureCompare(this->pwm_timer_channel_, 0, TICK_COMPARE_FORMAT);
     this->pwm_timer_->resume();
-    this->ilim_pin_ = arg_ilim_pin;
     this->a_channel_motor_pin_ = arg_a_channel_mot;
     this->b_channel_motor_pin_ = arg_b_channel_mot;
-    pinMode(this->ilim_pin_, OUTPUT);
     pinMode(this->a_channel_motor_pin_, OUTPUT);
     pinMode(this->b_channel_motor_pin_, OUTPUT);
     this->SoftStop();
-    this->SetCurrentLimit(MAX_CURRENT);
     this->a_channel_encoder_pin_ = arg_a_channel_encoder_pin;
     this->b_channel_encoder_pin_ = arg_b_channel_encoder_pin;
     this->encoder_timer_ = new HardwareTimer(arg_encoder_timer);
@@ -162,13 +176,6 @@ int16_t MotorClass::GetWheelAngle(void){
 
 uint32_t MotorClass::GetPwmTimerOverflow(void){
     return this->pwm_timer_->getOverflow();
-}
-
-void MotorClass::SetCurrentLimit(uint8_t arg_current_mode){
-    if(arg_current_mode = MAX_CURRENT)
-        digitalWrite(this->ilim_pin_, HIGH);
-    if(arg_current_mode = REDUCED_CURRENT)
-        digitalWrite(this->ilim_pin_, LOW);
 }
 
 void MotorClass::PidLoopHandler(void){
