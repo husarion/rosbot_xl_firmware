@@ -86,8 +86,10 @@ PowerOffSignalTypeDef PowerOffSignalLoopHandler(void){
 }
 
 String GetBoardVersion(void){
-    static String BoardVersion = "uknown";
-    if(BoardVersion == "uknown"){
+    // uint8_t BoardVer2Write[] = {'v', '1', '.', '2'};
+    // EepromWritePage(BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR, (uint8_t*)BoardVer2Write, BOARD_VER_MEM_SIZE);
+    static String BoardVersion = (String)"unknown";
+    if(BoardVersion == (String)"unknown"){
         char RetVal[BOARD_VER_MEM_SIZE + 1];
         RetVal[BOARD_VER_MEM_SIZE] = '\0';
         for(uint8_t i = 0; i < BOARD_VER_READ_ATTEMPTS; i++){
@@ -97,7 +99,7 @@ String GetBoardVersion(void){
             }
             break;
         }
-        BoardVersion = "v1.1";
+        BoardVersion = (String)"v1.1";
     }
     return BoardVersion;
 }
@@ -136,11 +138,11 @@ void BatteryInfoRequest(void){
 }
 
 void FanHardwareInit(void){
-    if(GetBoardVersion() == "v1.1"){
+    if(GetBoardVersion() == (String)"v1.1"){
         digitalWrite(FAN_PP_PIN, LOW);
         pinMode(FAN_PP_PIN, OUTPUT);
     }
-    if(GetBoardVersion() == "v1.2"){
+    if(GetBoardVersion() == (String)"v1.2"){
         analogReadResolution(ADC_RESOLUTION);
         digitalWrite(FAN_PWM_PIN, LOW);
         pinMode(FAN_PWM_PIN, OUTPUT);
@@ -148,10 +150,10 @@ void FanHardwareInit(void){
 }
 
 void FanLoopHanlder(void){
-    if(GetBoardVersion() == "v1.1"){
+    if(GetBoardVersion() == (String)"v1.1"){
         digitalWrite(FAN_PP_PIN, HIGH);
     }
-    if(GetBoardVersion() == "v1.2"){
+    else if(GetBoardVersion() == (String)"v1.2"){
         if(GetInsideTemperature() < FAN_TEMP_THRSH_DOWN){
             digitalWrite(FAN_PWM_PIN, LOW);
         }
