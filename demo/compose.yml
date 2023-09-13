@@ -4,8 +4,10 @@
 services:
   micro-xrce-agent:
     image: husarion/micro-xrce-agent
+    network_mode: host
+    ipc: host
     ports:
       - "8888:8888/udp"
     environment:
-      - XRCE_DOMAIN_ID_OVERRIDE=${ROS_DOMAIN_ID}
+      - XRCE_DOMAIN_ID_OVERRIDE=0
     command: MicroXRCEAgent udp4 --port 8888 # -v6
