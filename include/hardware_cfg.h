@@ -37,8 +37,8 @@
 #define FAN_PWM_TIMER		TIM3
 #define FAN_PWM_CHANNEL		3
 #define FAN_PWM_FREQUENCY	1000
-#define FAN_TEMP_THRSH_UP	10//35
-#define FAN_TEMP_THRSH_DOWN	5//30
+#define FAN_TEMP_THRSH_UP	35
+#define FAN_TEMP_THRSH_DOWN	30
 
 /* THERMISTOR NTC*/
 #define NTC_SENS_PIN				PB1				//ADC2 IN9
@@ -164,7 +164,7 @@
 
 
 /* WATCHDOG */
-#define WATCHDOG_TIMEOUT	15000000	//microseconds
+#define WATCHDOG_TIMEOUT	20000000	//microseconds
 
 /* BATTERY */
 
