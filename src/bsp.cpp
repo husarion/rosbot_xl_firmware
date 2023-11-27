@@ -183,6 +183,10 @@ uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value){
     return -1;
 }
 
+/**
+ * @fn uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size)
+ * @brief This function cannot be used after an EepromWritePage() or EepromWriteByte() function before less than 4ms.
+*/
 uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value){
     I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
     I2cBus.write(ByteAddr);
@@ -211,6 +215,10 @@ uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uin
     return -1;
 }
 
+/**
+ * @fn uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size)
+ * @brief This function cannot be used after an EepromWritePage() or EepromWriteByte() function before less than 4ms.
+*/
 uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size){
     I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
     I2cBus.write(ByteAddr);
