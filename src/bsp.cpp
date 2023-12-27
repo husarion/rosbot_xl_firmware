@@ -184,7 +184,7 @@ uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value){
 }
 
 /**
- * @fn uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value, uint8_t Size)
+ * @fn uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value)
  * @brief This function cannot be used after an EepromWritePage() or EepromWriteByte() function before less than 4ms.
 */
 uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value){
