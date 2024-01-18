@@ -26,6 +26,8 @@
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/joint_state.h>
 #include <std_msgs/msg/float32_multi_array.h>
+/*===== ROS SRVS TYPES =====*/
+#include <std_srvs/srv/trigger.h>
 /*===== REST =====*/
 #include <ImuLib_cfg.h>
 #include <STM32FreeRTOS.h>
