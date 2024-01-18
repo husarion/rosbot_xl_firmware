@@ -265,7 +265,7 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rcl_publisher_fini(&imu_publisher, &node));
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
   RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
-  RCCHECK(rcl_subscriber_fini(&motors_cmd_subscriber, &node));
+  RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
   RCCHECK(rcl_timer_fini(&timer));
   RCCHECK(rclc_executor_fini(&executor));
