@@ -259,13 +259,17 @@ uRosEntitiesStatus uRosCreateEntities(void)
 
 uRosEntitiesStatus uRosDestroyEntities(void)
 {
+  rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
+  (void) rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
+
   RCCHECK(rcl_publisher_fini(&imu_publisher, &node));
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
   RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
+  RCCHECK(rcl_subscriber_fini(&motors_cmd_subscriber, &node));
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
-  RCCHECK(rcl_node_fini(&node));
-  RCCHECK(rclc_executor_fini(&executor));
   RCCHECK(rcl_timer_fini(&timer));
+  RCCHECK(rclc_executor_fini(&executor));
+  RCCHECK(rcl_node_fini(&node));
   RCCHECK(rclc_support_fini(&support));
   return Destroyed;
 }
