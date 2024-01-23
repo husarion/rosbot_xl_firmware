@@ -1,10 +1,11 @@
+---
 name: Firmware release
 on:
   workflow_dispatch:
     inputs:
       name:
-        description: "Version to bump (major, minor, patch)"
-        default: "patch"
+        description: Version to bump (major, minor, patch)
+        default: patch
         required: true
   pull_request:
     branches: master
@@ -52,28 +53,28 @@ jobs:
 
       - name: Create tag
         run: git tag ${{ steps.bump-semver.outputs.new_version }}
-      
+
       - name: Publish tags
         run: git push --tags
-  
+
   firmware-release:
     name: Firmware release
     needs: bump-version
     runs-on: ubuntu-20.04
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Installing platformio
-      run: pip3 install -U platformio
+      - name: Installing platformio
+        run: pip3 install -U platformio
 
-    - name: Building a firmware for STM32
-      run: pio run
+      - name: Building a firmware for STM32
+        run: pio run
 
-    - name: Release a firmware
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          .pio/build/rosbot_xl_digital_board/firmware.bin
-          LICENSE
-        tag_name: ${{ needs.bump-version.outputs.new_version }}
+      - name: Release a firmware
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            .pio/build/rosbot_xl_digital_board/firmware.bin
+            LICENSE
+          tag_name: ${{ needs.bump-version.outputs.new_version }}

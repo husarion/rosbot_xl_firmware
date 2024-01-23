@@ -1,6 +1,6 @@
 # rosbot_xl_firmware
 
-ROSbot XL firmware for STM32 microcontroller  
+ROSbot XL firmware for STM32 microcontroller
 
 ## Updating firmware
 
