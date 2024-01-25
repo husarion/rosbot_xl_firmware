@@ -1,10 +1,11 @@
+---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
       # mesh files has to be taken into account
-        args: ["--maxkb=2000"]
+        args: [--maxkb=2000]
       - id: check-ast
       - id: check-json
         # vscode .json files do not follow the standard JSON format
@@ -26,7 +27,7 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        args: [--profile, black]
 
   - repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -50,23 +51,23 @@ repos:
         types: [text]
 
   - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-    rev: 0.2.1
+    rev: 0.2.3
     hooks:
       - id: yamlfmt
-        files: ^.github|./\.yaml
+        files: ^(?!.*compose).*$
+        args: [--mapping, '2', --sequence, '4', --offset, '2', --width, '100']
 
   - repo: https://github.com/psf/black
     rev: 23.10.1
     hooks:
       - id: black
-        args: ["--line-length=99", "--experimental-string-processing"]
+        args: [--line-length=99, --experimental-string-processing]
 
   - repo: https://github.com/PyCQA/flake8
     rev: 6.1.0
     hooks:
       - id: flake8
-        args:
-          ["--ignore=E501,W503"] # ignore too long line and line break before binary operator,
+        args: ['--ignore=E501,W503'] # ignore too long line and line break before binary operator,
           # black checks it
 
     # Docs - RestructuredText hooks
@@ -74,7 +75,7 @@ repos:
     rev: v1.1.1
     hooks:
       - id: doc8
-        args: ["--max-line-length=100", "--ignore=D001"]
+        args: [--max-line-length=100, --ignore=D001]
         exclude: ^.*\/CHANGELOG\.rst/.*$
 
   - repo: https://github.com/tier4/pre-commit-hooks-ros

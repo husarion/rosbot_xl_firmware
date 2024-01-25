@@ -40,7 +40,7 @@ uRosFunctionStatus ping_agent_status;
 // REST
 extern FirmwareModeTypeDef firmware_mode;
 
-void ErrorLoop(const char* func)
+void ErrorLoop(const char * func)
 {
   for (int i = 0; i < 4; ++i) {
     if (firmware_mode == fw_debug) Serial.printf("In error loop from function %s\r\n", func);
@@ -166,33 +166,33 @@ void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
   }
 }
 
-void uRosGetIdCallback (const void *req, void *res) {
-    (void)req; // Unused parameter
+void uRosGetIdCallback(const void * req, void * res)
+{
+  (void)req;  // Unused parameter
 
-    const uint32_t ADDRESS = 0x1FFF7A10;
-    const uint8_t NUM_BYTES = 12;
-    uint8_t buffer[NUM_BYTES];
-    memcpy(buffer, (void *)ADDRESS, NUM_BYTES);
+  const uint32_t ADDRESS = 0x1FFF7A10;
+  const uint8_t NUM_BYTES = 12;
+  uint8_t buffer[NUM_BYTES];
+  memcpy(buffer, (void *)ADDRESS, NUM_BYTES);
 
-    // Prepare the CPU ID in hexadecimal format
-    char cpu_id_buffer[NUM_BYTES * 2 + 1] = {0};
-    char *hex_ptr = cpu_id_buffer;
-    for (uint8_t i = 0; i < NUM_BYTES; ++i) {
-        snprintf(hex_ptr, 3, "%02X", buffer[i]);
-        hex_ptr += 2;
-    }
+  // Prepare the CPU ID in hexadecimal format
+  char cpu_id_buffer[NUM_BYTES * 2 + 1] = {0};
+  char * hex_ptr = cpu_id_buffer;
+  for (uint8_t i = 0; i < NUM_BYTES; ++i) {
+    snprintf(hex_ptr, 3, "%02X", buffer[i]);
+    hex_ptr += 2;
+  }
 
-    // Prepare the final output buffer with "CPU ID: " prefix
-    static char out_buffer[100]; // Ensure this is large enough
-    snprintf(out_buffer, sizeof(out_buffer), "{\"cpu_id\": \"%s\"}", cpu_id_buffer);
+  // Prepare the final output buffer with "CPU ID: " prefix
+  static char out_buffer[100];  // Ensure this is large enough
+  snprintf(out_buffer, sizeof(out_buffer), "{\"cpu_id\": \"%s\"}", cpu_id_buffer);
 
-    // Set the response
-    std_srvs__srv__Trigger_Response *response = (std_srvs__srv__Trigger_Response *)res;
-    response->success = true;
-    response->message.data = out_buffer;
-    response->message.size = strlen(out_buffer);
+  // Set the response
+  std_srvs__srv__Trigger_Response * response = (std_srvs__srv__Trigger_Response *)res;
+  response->success = true;
+  response->message.data = out_buffer;
+  response->message.size = strlen(out_buffer);
 }
-
 
 uRosEntitiesStatus uRosCreateEntities(void)
 {
@@ -206,7 +206,9 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
-  if (firmware_mode == fw_debug) Serial.printf("Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
+  if (firmware_mode == fw_debug)
+    Serial.printf(
+      "Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
 
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
@@ -243,11 +245,7 @@ uRosEntitiesStatus uRosCreateEntities(void)
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
-      &get_cpu_id_service,
-      &node,
-      ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger),
-      "get_cpu_id"
-  ));
+    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
   ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created 'get_cpu_id_service' service.\r\n");
   /*===== CREATE ENTITIES ===== */
@@ -255,7 +253,9 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
   RCCHECK(rclc_executor_add_subscription(
     &executor, &motors_cmd_subscriber, &motors_cmd_msg, &uRosMotorsCmdCallback, ON_NEW_DATA));
-  RCCHECK(rclc_executor_add_service(&executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response, uRosGetIdCallback));
+  RCCHECK(rclc_executor_add_service(
+    &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
+    uRosGetIdCallback));
   if (firmware_mode == fw_debug) Serial.printf("Executor started\r\n");
 
   RCCHECK(rmw_uros_sync_session(1000));
@@ -266,7 +266,7 @@ uRosEntitiesStatus uRosCreateEntities(void)
 uRosEntitiesStatus uRosDestroyEntities(void)
 {
   rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
-  (void) rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
+  (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
   RCCHECK(rcl_publisher_fini(&imu_publisher, &node));
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));

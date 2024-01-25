@@ -88,7 +88,7 @@ extern QueueHandle_t ImuQueue;  // extern functions
 extern "C" int clock_gettime(clockid_t unused, struct timespec * tp);
 
 /* FUNCTIONS */
-void ErrorLoop(const char* func);
+void ErrorLoop(const char * func);
 uRosFunctionStatus uRosPingAgent(void);
 uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
 uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);
