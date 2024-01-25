@@ -56,7 +56,7 @@
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
-      ErrorLoop();                 \
+      ErrorLoop(__FUNCTION__);     \
       Serial.printf("o");          \
     }                              \
   }
@@ -88,7 +88,7 @@ extern QueueHandle_t ImuQueue;  // extern functions
 extern "C" int clock_gettime(clockid_t unused, struct timespec * tp);
 
 /* FUNCTIONS */
-void ErrorLoop(void);
+void ErrorLoop(const char* func);
 uRosFunctionStatus uRosPingAgent(void);
 uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
 uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);

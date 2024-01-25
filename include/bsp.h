@@ -13,7 +13,6 @@
 #define BSP_H
 
 #include <Arduino.h>
-#include <IWatchdog.h>
 #include <Wire.h>
 #include <motors.h>
 #include "UartLib.h"

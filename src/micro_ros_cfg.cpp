@@ -30,6 +30,7 @@ rcl_service_t get_cpu_id_service;
 std_srvs__srv__Trigger_Request get_cpu_id_service_request;
 std_srvs__srv__Trigger_Response get_cpu_id_service_response;
 // ROS
+rcl_init_options_t init_options;
 rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
@@ -39,14 +40,16 @@ uRosFunctionStatus ping_agent_status;
 // REST
 extern FirmwareModeTypeDef firmware_mode;
 
-void ErrorLoop(void)
+void ErrorLoop(const char* func)
 {
-  while (1) {
-    if (firmware_mode == fw_debug) Serial.printf("In error loop");
+  for (int i = 0; i < 4; ++i) {
+    if (firmware_mode == fw_debug) Serial.printf("In error loop from function %s\r\n", func);
     SetRedLed(Toggle);
     SetGreenLed(Off);
-    delay(1000);
+    delay(500);
   }
+  // Reset the uC when microros fails
+  NVIC_SystemReset();
 }
 
 uRosFunctionStatus uRosPingAgent(void)
@@ -199,12 +202,15 @@ uRosEntitiesStatus uRosCreateEntities(void)
   MotorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
-  rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+  init_options = rcl_get_zero_initialized_init_options();
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
+  if (firmware_mode == fw_debug) Serial.printf("Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
+
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
+  if (firmware_mode == fw_debug) Serial.printf("Created node `%s`\r\n", NODE_NAME);
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
@@ -214,19 +220,19 @@ uRosEntitiesStatus uRosCreateEntities(void)
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     "_motors_cmd"));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'motors_cmd' subscriber\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_cmd' subscriber\r\n");
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
     &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), "_imu/data_raw"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_imu/data_raw' publisher.\r\n");
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
     &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
     "_motors_response"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'motors_response' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_response' publisher.\r\n");
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
     &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
@@ -271,6 +277,8 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rclc_executor_fini(&executor));
   RCCHECK(rcl_node_fini(&node));
   RCCHECK(rclc_support_fini(&support));
+  RCCHECK(rcl_init_options_fini(&init_options));
+  if (firmware_mode == fw_debug) Serial.printf("Destroyed all microros entities.\r\n");
   return Destroyed;
 }
 
