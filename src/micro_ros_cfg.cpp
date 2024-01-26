@@ -24,7 +24,13 @@ std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
 sensor_msgs__msg__JointState motors_response_msg;
 sensor_msgs__msg__BatteryState battery_state_msg;
+// ROS SERVICES
+rcl_service_t get_cpu_id_service;
+// ROS REQUESTS AND RESPONSES
+std_srvs__srv__Trigger_Request get_cpu_id_service_request;
+std_srvs__srv__Trigger_Response get_cpu_id_service_response;
 // ROS
+rcl_init_options_t init_options;
 rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
@@ -34,14 +40,16 @@ uRosFunctionStatus ping_agent_status;
 // REST
 extern FirmwareModeTypeDef firmware_mode;
 
-void ErrorLoop(void)
+void ErrorLoop(const char * func)
 {
-  while (1) {
-    if (firmware_mode == fw_debug) Serial.printf("In error loop");
+  for (int i = 0; i < 4; ++i) {
+    if (firmware_mode == fw_debug) Serial.printf("In error loop from function %s\r\n", func);
     SetRedLed(Toggle);
     SetGreenLed(Off);
-    delay(1000);
+    delay(500);
   }
+  // Reset the uC when microros fails
+  NVIC_SystemReset();
 }
 
 uRosFunctionStatus uRosPingAgent(void)
@@ -158,6 +166,34 @@ void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
   }
 }
 
+void uRosGetIdCallback(const void * req, void * res)
+{
+  (void)req;  // Unused parameter
+
+  const uint32_t ADDRESS = 0x1FFF7A10;
+  const uint8_t NUM_BYTES = 12;
+  uint8_t buffer[NUM_BYTES];
+  memcpy(buffer, (void *)ADDRESS, NUM_BYTES);
+
+  // Prepare the CPU ID in hexadecimal format
+  char cpu_id_buffer[NUM_BYTES * 2 + 1] = {0};
+  char * hex_ptr = cpu_id_buffer;
+  for (uint8_t i = 0; i < NUM_BYTES; ++i) {
+    snprintf(hex_ptr, 3, "%02X", buffer[i]);
+    hex_ptr += 2;
+  }
+
+  // Prepare the final output buffer with "CPU ID: " prefix
+  static char out_buffer[100];  // Ensure this is large enough
+  snprintf(out_buffer, sizeof(out_buffer), "{\"cpu_id\": \"%s\"}", cpu_id_buffer);
+
+  // Set the response
+  std_srvs__srv__Trigger_Response * response = (std_srvs__srv__Trigger_Response *)res;
+  response->success = true;
+  response->message.data = out_buffer;
+  response->message.size = strlen(out_buffer);
+}
+
 uRosEntitiesStatus uRosCreateEntities(void)
 {
   uint8_t ros_msgs_cnt = 0;
@@ -166,12 +202,17 @@ uRosEntitiesStatus uRosCreateEntities(void)
   MotorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
-  rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+  init_options = rcl_get_zero_initialized_init_options();
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
+  if (firmware_mode == fw_debug)
+    Serial.printf(
+      "Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
+
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
+  if (firmware_mode == fw_debug) Serial.printf("Created node `%s`\r\n", NODE_NAME);
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
@@ -181,31 +222,42 @@ uRosEntitiesStatus uRosCreateEntities(void)
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     "_motors_cmd"));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'motors_cmd' subscriber\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_cmd' subscriber\r\n");
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
     &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), "_imu/data_raw"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'sensor_msgs/Imu' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_imu/data_raw' publisher.\r\n");
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
     &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
     "_motors_response"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'motors_response' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_response' publisher.\r\n");
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
     &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
     "battery_state"));
   // ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created 'battery_state' publisher.\r\n");
-  // create executor
+  /*===== INIT SERVICES ===== */
+  std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
+  std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
+  RCCHECK(rclc_service_init_default(
+    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
+  ros_msgs_cnt++;
+  if (firmware_mode == fw_debug) Serial.printf("Created 'get_cpu_id_service' service.\r\n");
+  /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
   RCCHECK(rclc_executor_add_subscription(
     &executor, &motors_cmd_subscriber, &motors_cmd_msg, &uRosMotorsCmdCallback, ON_NEW_DATA));
+  RCCHECK(rclc_executor_add_service(
+    &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
+    uRosGetIdCallback));
   if (firmware_mode == fw_debug) Serial.printf("Executor started\r\n");
+
   RCCHECK(rmw_uros_sync_session(1000));
   if (firmware_mode == fw_debug) Serial.printf("Clocks synchronised\r\n");
   return Created;
@@ -213,13 +265,20 @@ uRosEntitiesStatus uRosCreateEntities(void)
 
 uRosEntitiesStatus uRosDestroyEntities(void)
 {
-  rcl_publisher_fini(&imu_publisher, &node);
-  rcl_publisher_fini(&motor_state_publisher, &node);
-  rcl_publisher_fini(&battery_state_publisher, &node);
-  rcl_node_fini(&node);
-  rclc_executor_fini(&executor);
-  rcl_timer_fini(&timer);
-  rclc_support_fini(&support);
+  rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
+  (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
+
+  RCCHECK(rcl_publisher_fini(&imu_publisher, &node));
+  RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
+  RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
+  RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
+  RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
+  RCCHECK(rcl_timer_fini(&timer));
+  RCCHECK(rclc_executor_fini(&executor));
+  RCCHECK(rcl_node_fini(&node));
+  RCCHECK(rclc_support_fini(&support));
+  RCCHECK(rcl_init_options_fini(&init_options));
+  if (firmware_mode == fw_debug) Serial.printf("Destroyed all microros entities.\r\n");
   return Destroyed;
 }
 

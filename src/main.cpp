@@ -141,7 +141,6 @@ static void RclcSpinTask(void * p)
   TickType_t xLastWakeTime = xTaskGetTickCount();
   static uRosFunctionStatus uRosPingAgentStatus;
   while (1) {
-    IWatchdog.reload();
     xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus, (TickType_t)0);
     vTaskDelayUntil(&xLastWakeTime, 1);
     uRosLoopHandler(uRosPingAgentStatus);
