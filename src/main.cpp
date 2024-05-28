@@ -35,7 +35,6 @@ extern ImuDriver ImuBno;
 // microROS
 extern std_msgs__msg__String msgs;
 extern sensor_msgs__msg__Imu imu_msg;
-extern sensor_msgs__msg__JointState motors_cmd_msg;
 extern sensor_msgs__msg__JointState motors_response_msg;
 extern rcl_publisher_t imu_publisher;
 extern rcl_publisher_t motor_state_publisher;
