@@ -193,9 +193,15 @@ static void PidHandlerTask(void * p)
 static void PixelLedTask(void * p)
 {
   int j=0;
+  // uint8_t brightness=0;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
   uint8_t StripLength = PixelStrip.GetStripLength();
+
+  uint8_t brightness[]={BRIGHTNESS_0, BRIGHTNESS_1, BRIGHTNESS_2, BRIGHTNESS_3, BRIGHTNESS_4, BRIGHTNESS_5, BRIGHTNESS_6, BRIGHTNESS_7, BRIGHTNESS_8, BRIGHTNESS_9};
+
+
+  int b=0;
 
   while (1) {
 
@@ -209,17 +215,49 @@ static void PixelLedTask(void * p)
     while (Serial.available() == 0) {
       vTaskDelay(1);
     }
-    Serial.printf("%d\r\n", Serial.available());
-    if('c' == Serial.read()) {
-      j=0;
+    // Serial.printf("%d\r\n", Serial.available());
+
+    char c = Serial.read();
+    // if('c' == c) {
+    //   i++
+    // }
+    if('q' == c) {
+      b++;;
     }
-    Serial.printf("j=%d [%d]\r\n", j, xTaskGetTickCount());
+    if('w' == c) {
+      b--;
+    }
+
+    if (b<0) {
+      b=0;
+    }
+    if (b>9) {
+      b=9;
+    }
+
+    // int a=Serial.parseInt();
+    // brightness=Serial.parseInt();
+    // Serial.printf("a=%d\r\n", a);
+
+// read integer from serial port
+    // while (Serial.available() == 0) {
+    //   vTaskDelay(1);
+    // }
+    // int j = Serial.parseInt();
+    // if (j < 0) {
+    //   j = 0;
+    // }
+    // if (j >= StripLength) {
+    //   j = StripLength - 1;
+
+
+    Serial.printf("j=%d\tbrightness=%d [%d]\r\n", j, brightness[b], xTaskGetTickCount());
     for (int i = 0; i < StripLength; i++) {
-      if (i==j) {
-        PixelStrip.SetNthLedBuffer(i, 0xFE, 0x01, 0x01, 0xFE);
-      } else {
-        PixelStrip.SetNthLedBuffer(i, 0x01, 0x01, 0x1, 0x01);
-      }
+      // if (i==j) {
+      //   PixelStrip.SetNthLedBuffer(i, 0xFE, 0x01, 0x01, 0xFE);
+      // } else {
+        PixelStrip.SetNthLedBuffer(i, 0x01, 0x01, 0x1, brightness[b]);
+      // }
     }
     PixelStrip.SendBuffersData();
 
