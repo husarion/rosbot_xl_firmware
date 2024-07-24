@@ -97,9 +97,9 @@ void setup()
     ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
   if (s2 != pdPASS)
     if (firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
-  s3 = xTaskCreate(
-    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
+  // s3 = xTaskCreate(
+  //   RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
+  //   tskIDLE_PRIORITY + 1, NULL);
   if (s3 != pdPASS)
     if (firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(
@@ -192,11 +192,37 @@ static void PidHandlerTask(void * p)
 
 static void PixelLedTask(void * p)
 {
+  int j=0;
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+  uint8_t StripLength = PixelStrip.GetStripLength();
+
   while (1) {
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
-    PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
-    PixelIddleAnimation(&PixelStrip, 0x0F, 0x00, 0x00, 0x0F, 50);
+
+    // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    // PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
+    // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    // PixelIddleAnimation(&PixelStrip, 0x00, 0x0F, 0x00, 0x0F, 50);
+    j++;
+    // j=j%StripLength;
+    // vTaskDelayUntil( &xLastWakeTime, 200 );
+    while (Serial.available() == 0) {
+      vTaskDelay(1);
+    }
+    Serial.printf("%d\r\n", Serial.available());
+    if('c' == Serial.read()) {
+      j=0;
+    }
+    Serial.printf("j=%d [%d]\r\n", j, xTaskGetTickCount());
+    for (int i = 0; i < StripLength; i++) {
+      if (i==j) {
+        PixelStrip.SetNthLedBuffer(i, 0xFE, 0x01, 0x01, 0xFE);
+      } else {
+        PixelStrip.SetNthLedBuffer(i, 0x01, 0x01, 0x1, 0x01);
+      }
+    }
+    PixelStrip.SendBuffersData();
+
   }
 }
 

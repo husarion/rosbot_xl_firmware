@@ -23,7 +23,7 @@
 /* VARIABLES */
 
 SPIClass PixelSpi(PIXEL_MOSI, PB14, PIXEL_SCK);
-uint8_t VirtualLeds[VIRTUAL_LED_LENGTH] = {5, 6, 7, 8, 9, 18, 19, 20, 21, 22};
+// uint8_t VirtualLeds[VIRTUAL_LED_LENGTH] = {5, 6, 7, 8, 9, 18, 19, 20, 21, 22};
 PixelLedClass PixelStrip(PIXEL_LENGTH, VIRTUAL_LED_LENGTH, 0);
 
 /* PIXEL LED LIBRARY PORT */
@@ -32,12 +32,14 @@ extern uint8_t PixelInitActions(PixelLedClass * PixelStrip_)
 {
   if (PixelStrip_->GetInstance() == 0) {
     PixelStrip_->SetStripColour(0x0F, 0x00, 0x00, 0x0F);
-    if (PixelStrip_->PixelStripMapSwap(23, 27)) return 1;
-    if (PixelStrip_->PixelStripMapSwap(24, 26)) return 1;
-    if (PixelStrip_->SetLedsAsVirtual(VirtualLeds, VIRTUAL_LED_LENGTH))
-      ;
-    return 1;
-    return 0;
+    PixelStrip_->PixelStripMapSwap(13, 17);
+    PixelStrip_->PixelStripMapSwap(14, 16);
+    // if (PixelStrip_->PixelStripMapSwap(23, 27)) return 1;
+    // if (PixelStrip_->PixelStripMapSwap(24, 26)) return 1;
+    // if (PixelStrip_->SetLedsAsVirtual(VirtualLeds, VIRTUAL_LED_LENGTH))
+    //   ;
+    // return 1;
+    // return 0;
   } else
     return 1;
 }
