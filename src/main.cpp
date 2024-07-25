@@ -43,7 +43,7 @@ extern rcl_publisher_t motor_state_publisher;
 extern TimebaseTimerClass timebase_timer;
 extern MotorClass wheel_motors[];
 // LED
-extern PixelLedClass pixel_strip;
+// extern PixelLedClass pixel_strip;
 
 // ETHERNET
 IPAddress client_ip;
@@ -60,7 +60,7 @@ extern String PowerBoardVersion;
 static void RclcSpinTask(void * p);
 static void ImuTask(void * p);
 static void PidHandlerTask(void * p);
-static void PixelLedTask(void * p);
+// static void PixelLedTask(void * p);
 static void SbcShutdownTask(void * p);
 static void PowerBoardTask(void * p);
 static void uRosPingTask(void * p);
@@ -100,17 +100,17 @@ void setup()
   // s3 = xTaskCreate(
   //   RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
   //   tskIDLE_PRIORITY + 1, NULL);
-  if (s3 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
+  // if (s3 != pdPASS)
+  //   if (firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
   s4 = xTaskCreate(
     PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
     NULL);
   if (s4 != pdPASS)
     if (firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
-  s5 = xTaskCreate(
-    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s5 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
+  // s5 = xTaskCreate(
+  //   PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
+  // if (s5 != pdPASS)
+    // if (firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
   s7 = xTaskCreate(
     SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
     NULL);
@@ -190,79 +190,58 @@ static void PidHandlerTask(void * p)
   }
 }
 
-static void PixelLedTask(void * p)
-{
-  int j=0;
-  // uint8_t brightness=0;
-  TickType_t xLastWakeTime;
-  xLastWakeTime = xTaskGetTickCount();
-  uint8_t StripLength = PixelStrip.GetStripLength();
-
-  uint8_t brightness[]={BRIGHTNESS_0, BRIGHTNESS_1, BRIGHTNESS_2, BRIGHTNESS_3, BRIGHTNESS_4, BRIGHTNESS_5, BRIGHTNESS_6, BRIGHTNESS_7, BRIGHTNESS_8, BRIGHTNESS_9};
 
 
-  int b=0;
+// static void PixelLedTask(void * p)
+// {
+//   int j=0;
+//   // uint8_t brightness=0;
+//   TickType_t xLastWakeTime;
+//   xLastWakeTime = xTaskGetTickCount();
+//   uint8_t StripLength = PixelStrip.GetStripLength();
 
-  while (1) {
-
-    // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
-    // PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
-    // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
-    // PixelIddleAnimation(&PixelStrip, 0x00, 0x0F, 0x00, 0x0F, 50);
-    j++;
-    // j=j%StripLength;
-    // vTaskDelayUntil( &xLastWakeTime, 200 );
-    while (Serial.available() == 0) {
-      vTaskDelay(1);
-    }
-    // Serial.printf("%d\r\n", Serial.available());
-
-    char c = Serial.read();
-    // if('c' == c) {
-    //   i++
-    // }
-    if('q' == c) {
-      b++;;
-    }
-    if('w' == c) {
-      b--;
-    }
-
-    if (b<0) {
-      b=0;
-    }
-    if (b>9) {
-      b=9;
-    }
-
-    // int a=Serial.parseInt();
-    // brightness=Serial.parseInt();
-    // Serial.printf("a=%d\r\n", a);
-
-// read integer from serial port
-    // while (Serial.available() == 0) {
-    //   vTaskDelay(1);
-    // }
-    // int j = Serial.parseInt();
-    // if (j < 0) {
-    //   j = 0;
-    // }
-    // if (j >= StripLength) {
-    //   j = StripLength - 1;
+//   uint8_t brightness[]={LED_BRIGHTNESS_0, LED_BRIGHTNESS_1, LED_BRIGHTNESS_2, LED_BRIGHTNESS_3, LED_BRIGHTNESS_4};
 
 
-    Serial.printf("j=%d\tbrightness=%d [%d]\r\n", j, brightness[b], xTaskGetTickCount());
-    for (int i = 0; i < StripLength; i++) {
-      // if (i==j) {
-      //   PixelStrip.SetNthLedBuffer(i, 0xFE, 0x01, 0x01, 0xFE);
-      // } else {
-        PixelStrip.SetNthLedBuffer(i, 0x01, 0x01, 0x1, brightness[b]);
-      // }
-    }
-    PixelStrip.SendBuffersData();
+//   int b=0;
 
-  }
-}
+//   while (1) {
+
+//     // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+//     // PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
+//     // vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+//     // PixelIddleAnimation(&PixelStrip, 0x00, 0x0F, 0x00, 0x0F, 50);
+//     j++;
+//     j=j%StripLength;
+//     vTaskDelayUntil( &xLastWakeTime, 200 );
+
+//     char c = Serial.read();
+
+//     if('q' == c) {
+//       b++;;
+//     }
+//     if('w' == c) {
+//       b--;
+//     }
+
+//     if (b<0) {
+//       b=0;
+//     }
+//     if (b>4) {
+//       b=4;
+//     }
+
+//     Serial.printf("j=%d\tbrightness[%d]=%d [%d]\r\n", j, b, brightness[b], xTaskGetTickCount());
+//     for (int i = 0; i < StripLength; i++) {
+//       if (i==j) {
+//         PixelStrip.SetNthLedBuffer(i, 0xff, 0x00, 0x00, brightness[b]);
+//       } else {
+//         PixelStrip.SetNthLedBuffer(i, 0x00, 0xff, 0x00, brightness[b]);
+//       }
+//     }
+//     PixelStrip.SendBuffersData();
+//   }
+// }
 
 static void SbcShutdownTask(void * p)
 {

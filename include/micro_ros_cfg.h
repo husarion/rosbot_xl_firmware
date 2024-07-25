@@ -26,6 +26,7 @@
 #include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/joint_state.h>
 #include <std_msgs/msg/float32_multi_array.h>
+#include <sensor_msgs/msg/image.h>
 /*===== ROS SRVS TYPES =====*/
 #include <std_srvs/srv/trigger.h>
 /*===== REST =====*/
@@ -33,6 +34,8 @@
 #include <STM32FreeRTOS.h>
 #include <bsp.h>
 #include <hardware_cfg.h>
+#include <PixelLedLib_cfg.h>
+
 
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
@@ -98,5 +101,6 @@ uRosEntitiesStatus uRosCreateEntities(void);
 uRosEntitiesStatus uRosDestroyEntities(void);
 void MotorsResponseMsgInit(sensor_msgs__msg__JointState * arg_message);
 void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray * arg_message);
+void ImageMsgInit(sensor_msgs__msg__Image *arg_message) ;
 
 #endif /* MICRO_ROC_CFG_H */

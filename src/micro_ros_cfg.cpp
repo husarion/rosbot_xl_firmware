@@ -16,7 +16,7 @@ rcl_publisher_t imu_publisher;
 rcl_publisher_t motor_state_publisher;
 rcl_publisher_t battery_state_publisher;
 // ROS SUBSCRIPTIONS
-rcl_subscription_t subscriber;
+rcl_subscription_t led_strip_subscriber;
 rcl_subscription_t motors_cmd_subscriber;
 // ROS MESSAGES
 sensor_msgs__msg__Imu imu_msg;
@@ -24,6 +24,7 @@ std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
 sensor_msgs__msg__JointState motors_response_msg;
 sensor_msgs__msg__BatteryState battery_state_msg;
+sensor_msgs__msg__Image img_msg;
 // ROS SERVICES
 rcl_service_t get_cpu_id_service;
 // ROS REQUESTS AND RESPONSES
@@ -194,14 +195,39 @@ void uRosGetIdCallback(const void * req, void * res)
   response->message.size = strlen(out_buffer);
 }
 
+#define LED_BRIGHTNESS_0 BRIGHTNESS_5
+#define LED_BRIGHTNESS_1 BRIGHTNESS_6
+#define LED_BRIGHTNESS_2 BRIGHTNESS_7
+#define LED_BRIGHTNESS_3 BRIGHTNESS_8
+#define LED_BRIGHTNESS_4 BRIGHTNESS_9
+
+void uRosLedStripCallback(const void * msg)
+{
+  Serial.println("Received image");
+  const sensor_msgs__msg__Image * img = (const sensor_msgs__msg__Image *)msg;
+  uint8_t StripLength = PixelStrip.GetStripLength();
+  // Assuming PixelStrip is an object that handles the LED strip
+  for (int i = 0; i < StripLength; i++) {
+    uint8_t red = img->data.data[3 * i];
+    uint8_t green = img->data.data[3 * i + 1];
+    uint8_t blue = img->data.data[3 * i + 2];
+    PixelStrip.SetNthLedBuffer(i, red, green, blue, LED_BRIGHTNESS_4);
+  }
+  PixelStrip.SendBuffersData();
+}
+
+
+
 uRosEntitiesStatus uRosCreateEntities(void)
 {
   uint8_t ros_msgs_cnt = 0;
   /*===== ALLCOATE MEMORY FOR MSGS =====*/
   MotorsResponseMsgInit(&motors_response_msg);
   MotorsCmdMsgInit(&motors_cmd_msg);
+  ImageMsgInit(&img_msg); // Add this line to initialize img_msg
   allocator = rcl_get_default_allocator();
   // create init_options
+
   init_options = rcl_get_zero_initialized_init_options();
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
@@ -213,46 +239,68 @@ uRosEntitiesStatus uRosCreateEntities(void)
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
   if (firmware_mode == fw_debug) Serial.printf("Created node `%s`\r\n", NODE_NAME);
+  
   /*===== INIT TIMERS =====*/
+
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created timer\r\n");
+  
   /*===== INIT SUBSCRIBERS ===== */
+
+  // subscriber: /_motors_cmd
   RCCHECK(rclc_subscription_init_best_effort(
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     "_motors_cmd"));
   ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created '_motors_cmd' subscriber\r\n");
+
+  // subscriber: /led_strip
+  RCCHECK(rclc_subscription_init_best_effort(
+    &led_strip_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Image),
+    "/led_strip"));
+  ros_msgs_cnt++;
+  if (firmware_mode == fw_debug) Serial.printf("Created 'led_strip' subscriber\r\n");
+
   /*===== INIT PUBLISHERS ===== */
-  // IMU
+
+  // publisher: /_imu/data_raw
   RCCHECK(rclc_publisher_init_best_effort(
     &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), "_imu/data_raw"));
   // ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created '_imu/data_raw' publisher.\r\n");
-  // MOTORS RESPONSE
+
+  // publisher: /_motors_response
   RCCHECK(rclc_publisher_init_best_effort(
     &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
     "_motors_response"));
   // ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created '_motors_response' publisher.\r\n");
-  // BATTERY STATE
+  
+  // publisher: /battery_state
   RCCHECK(rclc_publisher_init_best_effort(
     &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
     "battery_state"));
   // ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created 'battery_state' publisher.\r\n");
+
   /*===== INIT SERVICES ===== */
+
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
     &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
   ros_msgs_cnt++;
   if (firmware_mode == fw_debug) Serial.printf("Created 'get_cpu_id_service' service.\r\n");
+  
   /*===== CREATE ENTITIES ===== */
+  
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
   RCCHECK(rclc_executor_add_subscription(
     &executor, &motors_cmd_subscriber, &motors_cmd_msg, &uRosMotorsCmdCallback, ON_NEW_DATA));
+  RCCHECK(rclc_executor_add_subscription(
+    &executor, &led_strip_subscriber, &img_msg, &uRosLedStripCallback, ON_NEW_DATA));
   RCCHECK(rclc_executor_add_service(
     &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
     uRosGetIdCallback));
@@ -272,6 +320,7 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
   RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
   RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
+  RCCHECK(rcl_subscription_fini(&led_strip_subscriber, &node));
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
   RCCHECK(rcl_timer_fini(&timer));
   RCCHECK(rclc_executor_fini(&executor));
@@ -314,4 +363,25 @@ void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray * arg_message)
   arg_message->data.capacity = MOT_CMD_MSG_LEN;
   arg_message->data.size = MOT_CMD_MSG_LEN;
   arg_message->data.data = (float *)data;
+}
+
+void ImageMsgInit(sensor_msgs__msg__Image *arg_message) {
+  // Initialize the header
+  arg_message->header.frame_id.data = (char *)malloc(100 * sizeof(char));
+  strcpy(arg_message->header.frame_id.data, "led_strip_frame");
+  arg_message->header.frame_id.capacity = 100;
+  arg_message->header.frame_id.size = strlen(arg_message->header.frame_id.data);
+
+  // Initialize other fields
+  arg_message->height = 1;
+  arg_message->width = 18;
+  arg_message->encoding.data = (char *)malloc(10 * sizeof(char));
+  strcpy(arg_message->encoding.data, "rgb8");
+  arg_message->encoding.capacity = 10;
+  arg_message->encoding.size = strlen(arg_message->encoding.data);
+  arg_message->is_bigendian = 0;
+  arg_message->step = 54; // 18 * 3 for RGB
+  arg_message->data.capacity = 54;
+  arg_message->data.size = 54;
+  arg_message->data.data = (uint8_t *)malloc(54 * sizeof(uint8_t));
 }
