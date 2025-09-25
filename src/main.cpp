@@ -4,6 +4,7 @@
 /*===== HARDEWARE =====*/
 #include <bsp.h>
 #include <hardware_cfg.h>
+#include <battery_types.h>
 // MOTORS
 #include <motors.h>
 // IMU

@@ -10,6 +10,7 @@
  */
 
 #include <micro_ros_cfg.h>
+#include <battery_types.h>
 
 // ROS PUBLISHERS
 rcl_publisher_t imu_publisher;
