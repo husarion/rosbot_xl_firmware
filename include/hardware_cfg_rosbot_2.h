@@ -29,28 +29,28 @@
 #define PUSH_BUTTON2 PG13
 
 /* THERMISTOR NTC*/
-// #define NTC_SENS_PIN PB1  // ADC2 IN9
-// #define NTC_SENS_C1 0.001112613927
-// #define NTC_SENS_C2 0.000237277392
-// #define NTC_SENS_C3 0.000000071670
-// #define NTC_PULLUP_RES 5230          // NTC pull up resisior
-// #define NTC_OFFSET_VAL (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
+#define NTC_SENS_PIN PB1  // ADC2 IN9
+#define NTC_SENS_C1 0.001112613927
+#define NTC_SENS_C2 0.000237277392
+#define NTC_SENS_C3 0.000000071670
+#define NTC_PULLUP_RES 5230          // NTC pull up resisior
+#define NTC_OFFSET_VAL (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
 
 /* SBC */
-// #define SBC_SERIAL Serial1
-// #define SBC_SERIAL_BAUDRATE 460800
-// #define SBC_SERIAL_RX PA10
-// #define SBC_SERIAL_TX PA9
+#define SBC_SERIAL Serial1
+#define SBC_SERIAL_BAUDRATE 460800
+#define SBC_SERIAL_RX PA10
+#define SBC_SERIAL_TX PA9
 
 /* IMU */
-// #define IMU_I2C I2C2
-// #define IMU_SDA PF0
-// #define IMU_SCL PF1
-// #define IMU_GPIO_IT PF2
-// #define IMU_SAMPLE_FREQ 25  // Hz
-// #define IMU_ID 0x37
-// #define IMU_ADDR_A 0x28
-// #define IMU_ADDR_B 0x29
+#define IMU_I2C I2C2
+#define IMU_SDA PF0
+#define IMU_SCL PF1
+#define IMU_GPIO_IT PF2
+#define IMU_SAMPLE_FREQ 25  // Hz
+#define IMU_ID 0x37
+#define IMU_ADDR_A 0x28
+#define IMU_ADDR_B 0x29
 
 /* ETHERNET */
 // #define CLIENT_IP "192.168.77.3"
