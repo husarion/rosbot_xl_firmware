@@ -1,14 +1,30 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "PlatformIO",
-			"task": "Build",
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build",
-			"label": "PlatformIO: Build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build rosbot_XL",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "rosbot_xl_digital_board"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    },
+
+    {
+      "label": "Build rosbot_2",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "rosbot_2_digital_board"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    }
+  ]
 }
