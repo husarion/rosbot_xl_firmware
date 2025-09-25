@@ -18,6 +18,9 @@
 #include <hal_conf_custom.h>
 #include "stm32f407xx.h"
 
+#define PRINT_INFO(msg) if (firmware_mode == fw_debug) { Serial.printf(msg); }
+
+
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
 // RTOS
@@ -26,7 +29,6 @@ QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
 QueueHandle_t uRosPingAgentStatusQueue;
-portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
 
 /* EXTERN VARIABLES */
 extern UartProtocolClass PowerBoardSerial;
@@ -87,52 +89,56 @@ void setup()
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
   uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
-  if (firmware_mode == fw_debug) Serial.printf("Queues created\r\n");
+  PRINT_INFO("Queues created\r\n");
+
   /* RTOS TASKS CREATION */
-  s1 = xTaskCreate(
-    RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s1 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S1 creation problem\r\n");
-  s2 = xTaskCreate(
-    ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s2 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
-  s3 = xTaskCreate(
-    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s3 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
-  s4 = xTaskCreate(
-    PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
-    NULL);
-  if (s4 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
-  s5 = xTaskCreate(
-    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s5 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
-  s7 = xTaskCreate(
-    SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s7 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S7 creation problem\r\n");
-  s8 = xTaskCreate(
-    PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s8 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S8 creation problem\r\n");
-  s9 = xTaskCreate(
-    uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s9 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
-  s10 = xTaskCreate(
-    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s10 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S10 creation problem\r\n");
+  if (xTaskCreate(
+    RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S1 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S2 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S3 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3, NULL) != pdPASS) {
+    PRINT_INFO("S4 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S5 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S7 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S8 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S9 creation problem\r\n");
+  }
+
+  if (xTaskCreate(
+    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_INFO("S10 creation problem\r\n");
+    }
+  
   /* START RTOS */
-  if (firmware_mode == fw_debug) Serial.printf("Tasks starting\r\n");
+  PRINT_INFO("Tasks starting\r\n");
   vTaskStartScheduler();
 }
 
@@ -279,7 +285,7 @@ static void HardwareLoopTask(void * p)
 static void RuntimeStatsTask(void * p)
 {
   char buf[2000];
-  if (firmware_mode == fw_debug) Serial.printf("runtime stats task started\r\n");
+  PRINT_INFO("runtime stats task started\r\n");
   while (1) {
     if (firmware_mode == fw_debug) {
       vTaskGetRunTimeStats(buf);
