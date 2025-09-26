@@ -54,10 +54,7 @@ extern PixelLedClass pixel_strip;
 #endif
 
 // ETHERNET
-IPAddress client_ip;
-IPAddress agent_ip;
 EthernetClient EthClient;
-byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 
 // REST
 FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
@@ -82,16 +79,14 @@ void setup()
 {
   // Hardware init
   BoardPheripheralsInit();
+  uRosTransportInit();
   ImuBno.Init();
-
-#if defined(BOARD_ROSBOT_XL)
-  PixelStrip.Init();
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);
-#elif defined(BOARD_ROSBOT_2)
-  SetGreenLed(On);
-  SetRedLed(On);
+
+#if defined(BOARD_ROSBOT_XL)
+  PixelStrip.Init();
 #endif
 
   /* RTOS QUEUES CREATION */
@@ -259,9 +254,6 @@ static void PowerBoardTask(void * p)
 static void uRosPingTask(void * p)
 {
   static uRosFunctionStatus uRosPingAgentStatus;
-  client_ip.fromString(CLIENT_IP);
-  agent_ip.fromString(SBC_AGENT_IP);
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
   while (1) {
     uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
     xQueueSendToFront(uRosPingAgentStatusQueue, (void *)&uRosPingAgentStatus, (TickType_t)0);

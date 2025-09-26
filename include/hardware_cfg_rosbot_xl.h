@@ -90,6 +90,7 @@
 #define PIXEL_ANIMATION_FREQ 0.5
 
 /* ETHERNET */
+#define CLIENT_MAC_ADDR 0x02, 0x47, 0x00, 0x00, 0x00, 0x01
 #define CLIENT_IP "192.168.77.3"
 #define SBC_AGENT_IP "192.168.77.2"  // SBC
 // #define SBC_AGENT_IP 	"192.168.77.5"	//External device

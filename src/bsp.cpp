@@ -71,11 +71,6 @@ void BoardPheripheralsInit(void)
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
   }
 
-  // SBC Serial port init
-  SBC_SERIAL.setRx(SBC_SERIAL_RX);
-  SBC_SERIAL.setTx(SBC_SERIAL_TX);
-  SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
-  SBC_SERIAL.println("Hello SBC");
 // External Serial port init
 #if EXT_SERIAL_EN_FLAG == 1
   EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);

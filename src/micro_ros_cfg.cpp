@@ -53,6 +53,48 @@ void ErrorLoop(const char * func)
   NVIC_SystemReset();
 }
 
+
+uRosFunctionStatus uRosTransportInit(void)
+{
+#if defined(BOARD_ROSBOT_XL)
+  IPAddress client_ip;
+  IPAddress agent_ip;
+  byte mac[] = {CLIENT_MAC_ADDR};
+  client_ip.fromString(CLIENT_IP);
+  agent_ip.fromString(SBC_AGENT_IP);
+  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
+#elif defined(BOARD_ROSBOT_2)
+  rmw_uros_set_custom_transport(
+    /* Enable XRCE framing */
+    true,
+    /* Arguments for open function */
+    NULL,
+    /* Open transport callback */
+    [](struct uxrCustomTransport * transport) -> bool {
+      SBC_SERIAL.setRx(SBC_SERIAL_RX);
+      SBC_SERIAL.setTx(SBC_SERIAL_TX);
+      SBC_SERIAL.setTimeout(SBC_SERIAL_TIMEOUT);
+      SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
+      return SBC_SERIAL ? true : false;
+    },
+    /* Close transport callback */
+    [](struct uxrCustomTransport * transport) -> bool {
+      SBC_SERIAL.end();
+      return true;
+    },
+    /* Write transport callback */
+    [](struct uxrCustomTransport * transport, const uint8_t *buf, size_t len, uint8_t *errcode) -> unsigned int {
+      return SBC_SERIAL.write(buf, len);
+    },
+    /* Read transport callback */
+    [](struct uxrCustomTransport * transport, uint8_t *buf, size_t len, int timeout, uint8_t *errcode) -> unsigned int {
+      SBC_SERIAL.setTimeout(timeout);
+      return SBC_SERIAL.readBytes((char *)buf, len);
+    }
+  );
+#endif
+}
+
 uRosFunctionStatus uRosPingAgent(void)
 {
   if (rmw_uros_ping_agent(AGENT_RECONNECTION_TIMEOUT, AGENT_RECONNECTION_ATTEMPTS) == RMW_RET_OK)

@@ -38,9 +38,11 @@
 
 /* SBC */
 #define SBC_SERIAL Serial1
-#define SBC_SERIAL_BAUDRATE 460800
-#define SBC_SERIAL_RX PA10
+#define SBC_SERIAL_BAUDRATE 576000
 #define SBC_SERIAL_TX PA9
+#define SBC_SERIAL_RX PA10
+#define SBC_SERIAL_TIMEOUT 1 // ms
+#define SBC_STATUS PG6 // According to "Core2 v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
 
 /* IMU */
 #define IMU_I2C I2C2
