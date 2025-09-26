@@ -18,6 +18,8 @@ HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 UartProtocolClass PowerBoardSerial(
   PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD_SERIAL_BAUDRATE, PWR_BRD_SERIAL_CONFIG);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
+#elif defined(BOARD_ROSBOT_2)
+HardwareSerial SBC_SERIAL(SBC_SERIAL_TX, SBC_SERIAL_RX);
 #endif
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
@@ -71,17 +73,24 @@ void BoardPheripheralsInit(void)
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
   }
 
-// External Serial port init
-#if EXT_SERIAL_EN_FLAG == 1
-  EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
-  EXT_SERIAL.println("Hello external device");
-#endif
 #if defined(BOARD_ROSBOT_XL)
   // Power Board Serial port init
   PowerBoardSerial.setTimeout(PWR_BRD_SERIAL_TIMEOUT);
   PowerBoardSerial.begin(PWR_BRD_SERIAL_BAUDRATE);
   SetLocalPower(On);
+  // External Serial port init
+  #if EXT_SERIAL_EN_FLAG == 1
+    EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
+    EXT_SERIAL.println("Hello external device");
+  #endif
+#elif defined(BOARD_ROSBOT_2)
+  // FTDI UART-USB init
+  FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
+  FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
+  FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
+  FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
 #endif
+
   I2cBusInit();
   delay(250);
   SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);

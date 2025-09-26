@@ -23,8 +23,9 @@
 #define POWEROFF_DELAY 5000         // ms
 
 /* REAR PANEL */
-#define GRN_LED PE3
 #define RD_LED PE2
+#define GRN_LED PE3
+#define GRN_LED2 PE4
 #define PUSH_BUTTON1 PG12
 #define PUSH_BUTTON2 PG13
 
@@ -43,6 +44,13 @@
 #define SBC_SERIAL_RX PA10
 #define SBC_SERIAL_TIMEOUT 1 // ms
 #define SBC_STATUS PG6 // According to "Core2 v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+
+/* FTDI SERIAL */
+#define FTDI_SERIAL Serial3
+#define FTDI_SERIAL_BAUDRATE 115200
+#define FTDI_SERIAL_TX PB10
+#define FTDI_SERIAL_RX PB11
+#define FTDI_SERIAL_TIMEOUT 1 // ms
 
 /* IMU */
 #define IMU_I2C I2C2

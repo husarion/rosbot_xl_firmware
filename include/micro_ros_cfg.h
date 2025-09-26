@@ -21,6 +21,7 @@
 #include <rclc/rclc.h>
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/string.h>
+#include <std_msgs/msg/bool.h>
 // #include <std_msgs/msg/int64.h>
 #include <sensor_msgs/msg/battery_state.h>
 #include <sensor_msgs/msg/imu.h>
@@ -60,6 +61,8 @@
   #define NODE_NAME                 "stm32_node"
 #elif defined(BOARD_ROSBOT_2)
   #define BATTERY_TOPIC_NAME        "battery"
+  #define LEFT_LED_TOPIC_NAME       "led/left"
+  #define RIGHT_LED_TOPIC_NAME      "led/right"
   #define NODE_NAME                 "rosbot_ros2_firmware"
 #endif
 
@@ -100,7 +103,7 @@ extern "C" int clock_gettime(clockid_t unused, struct timespec * tp);
 
 /* FUNCTIONS */
 void ErrorLoop(const char * func);
-uRosFunctionStatus uRosTransportInit(void);
+void uRosTransportInit(void);
 uRosFunctionStatus uRosPingAgent(void);
 uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
 uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);

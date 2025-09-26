@@ -85,7 +85,11 @@ void setup()
 
 #if defined(BOARD_ROSBOT_XL)
   PixelStrip.Init();
+  const char* board_version="BOARD_ROSBOT_XL";
+#elif defined(BOARD_ROSBOT_2)
+  const char* board_version="BOARD_ROSBOT_2";
 #endif
+  PRINT_DEBUG("")
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
@@ -299,6 +303,7 @@ static void RuntimeStatsTask(void * p)
       Serial.printf("\r\n%s\r\n-------------", buf);
     }
     vTaskDelay(100);
+
   }
 }
 
