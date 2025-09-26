@@ -20,8 +20,6 @@
 #include <hal_conf_custom.h>
 #include "stm32f407xx.h"
 
-#define PRINT_DEBUG(msg) if (firmware_mode == fw_debug) { Serial.printf(msg); }
-
 
 /* VARIABLES */
 bool uRosInitSuccesfull = false;

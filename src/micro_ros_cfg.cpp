@@ -44,7 +44,7 @@ extern FirmwareModeTypeDef firmware_mode;
 void ErrorLoop(const char * func)
 {
   for (int i = 0; i < 4; ++i) {
-    if (firmware_mode == fw_debug) Serial.printf("In error loop from function %s\r\n", func);
+    PRINT_DEBUG("In error loop from function %s\r\n", func)
     SetRedLed(Toggle);
     SetGreenLed(Off);
     delay(500);
@@ -249,48 +249,46 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
-  if (firmware_mode == fw_debug)
-    Serial.printf(
-      "Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
+  PRINT_DEBUG("Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
 
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  if (firmware_mode == fw_debug) Serial.printf("Created node '%s'\r\n", NODE_NAME);
+  PRINT_DEBUG("Created node '%s'\r\n", NODE_NAME)
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created timer\r\n");
+  PRINT_DEBUG("Created timer\r\n")
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     MOTORS_CMD_TOPIC_NAME));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '%s' subscriber.\r\n", MOTORS_CMD_TOPIC_NAME);
+  PRINT_DEBUG("Created '%s' subscriber.\r\n", MOTORS_CMD_TOPIC_NAME)
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
     &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), IMU_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", IMU_TOPIC_NAME);
+  PRINT_DEBUG("Created '%s' publisher.\r\n", IMU_TOPIC_NAME)
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
     &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
     MOTOR_STATE_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", MOTOR_STATE_TOPIC_NAME);
+  PRINT_DEBUG("Created '%s' publisher.\r\n", MOTOR_STATE_TOPIC_NAME)
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
     &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
     BATTERY_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", BATTERY_TOPIC_NAME);
+  PRINT_DEBUG("Created '%s' publisher.\r\n", BATTERY_TOPIC_NAME)
   /*===== INIT SERVICES ===== */
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
     &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), GET_CPU_ID_SERVICE_NAME));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '%s' service.\r\n", GET_CPU_ID_SERVICE_NAME);
+  PRINT_DEBUG("Created '%s' service.\r\n", GET_CPU_ID_SERVICE_NAME)
   /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
@@ -299,10 +297,10 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rclc_executor_add_service(
     &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
     uRosGetIdCallback));
-  if (firmware_mode == fw_debug) Serial.printf("Executor started\r\n");
+  PRINT_DEBUG("Executor started\r\n")
 
   RCCHECK(rmw_uros_sync_session(1000));
-  if (firmware_mode == fw_debug) Serial.printf("Clocks synchronised\r\n");
+  PRINT_DEBUG("Clocks synchronised\r\n")
   return Created;
 }
 
@@ -321,7 +319,7 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rcl_node_fini(&node));
   RCCHECK(rclc_support_fini(&support));
   RCCHECK(rcl_init_options_fini(&init_options));
-  if (firmware_mode == fw_debug) Serial.printf("Destroyed all microros entities.\r\n");
+  PRINT_DEBUG("Destroyed all microros entities.\r\n")
   return Destroyed;
 }
 
