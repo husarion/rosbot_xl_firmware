@@ -255,7 +255,7 @@ uRosEntitiesStatus uRosCreateEntities(void)
 
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  if (firmware_mode == fw_debug) Serial.printf("Created node `%s`\r\n", NODE_NAME);
+  if (firmware_mode == fw_debug) Serial.printf("Created node '%s'\r\n", NODE_NAME);
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
@@ -263,34 +263,34 @@ uRosEntitiesStatus uRosCreateEntities(void)
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
-    "_motors_cmd"));
+    MOTORS_CMD_TOPIC_NAME));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_cmd' subscriber\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '%s' subscriber.\r\n", MOTORS_CMD_TOPIC_NAME);
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
-    &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), "_imu/data_raw"));
+    &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), IMU_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_imu/data_raw' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", IMU_TOPIC_NAME);
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
     &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-    "_motors_response"));
+    MOTOR_STATE_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_response' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", MOTOR_STATE_TOPIC_NAME);
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
     &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
-    "battery_state"));
+    BATTERY_TOPIC_NAME));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'battery_state' publisher.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '%s' publisher.\r\n", BATTERY_TOPIC_NAME);
   /*===== INIT SERVICES ===== */
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
-    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
+    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), GET_CPU_ID_SERVICE_NAME));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'get_cpu_id_service' service.\r\n");
+  if (firmware_mode == fw_debug) Serial.printf("Created '%s' service.\r\n", GET_CPU_ID_SERVICE_NAME);
   /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));

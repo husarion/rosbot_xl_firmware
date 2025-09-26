@@ -37,7 +37,6 @@
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
-#define NODE_NAME "stm32_node"
 #define AGENT_RECONNECTION_TIMEOUT 50
 #define AGENT_RECONNECTION_ATTEMPTS 2
 #define PING_AGENT_TIMEOUT 50
@@ -51,6 +50,18 @@
 #define REAR_LEFT_MOTOR_NAME "rl_wheel_joint"
 #define REAR_RIGHT_MOTOR_NAME "rr_wheel_joint"
 #define MOTORS_RESPONSE_FREQ 50
+// uRos topics
+#define IMU_TOPIC_NAME              "_imu/data_raw"
+#define MOTORS_CMD_TOPIC_NAME       "_motors_cmd"
+#define MOTOR_STATE_TOPIC_NAME      "_motors_response"
+#define GET_CPU_ID_SERVICE_NAME     "/get_cpu_id"
+#if defined(BOARD_ROSBOT_XL)
+  #define BATTERY_TOPIC_NAME        "battery_state"
+  #define NODE_NAME                 "stm32_node"
+#elif defined(BOARD_ROSBOT_2)
+  #define BATTERY_TOPIC_NAME        "battery"
+  #define NODE_NAME                 "rosbot_ros2_firmware"
+#endif
 
 #define RCCHECK(fn)                \
   {                                \
