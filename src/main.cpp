@@ -131,17 +131,17 @@ void setup()
     PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
     PRINT_DEBUG("S8 creation problem");
   }
+
+  if (xTaskCreate(
+    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S10 creation problem");
+    }
 #endif
 
   if (xTaskCreate(
     uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
     PRINT_DEBUG("S9 creation problem");
   }
-
-  if (xTaskCreate(
-    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S10 creation problem");
-    }
   
   /* START RTOS */
   PRINT_DEBUG("Tasks starting");
@@ -247,6 +247,15 @@ static void PowerBoardTask(void * p)
     vTaskDelay(150);
   }
 }
+
+static void HardwareLoopTask(void * p)
+{
+  FanHardwareInit();
+  while (1) {
+    FanLoopHanlder();
+    vTaskDelay(100);
+  }
+}
 #endif
 
 static void uRosPingTask(void * p)
@@ -275,18 +284,6 @@ static void uRosPingTask(void * p)
     }
     vTaskDelay(FREQ_TO_DELAY_TICKS(PING_AGENT_FREQUENCY));
   }
-}
-
-static void HardwareLoopTask(void * p)
-{
-  vTaskDelay(1000);
-#if defined(BOARD_ROSBOT_XL)
-  FanHardwareInit();
-  while (1) {
-    FanLoopHanlder();
-    vTaskDelay(100);
-  }
-#endif
 }
 
 static void RuntimeStatsTask(void * p)
