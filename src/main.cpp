@@ -85,11 +85,7 @@ void setup()
 
 #if defined(BOARD_ROSBOT_XL)
   PixelStrip.Init();
-  const char* board_version="BOARD_ROSBOT_XL";
-#elif defined(BOARD_ROSBOT_2)
-  const char* board_version="BOARD_ROSBOT_2";
 #endif
-  PRINT_DEBUG("")
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
@@ -97,58 +93,58 @@ void setup()
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
   uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
-  PRINT_DEBUG("Queues created\r\n");
+  PRINT_DEBUG("Queues created");
 
   /* RTOS TASKS CREATION */
   if (xTaskCreate(
     RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S1 creation problem\r\n");
+    PRINT_DEBUG("S1 creation problem");
   }
 
   if (xTaskCreate(
     ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S2 creation problem\r\n");
+    PRINT_DEBUG("S2 creation problem");
   }
 
   if (xTaskCreate(
     RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S3 creation problem\r\n");
+    PRINT_DEBUG("S3 creation problem");
   }
 
   if (xTaskCreate(
     PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3, NULL) != pdPASS) {
-    PRINT_DEBUG("S4 creation problem\r\n");
+    PRINT_DEBUG("S4 creation problem");
   }
 
 #if defined(BOARD_ROSBOT_XL)
   if (xTaskCreate(
     PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S5 creation problem\r\n");
+    PRINT_DEBUG("S5 creation problem");
   }
 
   if (xTaskCreate(
     SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S7 creation problem\r\n");
+    PRINT_DEBUG("S7 creation problem");
   }
 
   if (xTaskCreate(
     PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S8 creation problem\r\n");
+    PRINT_DEBUG("S8 creation problem");
   }
 #endif
 
   if (xTaskCreate(
     uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S9 creation problem\r\n");
+    PRINT_DEBUG("S9 creation problem");
   }
 
   if (xTaskCreate(
     HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
-    PRINT_DEBUG("S10 creation problem\r\n");
+    PRINT_DEBUG("S10 creation problem");
     }
   
   /* START RTOS */
-  PRINT_DEBUG("Tasks starting\r\n");
+  PRINT_DEBUG("Tasks starting");
   vTaskStartScheduler();
 }
 
@@ -296,11 +292,11 @@ static void HardwareLoopTask(void * p)
 static void RuntimeStatsTask(void * p)
 {
   char buf[2000];
-  PRINT_DEBUG("runtime stats task started\r\n");
+  PRINT_DEBUG("runtime stats task started");
   while (1) {
     if (firmware_mode == fw_debug) {
       vTaskGetRunTimeStats(buf);
-      Serial.printf("\r\n%s\r\n-------------", buf);
+      // Serial.printf("\r\n%s\r\n-------------", buf);
     }
     vTaskDelay(100);
 

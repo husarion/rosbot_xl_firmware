@@ -21,7 +21,9 @@ typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 #define PRINT_DEBUG(...) \
     do { \
         if (firmware_mode == fw_debug) { \
+            Serial.printf("[%s : %d] ", __FILE__, __LINE__); \
             Serial.printf(__VA_ARGS__); \
+            Serial.printf("\r\n"); \
         } \
     } while (0);
 

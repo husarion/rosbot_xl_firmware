@@ -70,15 +70,15 @@
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
+      PRINT_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
       ErrorLoop(__FUNCTION__);     \
-      Serial.printf("o");          \
     }                              \
   }
 #define RCSOFTCHECK(fn)            \
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
-      Serial.printf("!");          \
+      PRINT_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
     }                              \
   }
 
