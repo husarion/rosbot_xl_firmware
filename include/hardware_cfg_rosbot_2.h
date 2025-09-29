@@ -51,12 +51,11 @@
 #define FTDI_SERIAL_TIMEOUT 1 // ms
 
 /* IMU */
-#define IMU_I2C I2C2
-#define IMU_SDA PF0
-#define IMU_SCL PF1
-#define IMU_GPIO_IT PF2
+#define IMU_I2C I2C3
+#define IMU_SDA PC9
+#define IMU_SCL PA8
 #define IMU_SAMPLE_FREQ 25  // Hz
-#define IMU_ID 0x37
+#define IMU_ID 0xA0
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
 
