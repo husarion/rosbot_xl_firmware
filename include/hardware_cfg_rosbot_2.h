@@ -15,8 +15,6 @@
 
 /* OTHERS */
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
-#define RTOS_FREQUENCY 1000      // hz
-#define FREQ_TO_DELAY_TIME(freq) (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
 
 // POWER OFF
 #define SBC_ETH_CONNECT_TIMEOUT 10  // ms

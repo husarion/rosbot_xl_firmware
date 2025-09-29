@@ -27,6 +27,8 @@ typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
         } \
     } while (0);
 
+#define FREQ_TO_DELAY_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
+
 /* CHOOSE HARDWARE CONFIG */
 
 #if defined(BOARD_ROSBOT_XL)
