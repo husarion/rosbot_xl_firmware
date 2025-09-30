@@ -21,6 +21,7 @@ rcl_subscription_t subscriber;
 rcl_subscription_t motors_cmd_subscriber;
 #if defined(BOARD_ROSBOT_2)
 rcl_subscription_t left_led_subscriber;
+rcl_subscription_t right_led_subscriber;
 #endif
 // ROS MESSAGES
 sensor_msgs__msg__Imu imu_msg;
@@ -161,6 +162,16 @@ void uRosLeftLedCallback(const void * arg_led_msg)
     SetGreenLed(Off);
   }
 }
+
+void uRosRightLedCallback(const void * arg_led_msg)
+{
+  std_msgs__msg__Bool * led_msg = (std_msgs__msg__Bool *)arg_led_msg;
+  if (led_msg->data == true) {
+    SetGreenLed2(On);
+  } else {
+    SetGreenLed2(Off);
+  }
+}
 #endif
 
 void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
@@ -290,6 +301,11 @@ uRosEntitiesStatus uRosCreateEntities(void)
     LEFT_LED_TOPIC_NAME));
   PRINT_DEBUG("Created '%s' subscriber.", LEFT_LED_TOPIC_NAME)
   ros_msgs_cnt++;
+  RCCHECK(rclc_subscription_init_default(
+    &right_led_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+    RIGHT_LED_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' subscriber.", RIGHT_LED_TOPIC_NAME)
+  ros_msgs_cnt++;
 #endif
   /*===== INIT PUBLISHERS ===== */
   // IMU
@@ -323,6 +339,9 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rclc_executor_add_subscription(
     &executor, &left_led_subscriber, &led_msg, &uRosLeftLedCallback, ON_NEW_DATA));
   PRINT_DEBUG("rclc_executor_add_subscription left_led_subscriber")
+  RCCHECK(rclc_executor_add_subscription(
+    &executor, &right_led_subscriber, &led_msg, &uRosRightLedCallback, ON_NEW_DATA));
+  PRINT_DEBUG("rclc_executor_add_subscription right_led_subscriber")
 #endif
   RCCHECK(rclc_executor_add_service(
     &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
@@ -346,6 +365,7 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
 #if defined(BOARD_ROSBOT_2)
   RCCHECK(rcl_subscription_fini(&left_led_subscriber, &node));
+  RCCHECK(rcl_subscription_fini(&right_led_subscriber, &node));
 #endif
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
   RCCHECK(rcl_timer_fini(&timer));

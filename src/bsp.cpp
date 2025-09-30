@@ -32,7 +32,10 @@ void BoardGpioInit(void)
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
-#if defined(BOARD_ROSBOT_XL)
+#if defined(BOARD_ROSBOT_2)
+  digitalWrite(GRN_LED2, LOW);
+  pinMode(GRN_LED2, OUTPUT);
+#elif defined(BOARD_ROSBOT_XL)
   digitalWrite(EN_LOC_5V, LOW);
   pinMode(EN_LOC_5V, OUTPUT);
   digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
@@ -58,6 +61,15 @@ void SetGreenLed(SwitchStateTypeDef State_)
   if (State_ == On) digitalWrite(GRN_LED, HIGH);
   if (State_ == Toggle) digitalToggle(GRN_LED);
 }
+
+#if defined(BOARD_ROSBOT_2)
+void SetGreenLed2(SwitchStateTypeDef State_)
+{
+  if (State_ == Off) digitalWrite(GRN_LED2, LOW);
+  if (State_ == On) digitalWrite(GRN_LED2, HIGH);
+  if (State_ == Toggle) digitalToggle(GRN_LED2);
+}
+#endif
 
 void SetRedLed(SwitchStateTypeDef State_)
 {
