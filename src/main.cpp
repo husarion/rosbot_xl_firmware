@@ -266,16 +266,17 @@ static void uRosPingTask(void * p)
     xQueueSendToFront(uRosPingAgentStatusQueue, (void *)&uRosPingAgentStatus, (TickType_t)0);
     switch (uRosPingAgentStatus) {
       case Ok:
-        SetGreenLed(On);
+        SetGreenLed(Toggle);
         SetRedLed(Off);
         break;
       case Error:
+        PRINT_DEBUG("rmw_uros_ping_agent() error!");
         SetGreenLed(Off);
-        SetRedLed(Toggle);
+        SetRedLed(On);
         break;
       case Default:
-        SetGreenLed(Toggle);
-        SetRedLed(Off);
+         SetGreenLed(On);
+         SetRedLed(On);
         break;
       default:
         SetGreenLed(Off);

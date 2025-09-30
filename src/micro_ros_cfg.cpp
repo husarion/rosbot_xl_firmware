@@ -103,7 +103,7 @@ void uRosTransportInit(void)
 
 uRosFunctionStatus uRosPingAgent(void)
 {
-  if (rmw_uros_ping_agent(AGENT_RECONNECTION_TIMEOUT, AGENT_RECONNECTION_ATTEMPTS) == RMW_RET_OK)
+  if (rmw_uros_ping_agent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) == RMW_RET_OK)
     return Ok;
   else
     return Error;  // if false
@@ -224,16 +224,6 @@ void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
       imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
       imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
       imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
-
-      if (!rcl_publisher_is_valid(&imu_publisher)) {
-        PRINT_DEBUG("imu_publisher is invalid");
-      }
-
-      if (imu_msg.header.frame_id.data == NULL) {
-        PRINT_DEBUG("imu_msg.header.frame_id is NULL");
-      }
-      PRINT_DEBUG("Publishing IMU with frame_id='%s'", imu_msg.header.frame_id.data);
-
       RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
     }
   }
@@ -295,7 +285,7 @@ uRosEntitiesStatus uRosCreateEntities(void)
   PRINT_DEBUG("Created '%s' subscriber.", MOTORS_CMD_TOPIC_NAME)
   ros_msgs_cnt++;
 #if defined(BOARD_ROSBOT_2)
-  RCCHECK(rclc_subscription_init_best_effort(
+  RCCHECK(rclc_subscription_init_default(
     &left_led_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
     LEFT_LED_TOPIC_NAME));
   PRINT_DEBUG("Created '%s' subscriber.", LEFT_LED_TOPIC_NAME)

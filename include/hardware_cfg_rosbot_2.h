@@ -52,6 +52,7 @@
 #define FTDI_SERIAL_RX PB11
 #define FTDI_SERIAL_TIMEOUT 1 // ms
 
+
 /* IMU */
 #define IMU_I2C I2C3
 #define IMU_SDA PC9
