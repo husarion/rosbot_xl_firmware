@@ -27,6 +27,7 @@ MotorClass motor_4(
   M4_DEFAULT_DIR, &timebase_timer);
 MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
 
+#if defined(BOARD_ROSBOT_XL)
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_)
 {
   if (GetBoardVersion() == "v1.2") {
@@ -45,6 +46,7 @@ void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint
     digitalWrite(Ilim4_, HIGH);
   }
 }
+#endif
 
 MotorClass::MotorClass() {}
 

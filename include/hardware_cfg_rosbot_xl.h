@@ -78,6 +78,52 @@
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
 
+/* MOTORS */
+#define M1_ENC_TIM TIM1
+#define M1_ENC_A PE9
+#define M1_ENC_B PE11
+#define M1_PWM_TIM TIM10
+#define M1_PWM_PIN PF6
+#define M1_PWM_TIM_CH 1
+#define M1A_IN PE12
+#define M1B_IN PE13
+#define M1_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
+
+#define M2_ENC_TIM TIM2
+#define M2_ENC_A PA15
+#define M2_ENC_B PB3
+#define M2_PWM_TIM TIM11
+#define M2_PWM_PIN PF7
+#define M2_PWM_TIM_CH 1
+#define M2A_IN PG11
+#define M2B_IN PG12
+#define M2_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
+
+#define M3_ENC_TIM TIM3
+#define M3_ENC_A PC6
+#define M3_ENC_B PC7
+#define M3_PWM_TIM TIM13
+#define M3_PWM_PIN PF8
+#define M3_PWM_TIM_CH 1
+#define M3A_IN PG5
+#define M3B_IN PG6
+#define M3_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
+
+#define M4_ENC_TIM TIM4
+#define M4_ENC_A PD12
+#define M4_ENC_B PD13
+#define M4_PWM_TIM TIM14
+#define M4_PWM_PIN PF9
+#define M4_PWM_TIM_CH 1
+#define M4A_IN PD10
+#define M4B_IN PD11
+#define M4_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
+
+#define ILIM1 PE10
+#define ILIM2 PG15
+#define ILIM3 PG7
+#define ILIM4 PD14
+
 /* PIXEL LED */
 #define PIXEL_SPI SPI2
 #define PIXEL_MOSI PB15

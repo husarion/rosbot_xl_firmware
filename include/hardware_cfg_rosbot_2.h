@@ -42,6 +42,8 @@
 #define SBC_SERIAL_RX PA10
 #define SBC_SERIAL_TIMEOUT 1 // ms
 #define SBC_STATUS PG6 // According to "Core2 v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define RPI_CONSOLE PG5
+#define RPI_BTN PG7
 
 /* FTDI SERIAL */
 #define FTDI_SERIAL Serial3
@@ -58,6 +60,53 @@
 #define IMU_ID 0xA0
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
+
+/* MOTORS */
+#define M12_SLEEP PC13
+#define M12_FAULT PE0
+
+#define M1_ENC_TIM TIM2
+#define M1_ENC_A PA0 // TIM2_CH1_ETR TODO - remember to disable ETR functionality
+#define M1_ENC_B PA1 // TIM2_CH2
+#define M1_PWM_TIM TIM10
+#define M1_PWM_TIM_CH 1
+#define M1_PWM_PIN PF6
+#define M1A_IN PG10
+#define M1B_IN PG11
+#define M1_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
+
+#define M2_ENC_TIM TIM8
+#define M2_ENC_A PC6 // TIM8_CH1
+#define M2_ENC_B PC7 // TIM8_CH2
+#define M2_PWM_TIM TIM11
+#define M2_PWM_TIM_CH 1
+#define M2_PWM_PIN PF7
+#define M2A_IN PD3
+#define M2B_IN PD4
+#define M2_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
+
+#define M34_SLEEP PC14
+#define M34_FAULT PE1
+
+#define M3_ENC_TIM TIM3
+#define M3_ENC_A PB4 // TIM3_CH1
+#define M3_ENC_B PA7 // TIM3_CH2
+#define M3_PWM_TIM TIM13
+#define M3_PWM_TIM_CH 1
+#define M3_PWM_PIN PF8
+#define M3A_IN PC15
+#define M3B_IN PF2
+#define M3_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
+
+#define M4_ENC_TIM TIM4
+#define M4_ENC_A PB6 // TIM4_CH1
+#define M4_ENC_B PB7 // TIM4_CH2
+#define M4_PWM_TIM TIM14
+#define M4_PWM_TIM_CH 1
+#define M4_PWM_PIN PF9
+#define M4A_IN PE5
+#define M4B_IN PE6
+#define M4_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
 
 /* ETHERNET */
 // #define CLIENT_IP "192.168.77.3"

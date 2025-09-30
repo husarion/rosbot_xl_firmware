@@ -82,6 +82,7 @@ void BoardPheripheralsInit(void)
   #if EXT_SERIAL_EN_FLAG == 1
     EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
     EXT_SERIAL.println("Hello external device");
+  SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
   #endif
 #elif defined(BOARD_ROSBOT_2)
   // FTDI UART-USB init
@@ -93,7 +94,6 @@ void BoardPheripheralsInit(void)
 
   I2cBusInit();
   delay(250);
-  SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void)
