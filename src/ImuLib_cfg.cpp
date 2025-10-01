@@ -28,8 +28,13 @@ ImuDriver::~ImuDriver() { ; }
 
 bool ImuDriver::Init()
 {
-  // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for
-  // orientation
+#if defined(BOARD_ROSBOT_2)
+  // Enable power for IMU sensor
+  pinMode(IMU_POWER_ON, OUTPUT);
+  digitalWrite(IMU_POWER_ON, HIGH);
+#endif
+
+  // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for orientation
   if (this->ImuBno->begin(OPERATION_MODE_IMUPLUS)) {
     this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
     this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);

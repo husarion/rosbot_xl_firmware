@@ -78,7 +78,9 @@ void setup()
   // Hardware init
   BoardPheripheralsInit();
   uRosTransportInit();
-  ImuBno.Init();
+  if(!ImuBno.Init()) {
+    PRINT_DEBUG("ImuBno.Init() failed!");
+  }
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);

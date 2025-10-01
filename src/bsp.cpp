@@ -147,7 +147,10 @@ String GetBoardVersion(void)
   return BoardVersion;
 }
 
-void I2cBusInit(void) { I2cBus.begin(); }
+void I2cBusInit(void)
+{
+  I2cBus.begin();
+}
 
 #if defined(BOARD_ROSBOT_XL)
 void TestFunction(uint8_t state)
