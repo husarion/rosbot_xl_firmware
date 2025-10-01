@@ -28,7 +28,7 @@ ImuDriver::~ImuDriver() { ; }
 
 bool ImuDriver::Init()
 {
-#if defined(BOARD_ROSBOT_2)
+#if defined(BOARD_CORE_2)
   // Enable power for IMU sensor
   pinMode(IMU_POWER_ON, OUTPUT);
   digitalWrite(IMU_POWER_ON, HIGH);

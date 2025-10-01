@@ -47,7 +47,7 @@ void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint
     digitalWrite(Ilim4_, HIGH);
   }
 }
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
 // Custom timers configuration for ROSBOT_2 encoders, as using default
 // HardwareTimer::setMode() results in TIM3 using the same input as TIM8
 void ConfigureEncoderTimers(TIM_TypeDef* timer)
@@ -161,7 +161,7 @@ MotorClass::MotorClass(
 #if defined(BOARD_ROSBOT_XL)
   this->encoder_timer_->setMode(
     1, TIMER_INPUT_ENCODER_MODE12, this->a_channel_encoder_pin_, this->b_channel_encoder_pin_);
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
   ConfigureEncoderTimers(arg_encoder_timer);
 #endif
   this->encoder_timer_->setOverflow(ENCODER_COUNTER_MAX_VALUE);

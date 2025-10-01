@@ -18,7 +18,7 @@ HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 UartProtocolClass PowerBoardSerial(
   PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD_SERIAL_BAUDRATE, PWR_BRD_SERIAL_CONFIG);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
 HardwareSerial SBC_SERIAL(SBC_SERIAL_TX, SBC_SERIAL_RX);
 #endif
 String PowerBoardFirmwareVersion = "";
@@ -32,7 +32,7 @@ void BoardGpioInit(void)
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
-#if defined(BOARD_ROSBOT_2)
+#if defined(BOARD_CORE_2)
   digitalWrite(GRN_LED2, LOW);
   pinMode(GRN_LED2, OUTPUT);
 #elif defined(BOARD_ROSBOT_XL)
@@ -62,7 +62,7 @@ void SetGreenLed(SwitchStateTypeDef State_)
   if (State_ == Toggle) digitalToggle(GRN_LED);
 }
 
-#if defined(BOARD_ROSBOT_2)
+#if defined(BOARD_CORE_2)
 void SetGreenLed2(SwitchStateTypeDef State_)
 {
   if (State_ == Off) digitalWrite(GRN_LED2, LOW);
@@ -96,7 +96,7 @@ void BoardPheripheralsInit(void)
     EXT_SERIAL.println("Hello external device");
   SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
   #endif
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
   // FTDI UART-USB init
   FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
   FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
@@ -115,7 +115,7 @@ PowerOffSignalTypeDef PowerOffSignalLoopHandler(void)
     return Shutdown;
   else
     return Idle;
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
   return Idle;
 #endif
 }
@@ -141,7 +141,7 @@ String GetBoardVersion(void)
     }
     BoardVersion = (String) "v1.1";
   }
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
     static String BoardVersion = (String) "core2";
 #endif
   return BoardVersion;

@@ -57,7 +57,7 @@
 #if defined(BOARD_ROSBOT_XL)
   #define BATTERY_TOPIC_NAME        "battery_state"
   #define NODE_NAME                 "stm32_node"
-#elif defined(BOARD_ROSBOT_2)
+#elif defined(BOARD_CORE_2)
   #define BATTERY_TOPIC_NAME        "battery"
   #define LEFT_LED_TOPIC_NAME       "led/left"
   #define RIGHT_LED_TOPIC_NAME      "led/right"
