@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DB: Build firmware",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "digital_board"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    },
+
+    {
+      "label": "Core2: Build firmware",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "core2"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    },
+
+    {
+      "label": "Core2: Build and deploy firmware",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/deploy_firmware.sh",
+        "192.168.77.2",
+        "husarion",
+        "${workspaceFolder}/.pio/build/core2/firmware.bin"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"],
+      "dependsOn": ["Core2: Build firmware"]
+    }
+  ]
+}
