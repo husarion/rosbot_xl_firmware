@@ -6,7 +6,7 @@
     "f_cpu": "168000000L",
     "mcu": "stm32f407zgt6",
     "product_line": "STM32F407xx",
-    "variant": "BLACK_F407XX"
+    "variant": "STM32F4xx/F407Z(E-G)T_F417Z(E-G)T"
   },
   "connectivity": [
     "can"
