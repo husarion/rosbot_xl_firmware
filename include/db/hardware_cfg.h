@@ -1,5 +1,5 @@
 /**
- * @file db_hardware_cfg.h
+ * @file hardware_cfg.h
  * @author Maciej Kurcius
  * @brief
  * @version 0.1
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef DB_HARDWARE_CFG
-#define DB_HARDWARE_CFG
+#ifndef DB__HARDWARE_CFG
+#define DB__HARDWARE_CFG
 
 
 /* OTHERS */
@@ -218,4 +218,4 @@
 // BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE (BATTERY_CELLS_PARALLEL *
 // BATTERY_CELLS_SERIES)
 
-#endif /* DB_HARDWARE_CFG */
+#endif /* DB__HARDWARE_CFG */

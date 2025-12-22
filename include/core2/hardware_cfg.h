@@ -1,5 +1,5 @@
 /**
- * @file core2_hardware_cfg.h
+ * @file hardware_cfg.h
  * @author Jakub Klein
  * @brief
  * @version 0.1
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef CORE2_HARDWARE_CFG
-#define CORE2_HARDWARE_CFG
+#ifndef CORE2__HARDWARE_CFG
+#define CORE2__HARDWARE_CFG
 
 
 /* OTHERS */
@@ -173,4 +173,4 @@
 // BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE (BATTERY_CELLS_PARALLEL *
 // BATTERY_CELLS_SERIES)
 
-#endif /* CORE2_HARDWARE_CFG */
+#endif /* CORE2__HARDWARE_CFG */

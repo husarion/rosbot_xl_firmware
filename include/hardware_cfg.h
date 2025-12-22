@@ -35,9 +35,9 @@ typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 /* CHOOSE HARDWARE CONFIG */
 
 #if defined(DIGITAL_BOARD)
-  #include "db_hardware_cfg.h"
+  #include "db/hardware_cfg.h"
 #elif defined(CORE_2)
-  #include "core_2_hardware_cfg.h"
+  #include "core2/hardware_cfg.h"
 #else
   #error "No board version defined! Did you set correct flag in platformio.ini?"
 #endif
