@@ -13,21 +13,22 @@
       "group": "build",
       "problemMatcher": ["$platformio"]
     },
-
     {
-      "label": "DB: Build firmware (Release)",
+      "label": "DB: Build and deploy firmware",
       "type": "shell",
       "command": "platformio",
       "args": [
         "run",
         "-e",
-        "digital_board_release",
+        "digital_board",
+        "--target",
+        "upload"
       ],
       "group": "build",
       "problemMatcher": ["$platformio"]
     },
 
-    {
+        {
       "label": "Core2: Build firmware",
       "type": "shell",
       "command": "platformio",
@@ -39,33 +40,34 @@
       "group": "build",
       "problemMatcher": ["$platformio"]
     },
-
     {
-      "label": "Core2: Build firmware (Release)",
+      "label": "Core2: Build and deploy firmware",
       "type": "shell",
       "command": "platformio",
       "args": [
         "run",
         "-e",
-        "core2_release"
+        "core2",
+        "--target",
+        "upload"
       ],
       "group": "build",
       "problemMatcher": ["$platformio"]
     },
 
     {
-      "label": "Core2: Build and deploy firmware",
+      "label": "Build Releases",
       "type": "shell",
-      "command": "bash",
+      "command": "platformio",
       "args": [
-        "${workspaceFolder}/scripts/deploy_firmware.sh",
-        "192.168.77.2",
-        "husarion",
-        "${workspaceFolder}/.pio/build/core2/firmware.bin"
+        "run",
+        "-e",
+        "core2_release",
+        "-e",
+        "digital_board_release"
       ],
       "group": "build",
-      "problemMatcher": ["$platformio"],
-      "dependsOn": ["Core2: Build firmware"]
-    }
+      "problemMatcher": ["$platformio"]
+    },
   ]
 }
