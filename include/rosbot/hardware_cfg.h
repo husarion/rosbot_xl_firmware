@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef CORE2__HARDWARE_CFG
-#define CORE2__HARDWARE_CFG
+#ifndef ROSBOT__HARDWARE_CFG
+#define ROSBOT__HARDWARE_CFG
 
 
 /* OTHERS */
@@ -41,7 +41,7 @@
 #define SBC_SERIAL_TX PA9
 #define SBC_SERIAL_RX PA10
 #define SBC_SERIAL_TIMEOUT 1 // ms
-#define SBC_STATUS PG6 // According to "Core2 v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define SBC_STATUS PG6 // According to "Rosbot v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
 #define RPI_CONSOLE PG5
 #define RPI_BTN PG7
 
@@ -173,4 +173,4 @@
 // BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE (BATTERY_CELLS_PARALLEL *
 // BATTERY_CELLS_SERIES)
 
-#endif /* CORE2__HARDWARE_CFG */
+#endif /* ROSBOT__HARDWARE_CFG */

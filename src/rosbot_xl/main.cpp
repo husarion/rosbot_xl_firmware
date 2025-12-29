@@ -7,7 +7,7 @@
 // MOTORS
 #include <motors.h>
 // IMU
-#include <ImuLib_cfg.h>
+#include "hardware/imu.h"
 // PIXEL
 #include <PixelLedLib_cfg.h>
 /*===== CONNECTIVITY =====*/
@@ -16,6 +16,7 @@
 #include <UartLib.h>
 #include <hal_conf_custom.h>
 #include "stm32f407xx.h"
+#include "log.h"
 
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
@@ -28,10 +29,9 @@ QueueHandle_t uRosPingAgentStatusQueue;
 portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
 
 /* EXTERN VARIABLES */
+Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 extern UartProtocolClass PowerBoardSerial;
 
-// IMU
-extern ImuDriver ImuBno;
 // microROS
 extern std_msgs__msg__String msgs;
 extern sensor_msgs__msg__Imu imu_msg;
@@ -41,7 +41,6 @@ extern rcl_publisher_t imu_publisher;
 extern rcl_publisher_t motor_state_publisher;
 // MOTORS
 extern TimebaseTimerClass timebase_timer;
-extern MotorClass wheel_motors[];
 // LED
 extern PixelLedClass pixel_strip;
 
@@ -75,7 +74,7 @@ void setup()
   // Hardware init
   BoardPheripheralsInit();
   PixelStrip.Init();
-  ImuBno.Init();
+  imuDriver.Init();
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);
@@ -83,55 +82,55 @@ void setup()
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
-  ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
+  ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
   uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
-  PRINT_DEBUG("Queues created");
+  LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(
     RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
     NULL);
   if (s1 != pdPASS)
-    PRINT_DEBUG("S1 creation problem");
+    LOG_DEBUG("S1 creation problem");
   s2 = xTaskCreate(
     ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
   if (s2 != pdPASS)
-    PRINT_DEBUG("S2 creation problem");
+    LOG_DEBUG("S2 creation problem");
   s3 = xTaskCreate(
     RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
     tskIDLE_PRIORITY + 1, NULL);
   if (s3 != pdPASS)
-    PRINT_DEBUG("S3 creation problem");
+    LOG_DEBUG("S3 creation problem");
   s4 = xTaskCreate(
     PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
     NULL);
   if (s4 != pdPASS)
-    PRINT_DEBUG("S4 creation problem");
+    LOG_DEBUG("S4 creation problem");
   s5 = xTaskCreate(
     PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
   if (s5 != pdPASS)
-    PRINT_DEBUG("S5 creation problem");
+    LOG_DEBUG("S5 creation problem");
   s7 = xTaskCreate(
     SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
     NULL);
   if (s7 != pdPASS)
-    PRINT_DEBUG("S7 creation problem");
+    LOG_DEBUG("S7 creation problem");
   s8 = xTaskCreate(
     PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
     NULL);
   if (s8 != pdPASS)
-    PRINT_DEBUG("S8 creation problem");
+    LOG_DEBUG("S8 creation problem");
   s9 = xTaskCreate(
     uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL);
   if (s9 != pdPASS)
-    PRINT_DEBUG("S9 creation problem");
+    LOG_DEBUG("S9 creation problem");
   s10 = xTaskCreate(
     HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL,
     tskIDLE_PRIORITY + 1, NULL);
   if (s10 != pdPASS)
-    PRINT_DEBUG("S10 creation problem");
+    LOG_DEBUG("S10 creation problem");
   /* START RTOS */
-  PRINT_DEBUG("Tasks starting");
+  LOG_DEBUG("Tasks starting");
   vTaskStartScheduler();
 }
 
@@ -149,10 +148,10 @@ static void RclcSpinTask(void * p)
 
 static void ImuTask(void * p)
 {
-  static imu_queue_t queue_imu;
+  static imu_data_t queue_imu;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
-    queue_imu = ImuBno.LoopHandler();
+    queue_imu = imuDriver.LoopHandler();
     xQueueSendToFront(ImuQueue, (void *)&queue_imu, TickType_t(0));
     vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TIME(IMU_SAMPLE_FREQ));
   }
@@ -278,7 +277,7 @@ static void HardwareLoopTask(void * p)
 static void RuntimeStatsTask(void * p)
 {
   char buf[2000];
-  PRINT_DEBUG("runtime stats task started");
+  LOG_DEBUG("runtime stats task started");
   while (1) {
     if (firmware_mode == fw_debug) {
       vTaskGetRunTimeStats(buf);

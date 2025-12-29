@@ -24,6 +24,3 @@ If you're following one of our tutorials, the agent service should be already in
 
 > In more recent versions `micro-XRCE` agent is used instead of `micro-ROS`, because ROS Domain ID functionality was added in the [v2.4.1 release of Micro-XRCE-DDS-Agent](https://github.com/eProsima/Micro-XRCE-DDS-Agent/releases/tag/v2.4.1) and so far `micro-ROS` agent wasn't updated to include this feature.
 
-## Creating a release
-
-Release is created automatically after PR with bump command is merged to the master branch. Available bump commands are: `bump::major`, `bump::minor` and `bump::patch` (simply add them to the description of your PR).

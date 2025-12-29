@@ -177,4 +177,6 @@ protected:
   ;
 };
 
+extern MotorClass wheel_motors[4];
+
 #endif /* MOTORS_H */

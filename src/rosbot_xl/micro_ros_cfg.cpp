@@ -54,7 +54,7 @@ void ErrorLoop(const char * func)
 
 uRosFunctionStatus uRosPingAgent(void)
 {
-  if (rmw_uros_ping_agent(AGENT_RECONNECTION_TIMEOUT, AGENT_RECONNECTION_ATTEMPTS) == RMW_RET_OK)
+  if (rmw_uros_ping_agent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) == RMW_RET_OK)
     return Ok;
   else
     return Error;  // if false
@@ -105,7 +105,7 @@ void uRosMotorsCmdCallback(const void * arg_input_message)
 void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
 {
   RCLC_UNUSED(arg_last_call_time);
-  static imu_queue_t queue_imu;
+  static imu_data_t queue_imu;
   static motor_state_queue_t motor_state_queue;
   static battery_state_queue_t battery_state_queue;
   if (arg_timer != NULL) {

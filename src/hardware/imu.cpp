@@ -9,7 +9,7 @@
  *
  */
 
-#include "ImuLib_cfg.h"
+#include "hardware/imu.h"
 #include <Wire.h>
 #include "bsp.h"
 
@@ -17,7 +17,7 @@
 
 extern TwoWire I2cBus;
 
-ImuDriver ImuBno(IMU_ID, IMU_ADDR_B, &I2cBus);
+ImuDriver imuDriver(IMU_ID, IMU_ADDR_B, &I2cBus);
 
 ImuDriver::ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire * ImuWire_)
 {
@@ -28,8 +28,13 @@ ImuDriver::~ImuDriver() { ; }
 
 bool ImuDriver::Init()
 {
-  // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for
-  // orientation
+#if defined(ROSBOT)
+  // Enable power for IMU sensor
+  pinMode(IMU_POWER_ON, OUTPUT);
+  digitalWrite(IMU_POWER_ON, HIGH);
+#endif
+
+  // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for orientation
   if (this->ImuBno->begin(OPERATION_MODE_IMUPLUS)) {
     this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
     this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
@@ -39,9 +44,9 @@ bool ImuDriver::Init()
   return true;
 }
 
-imu_queue_t ImuDriver::LoopHandler()
+imu_data_t ImuDriver::LoopHandler()
 {
-  imu_queue_t ImuQueue;
+  imu_data_t ImuQueue;
   imu::Quaternion Quaternion;
   double * buffer = &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER))[0];
   ImuQueue.LinearAcceleration[0] = (float)buffer[0];

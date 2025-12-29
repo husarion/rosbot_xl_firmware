@@ -31,10 +31,11 @@
 /*===== ROS SRVS TYPES =====*/
 #include <std_srvs/srv/trigger.h>
 /*===== REST =====*/
-#include <ImuLib_cfg.h>
+#include "hardware/imu.h"
 #include <STM32FreeRTOS.h>
 #include <bsp.h>
 #include <hardware_cfg.h>
+#include "log.h"
 
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
@@ -57,7 +58,7 @@
 #define GET_CPU_ID_SERVICE_NAME     "/get_cpu_id"
 #define NODE_NAME                 "stm32_node"
 #define BATTERY_TOPIC_NAME        "battery"
-#if defined(CORE_2)
+#if defined(ROSBOT)
   #define LEFT_LED_TOPIC_NAME       "led/left"
   #define RIGHT_LED_TOPIC_NAME      "led/right"
   #define RANGES_TOPIC_NAME         "ranges"
@@ -67,7 +68,7 @@
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
-      PRINT_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
+      LOG_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
       ErrorLoop(__FUNCTION__);     \
     }                              \
   }
@@ -75,7 +76,7 @@
   {                                \
     rcl_ret_t temp_rc = fn;        \
     if ((temp_rc != RCL_RET_OK)) { \
-      PRINT_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
+      LOG_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", temp_rc, __FUNCTION__);          \
     }                              \
   }
 

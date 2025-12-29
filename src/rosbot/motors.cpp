@@ -25,10 +25,10 @@ MotorClass motor_3(
 MotorClass motor_4(
   M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B,
   M4_DEFAULT_DIR, &timebase_timer);
-MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
+MotorClass wheel_motors[4] = {motor_1, motor_2, motor_3, motor_4};
 
 
-#if defined(DIGITAL_BOARD)
+#if defined(ROSBOT_XL)
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_)
 {
   if (GetBoardVersion() == "v1.2") {
@@ -47,7 +47,7 @@ void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint
     digitalWrite(Ilim4_, HIGH);
   }
 }
-#elif defined(CORE_2)
+#elif defined(ROSBOT)
 // Custom timers configuration for ROSBOT_2 encoders, as using default
 // HardwareTimer::setMode() results in TIM3 using the same input as TIM8
 void ConfigureEncoderTimers(TIM_TypeDef* timer)
@@ -158,10 +158,10 @@ MotorClass::MotorClass(
   this->a_channel_encoder_pin_ = arg_a_channel_encoder_pin;
   this->b_channel_encoder_pin_ = arg_b_channel_encoder_pin;
   this->encoder_timer_ = new HardwareTimer(arg_encoder_timer);
-#if defined(DIGITAL_BOARD)
+#if defined(ROSBOT_XL)
   this->encoder_timer_->setMode(
     1, TIMER_INPUT_ENCODER_MODE12, this->a_channel_encoder_pin_, this->b_channel_encoder_pin_);
-#elif defined(CORE_2)
+#elif defined(ROSBOT)
   ConfigureEncoderTimers(arg_encoder_timer);
 #endif
   this->encoder_timer_->setOverflow(ENCODER_COUNTER_MAX_VALUE);

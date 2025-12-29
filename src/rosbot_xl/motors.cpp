@@ -25,7 +25,7 @@ MotorClass motor_3(
 MotorClass motor_4(
   M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B,
   M4_DEFAULT_DIR, &timebase_timer);
-MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
+MotorClass wheel_motors[4] = {motor_1, motor_2, motor_3, motor_4};
 
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_)
 {

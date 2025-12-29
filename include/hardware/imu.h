@@ -9,8 +9,7 @@
  *
  */
 
-#ifndef ImuLibCfg_H
-#define ImuLibCfg_H
+#pragma once
 
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
@@ -19,10 +18,10 @@
 
 typedef struct
 {
-  float Orientation[4];
-  float AngularVelocity[3];
-  float LinearAcceleration[3];
-} imu_queue_t;
+  float Orientation[4];        // quaternion: x y z w
+  float AngularVelocity[3];    // rad/s
+  float LinearAcceleration[3]; // m/s^2
+} imu_data_t;
 
 class ImuDriver
 {
@@ -30,10 +29,10 @@ public:
   ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire * ImuWire_);
   ~ImuDriver();
   bool Init();
-  imu_queue_t LoopHandler();
+  imu_data_t LoopHandler();
 
 private:
   Adafruit_BNO055 * ImuBno;
 };
 
-#endif /* ImuLibCfg_H */
+extern ImuDriver imuDriver;
