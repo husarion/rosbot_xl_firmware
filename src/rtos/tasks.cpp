@@ -37,18 +37,30 @@ void destroy() {
 void task(void* pvParameters) {
     UNUSED(pvParameters);
     TickType_t wake_time = xTaskGetTickCount();
-    imu_data_t queue_imu;
+    imu_data_t imu_data;
 
     while(1) {
-        queue_imu = imuDriver.LoopHandler();
-        xQueueSendToFront(rtos::queues::ImuQueue, &queue_imu, 0);
+        imu_data = imuDriver.LoopHandler();
+        LOG_DEBUG("Orient 10x: [%d, %d, %d, %d] \n Gyro 10x: [%d, %d, %d] rad/s\n Accel 10x: [%d, %d, %d] m/s^2",
+                (int)(imu_data.orientation[0]*10),
+                (int)(imu_data.orientation[1]*10),
+                (int)(imu_data.orientation[2]*10),
+                (int)(imu_data.orientation[3]*10),
+                (int)(imu_data.angular_velocity[0]*10),
+                (int)(imu_data.angular_velocity[1]*10),
+                (int)(imu_data.angular_velocity[2]*10),
+                (int)(imu_data.acceleration[0]*10),
+                (int)(imu_data.acceleration[1]*10),
+                (int)(imu_data.acceleration[2]*10));
+
+        xQueueSendToFront(rtos::queues::ImuQueue, &imu_data, 0);
 
         UBaseType_t stack_free = uxTaskGetStackHighWaterMark(nullptr);
         if(stack_free < 50) {
             LOG_WARN("Warning: IMU task stack low: %d words remaining", stack_free);
         }
 
-        vTaskDelayUntil(&wake_time, FREQ_TO_DELAY_TICKS(IMU_SAMPLE_FREQ));
+        vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(IMU_SAMPLE_FREQ));
     }
 }
 
@@ -86,7 +98,7 @@ void task(void* pvParameters) {
     uint8_t freq_div_ptr = 0;
 
     while(1) {
-        vTaskDelayUntil(&wake_time, FREQ_TO_DELAY_TICKS(PID_FREQ));
+        vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(PID_FREQ));
         if(xQueueReceive(rtos::queues::SetpointQueue, &setpoint, 0)) {
             last_update_time = xTaskGetTickCount();
         }
@@ -240,7 +252,7 @@ void task(void* pvParameters) {
                 break;
         }
 
-        vTaskDelay(FREQ_TO_DELAY_TICKS(PING_AGENT_FREQUENCY));
+        vTaskDelay(FREQ_TO_TICKS(PING_AGENT_FREQUENCY));
     }
 }
 

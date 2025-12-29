@@ -153,7 +153,7 @@ static void ImuTask(void * p)
   while (1) {
     queue_imu = imuDriver.LoopHandler();
     xQueueSendToFront(ImuQueue, (void *)&queue_imu, TickType_t(0));
-    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TIME(IMU_SAMPLE_FREQ));
+    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_TIME(IMU_SAMPLE_FREQ));
   }
 }
 
@@ -166,7 +166,7 @@ static void PidHandlerTask(void * p)
   static motor_state_queue_t motor_state;
   static uint8_t freq_div_ptr = 0;
   while (1) {
-    vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
+    vTaskDelayUntil(&x_last_wake_time, FREQ_TO_TIME(PID_FREQ));
     if (xQueueReceive(SetpointQueue, (void *)setpoint, (TickType_t)0)) {
       last_setpoint_update_time = xTaskGetTickCount();
     }
@@ -192,9 +192,9 @@ static void PidHandlerTask(void * p)
 static void PixelLedTask(void * p)
 {
   while (1) {
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    vTaskDelay(FREQ_TO_TIME(PIXEL_ANIMATION_FREQ));
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    vTaskDelay(FREQ_TO_TIME(PIXEL_ANIMATION_FREQ));
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x00, 0x00, 0x0F, 50);
   }
 }
@@ -260,7 +260,7 @@ static void uRosPingTask(void * p)
         SetRedLed(Off);
         break;
     }
-    vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
+    vTaskDelay(FREQ_TO_TIME(PING_AGENT_FREQUENCY));
   }
 }
 

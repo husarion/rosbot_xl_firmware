@@ -20,8 +20,8 @@
 typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 
 #define RTOS_FREQUENCY 1000      // hz
-#define FREQ_TO_DELAY_TIME(freq) (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
-#define FREQ_TO_DELAY_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
+#define FREQ_TO_TIME(freq) (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
+#define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
 
 /* CHOOSE HARDWARE CONFIG */
 

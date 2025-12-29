@@ -41,10 +41,10 @@ extern String PowerBoardVersion;
 
 /*==================== SETUP ========================*/
 void setup() {
-  FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
-  FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
-  FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
-  FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
+  Serial.setRx(FTDI_SERIAL_RX);
+  Serial.setTx(FTDI_SERIAL_TX);
+  Serial.setTimeout(FTDI_SERIAL_TIMEOUT);
+  Serial.begin(FTDI_SERIAL_BAUDRATE);
 
   // Hardware init
   BoardPheripheralsInit();

@@ -18,9 +18,9 @@
 
 typedef struct
 {
-  float Orientation[4];        // quaternion: x y z w
-  float AngularVelocity[3];    // rad/s
-  float LinearAcceleration[3]; // m/s^2
+  float orientation[4];        // quaternion: x y z w
+  float angular_velocity[3];    // rad/s
+  float acceleration[3]; // m/s^2
 } imu_data_t;
 
 class ImuDriver
@@ -32,7 +32,8 @@ public:
   imu_data_t LoopHandler();
 
 private:
-  Adafruit_BNO055 * ImuBno;
+  Adafruit_BNO055 * imuBno;
+  sensors_event_t event;
 };
 
 extern ImuDriver imuDriver;

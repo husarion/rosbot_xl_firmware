@@ -151,16 +151,16 @@ void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
         imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
       }
       imu_msg.header.frame_id.data = (char *)"imu_link";
-      imu_msg.orientation.x = queue_imu.Orientation[0];
-      imu_msg.orientation.y = queue_imu.Orientation[1];
-      imu_msg.orientation.z = queue_imu.Orientation[2];
-      imu_msg.orientation.w = queue_imu.Orientation[3];
-      imu_msg.angular_velocity.x = queue_imu.AngularVelocity[0];
-      imu_msg.angular_velocity.y = queue_imu.AngularVelocity[1];
-      imu_msg.angular_velocity.z = queue_imu.AngularVelocity[2];
-      imu_msg.linear_acceleration.x = queue_imu.LinearAcceleration[0];
-      imu_msg.linear_acceleration.y = queue_imu.LinearAcceleration[1];
-      imu_msg.linear_acceleration.z = queue_imu.LinearAcceleration[2];
+      imu_msg.orientation.x = queue_imu.orientation[0];
+      imu_msg.orientation.y = queue_imu.orientation[1];
+      imu_msg.orientation.z = queue_imu.orientation[2];
+      imu_msg.orientation.w = queue_imu.orientation[3];
+      imu_msg.angular_velocity.x = queue_imu.angular_velocity[0];
+      imu_msg.angular_velocity.y = queue_imu.angular_velocity[1];
+      imu_msg.angular_velocity.z = queue_imu.angular_velocity[2];
+      imu_msg.linear_acceleration.x = queue_imu.acceleration[0];
+      imu_msg.linear_acceleration.y = queue_imu.acceleration[1];
+      imu_msg.linear_acceleration.z = queue_imu.acceleration[2];
       RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
     }
   }
