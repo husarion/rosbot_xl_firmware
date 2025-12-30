@@ -36,7 +36,7 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-uRosFunctionStatus ping_agent_status;
+u_ros_status_t ping_agent_status;
 // REST
 extern FirmwareModeTypeDef firmware_mode;
 
@@ -52,24 +52,24 @@ void ErrorLoop(const char* func) {
   NVIC_SystemReset();
 }
 
-uRosFunctionStatus uRosPingAgent(void) {
-  if (rmw_uros_ping_agent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) ==
+u_ros_status_t uRosPingAgent(void) {
+  if (rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
       RMW_RET_OK)
     return Ok;
   else
     return Error;  // if false
 }
 
-uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts) {
+u_ros_status_t uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts) {
   if (rmw_uros_ping_agent((int)arg_timeout, arg_attempts) == RMW_RET_OK)
     return Ok;
   else
     return Error;  // if false
 }
 
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status) {
-  static uRosEntitiesStatus entities_status = NotCreated;
-  if (arg_agent_ping_status == Ok) {
+u_ros_status_t uRosLoopHandler(u_ros_status_t arg_u_ros_status) {
+  static u_ros_entities_status_t entities_status = NotCreated;
+  if (arg_u_ros_status == Ok) {
     if (entities_status != Created) {
       entities_status = uRosCreateEntities();
       return Pending;
@@ -102,8 +102,8 @@ void uRosMotorsCmdCallback(const void* arg_input_message) {
 void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
   RCLC_UNUSED(arg_last_call_time);
   static imu_data_t queue_imu;
-  static motor_state_queue_t motor_state_queue;
-  static battery_state_queue_t battery_state_queue;
+  static motor_joint_state_t motor_state_queue;
+  static battery_state_t battery_state_queue;
   if (arg_timer != NULL) {
     // QOS default
     if (xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) ==
@@ -201,10 +201,10 @@ void uRosGetIdCallback(const void* req, void* res) {
   response->message.size = strlen(out_buffer);
 }
 
-uRosEntitiesStatus uRosCreateEntities(void) {
+u_ros_entities_status_t uRosCreateEntities(void) {
   uint8_t ros_msgs_cnt = 0;
   /*===== ALLOCATE MEMORY FOR MSGS =====*/
-  MotorsResponseMsgInit(&motors_response_msg);
+  MotorsJointStateInit(&motors_response_msg);
   MotorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
@@ -285,7 +285,7 @@ uRosEntitiesStatus uRosCreateEntities(void) {
   return Created;
 }
 
-uRosEntitiesStatus uRosDestroyEntities(void) {
+u_ros_entities_status_t uRosDestroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
@@ -304,7 +304,7 @@ uRosEntitiesStatus uRosDestroyEntities(void) {
   return Destroyed;
 }
 
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message) {
+void MotorsJointStateInit(sensor_msgs__msg__JointState* arg_message) {
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";

@@ -12,6 +12,8 @@
 #ifndef BATTERY_TYPES_H
 #define BATTERY_TYPES_H
 
+#include "hardware_cfg.hpp"
+
 typedef enum {
   unknown_status = 0,
   charging = 1,
@@ -57,6 +59,6 @@ typedef struct {
   BatteryHealthTypeDef health;
   BatteryTechnologyTypeDef technology;
   bool present;
-} battery_state_queue_t;
+} battery_state_t;
 
 #endif /* BATTERY_TYPES_H */

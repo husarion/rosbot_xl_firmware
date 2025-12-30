@@ -8,7 +8,7 @@ extern QueueHandle_t MotorStateQueue;
 extern QueueHandle_t ImuQueue;
 extern QueueHandle_t RangeQueue;
 extern QueueHandle_t BatteryStateQueue;
-extern QueueHandle_t uRosPingAgentStatusQueue;
+extern QueueHandle_t uRosAgentConectionQueue;
 
 void createAll();
 

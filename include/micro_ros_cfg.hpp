@@ -42,9 +42,10 @@
   255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
-#define PING_AGENT_TIMEOUT 10
-#define PING_AGENT_ATTEMPTS 100
-#define PING_AGENT_FREQUENCY (double)1  // Hz
+#define uROS_PING_TIMEOUT_MS 50
+#define uROS_PING_ATTEMPTS 2
+#define uROS_PING_FREQUENCY 1.0
+#define uROS_SPIN_DELAY_MS 1
 // Motors msgs defines
 #define MOT_CMD_MSG_LEN 4
 #define MOT_RESP_MSG_LEN 4
@@ -54,17 +55,7 @@
 #define REAR_RIGHT_MOTOR_NAME "rr_wheel_joint"
 #define MOTORS_RESPONSE_FREQ 50
 // uRos topics
-#define IMU_TOPIC_NAME "_imu/data_raw"
-#define MOTORS_CMD_TOPIC_NAME "_motors_cmd"
-#define MOTOR_STATE_TOPIC_NAME "_motors_response"
-#define GET_CPU_ID_SERVICE_NAME "/get_cpu_id"
 #define NODE_NAME "stm32_node"
-#define BATTERY_TOPIC_NAME "battery"
-#if defined(ROSBOT)
-#define LEFT_LED_TOPIC_NAME "led/left"
-#define RIGHT_LED_TOPIC_NAME "led/right"
-#define RANGES_TOPIC_NAME "ranges"
-#endif
 
 #define RCCHECK(fn)                                                       \
   {                                                                       \
@@ -89,17 +80,16 @@ typedef struct {
   uint8_t size = 4;
   double velocity[4];
   double position[4];
-} motor_state_queue_t;
+} motor_joint_state_t;
 
 typedef enum {
-  Default = 0,
-  Ok = 1,
-  Error = 2,
-  InvalidInput = 3,
-  Pending = 4
-} uRosFunctionStatus;
+  WAITING,
+  AGENT_AVAILABLE,
+  CONNECTED,
+  DISCONNECTED
+} u_ros_status_t;
 
-typedef enum { NotCreated = 0, Created = 1, Destroyed = 3 } uRosEntitiesStatus;
+typedef enum { NotCreated = 0, Created = 1, Destroyed = 3 } u_ros_entities_status_t;
 
 /* EXTERN */
 // extern variables
@@ -112,14 +102,18 @@ extern "C" int clock_gettime(clockid_t unused, struct timespec* tp);
 /* FUNCTIONS */
 void ErrorLoop(const char* func);
 void uRosTransportInit(void);
-uRosFunctionStatus uRosPingAgent(void);
-uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts);
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status);
-void uRosMotorsCmdCallback(const void* arg_input_message);
-void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time);
-uRosEntitiesStatus uRosCreateEntities(void);
-uRosEntitiesStatus uRosDestroyEntities(void);
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message);
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message);
+bool uRosPingAgent(void);
+bool uRosPingAgent(int timeout_ms, uint8_t attempts);
+void uRosLoopHandler(bool connected);
+void uRosMotorsCmdCallback(const void* input_message);
+void uRosTimerCallback(rcl_timer_t* timer, int64_t last_call_time);
+bool uRosCreateEntities(void);
+void uRosDestroyEntities(void);
+void MotorsJointStateInit(sensor_msgs__msg__JointState* msg);
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg);
+void publishBattery();
+void publishImu();
+void publishRanges();
+void publishWheelsJointState();
 
 #endif /* MICRO_ROC_CFG_H */

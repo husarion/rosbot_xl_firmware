@@ -10,6 +10,8 @@
  */
 
 #include "bsp.hpp"
+#include "hardware/imu.hpp"
+#include "log.hpp"
 
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
@@ -76,6 +78,10 @@ void BoardPheripheralsInit(void) {
 
   I2cBusInit();
   delay(250);
+
+  if (!imuDriver.init()) {
+    LOG_ERROR("imuDriver.Init() failed!");
+  }
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) { return Idle; }

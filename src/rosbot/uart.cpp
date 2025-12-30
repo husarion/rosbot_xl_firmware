@@ -138,7 +138,7 @@ void UartProtocolClass::ExecuteFrame() {
       if (this->processed_frame.arg_size != BATTERY_STATE_MSG_LENGTH) {
         break;
       }
-      battery_state_queue_t battery_state;
+      battery_state_t battery_state;
       battery_state.voltage = (float(this->processed_frame.args[1] << 8 |
                                      this->processed_frame.args[2])) *
                               0.001;

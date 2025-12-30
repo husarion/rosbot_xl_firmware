@@ -3,7 +3,11 @@
 
 #include <STM32FreeRTOS.h>
 
+#include "micro_ros_cfg.hpp"
 #include "hardware/imu.hpp"
+#include "battery_types.hpp"
+#include "motors.hpp"
+#include "ranges.hpp"
 
 namespace rtos::queues {
 
@@ -12,15 +16,15 @@ QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t RangeQueue;
 QueueHandle_t BatteryStateQueue;
-QueueHandle_t uRosPingAgentStatusQueue;
+QueueHandle_t uRosAgentConectionQueue;
 
 void createAll() {
-  // SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
-  // MotorStateQueue = xQueueCreate(1, sizeof(motor_state_queue_t));
+  SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
+  MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
-  // RangeQueue = xQueueCreate(1, sizeof(ranges_queue_t));
-  // BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
-  // uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
+  RangeQueue = xQueueCreate(1, sizeof(ranges_queue_t));
+  BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_t));
+  uRosAgentConectionQueue = xQueueCreate(1, sizeof(bool));
 }
 
 }  // namespace rtos::queues

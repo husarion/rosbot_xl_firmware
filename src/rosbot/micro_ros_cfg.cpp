@@ -15,30 +15,26 @@
 #include "buttons.hpp"
 #include "log.hpp"
 #include "ranges.hpp"
+#include "rtos/queues.hpp"
 
 // ROS PUBLISHERS
+rcl_publisher_t battery_state_publisher;
+rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
 rcl_publisher_t imu_publisher;
 rcl_publisher_t motor_state_publisher;
-rcl_publisher_t battery_state_publisher;
-// ROS SUBSCRIPTIONS
-rcl_subscription_t subscriber;
-rcl_subscription_t motors_cmd_subscriber;
-#if defined(ROSBOT)
 rcl_publisher_t range_pub;
-rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
+// ROS SUBSCRIPTIONS
+rcl_subscription_t motors_cmd_subscriber;
 rcl_subscription_t left_led_subscriber;
 rcl_subscription_t right_led_subscriber;
-#endif
 // ROS MESSAGES
+sensor_msgs__msg__BatteryState battery_msg;
 sensor_msgs__msg__Imu imu_msg;
+sensor_msgs__msg__Range range_msg;
+sensor_msgs__msg__JointState motors_joint_state_msg;
+std_msgs__msg__Bool led_msg;
 std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
-#if defined(ROSBOT)
-std_msgs__msg__Bool led_msg;
-sensor_msgs__msg__Range range_msg;
-#endif
-sensor_msgs__msg__JointState motors_response_msg;
-sensor_msgs__msg__BatteryState battery_state_msg;
 // ROS SERVICES
 rcl_service_t get_cpu_id_service;
 // ROS REQUESTS AND RESPONSES
@@ -51,7 +47,7 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-uRosFunctionStatus ping_agent_status;
+u_ros_status_t ping_agent_status;
 
 void ErrorLoop(const char* func) {
   for (int i = 0; i < 4; ++i) {
@@ -65,15 +61,6 @@ void ErrorLoop(const char* func) {
 }
 
 void uRosTransportInit(void) {
-#if defined(ROSBOT_XL)
-  IPAddress client_ip;
-  IPAddress agent_ip;
-  byte mac[] = {CLIENT_MAC_ADDR};
-  client_ip.fromString(CLIENT_IP);
-  agent_ip.fromString(SBC_AGENT_IP);
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
-                                              AGENT_PORT);
-#elif defined(ROSBOT)
   rmw_uros_set_custom_transport(
       /* Enable XRCE framing */
       true,
@@ -103,166 +90,71 @@ void uRosTransportInit(void) {
         SBC_SERIAL.setTimeout(timeout);
         return SBC_SERIAL.readBytes((char*)buf, len);
       });
-#endif
 }
 
-uRosFunctionStatus uRosPingAgent(void) {
-  if (rmw_uros_ping_agent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) ==
-      RMW_RET_OK)
-    return Ok;
-  else
-    return Error;  // if false
+bool uRosPingAgent(void) {
+    return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
+      RMW_RET_OK;
 }
 
-uRosFunctionStatus uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts) {
-  if (rmw_uros_ping_agent((int)arg_timeout, arg_attempts) == RMW_RET_OK)
-    return Ok;
-  else
-    return Error;  // if false
+bool uRosPingAgent(int timeout_ms, uint8_t attempts) {
+  return rmw_uros_ping_agent(timeout_ms, attempts) == RMW_RET_OK;
 }
 
-uRosFunctionStatus uRosLoopHandler(uRosFunctionStatus arg_agent_ping_status) {
-  static uRosEntitiesStatus entities_status = NotCreated;
-  if (arg_agent_ping_status == Ok) {
-    if (entities_status != Created) {
-      entities_status = uRosCreateEntities();
-      return Pending;
-    } else {
-      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-      return Ok;
-    }
-  } else {
-    if (entities_status != Destroyed && entities_status != NotCreated) {
-      entities_status = uRosDestroyEntities();
-      entities_status = Destroyed;
-      return Error;
-    }
+void uRosLoopHandler(bool connected) {
+  static u_ros_status_t state = WAITING;
+
+  switch (state) {
+    case WAITING:
+      state = connected ? AGENT_AVAILABLE : WAITING;
+      break;
+    case AGENT_AVAILABLE:
+      state = uRosCreateEntities() ? CONNECTED : DISCONNECTED;
+      break;
+    case CONNECTED:
+      state = connected ? CONNECTED : DISCONNECTED;
+      if (state == CONNECTED) {
+        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+      }
+      break;
+    case DISCONNECTED:
+      uRosDestroyEntities();
+      state = WAITING;
+      break;
+    default:
+      break;
   }
-  return Default;
 }
 
-void uRosMotorsCmdCallback(const void* arg_input_message) {
+void uRosMotorsCmdCallback(const void* input_message) {
   static double setpoint[] = {0, 0, 0, 0};
   static std_msgs__msg__Float32MultiArray* setpoint_msg;
-  setpoint_msg = (std_msgs__msg__Float32MultiArray*)arg_input_message;
+  setpoint_msg = (std_msgs__msg__Float32MultiArray*)input_message;
   if (setpoint_msg->data.size == 4) {
     for (uint8_t i = 0; i < setpoint_msg->data.size; i++) {
       setpoint[i] = (double)setpoint_msg->data.data[i];
     }
   }
-  xQueueSendToFront(SetpointQueue, (void*)setpoint, (TickType_t)0);
+  xQueueSendToFront(rtos::queues::SetpointQueue, (void*)setpoint, (TickType_t)0);
 }
 
-#if defined(ROSBOT)
-void uRosLeftLedCallback(const void* arg_led_msg) {
-  std_msgs__msg__Bool* led_msg = (std_msgs__msg__Bool*)arg_led_msg;
-  if (led_msg->data == true) {
-    SetGreenLed(On);
-  } else {
-    SetGreenLed(Off);
-  }
+void uRosLeftLedCallback(const void* msg) {
+  auto led_msg = (std_msgs__msg__Bool*)msg;
+  SetGreenLed(led_msg->data ? On : Off);
 }
 
-void uRosRightLedCallback(const void* arg_led_msg) {
-  std_msgs__msg__Bool* led_msg = (std_msgs__msg__Bool*)arg_led_msg;
-  if (led_msg->data == true) {
-    SetGreenLed2(On);
-  } else {
-    SetGreenLed2(Off);
-  }
+void uRosRightLedCallback(const void* msg) {
+  auto led_msg = (std_msgs__msg__Bool*)msg;
+  SetGreenLed2(led_msg->data ? On : Off);
 }
-#endif
 
-void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
-  RCLC_UNUSED(arg_last_call_time);
-  static imu_data_t queue_imu;
-  static motor_state_queue_t motor_state_queue;
-  static motor_state_queue_t ranges_queue;
-  static battery_state_queue_t battery_state_queue;
-  if (arg_timer != NULL) {
-    // QOS default
-    if (xQueueReceive(BatteryStateQueue, &battery_state_queue, (TickType_t)0) ==
-        pdPASS) {
-      if (rmw_uros_epoch_synchronized()) {
-        battery_state_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        battery_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
-      }
-      battery_state_msg.voltage = battery_state_queue.voltage;
-      battery_state_msg.temperature = battery_state_queue.temperature;
-      battery_state_msg.current = battery_state_queue.current;
-      battery_state_msg.charge = battery_state_queue.charge_current;
-      battery_state_msg.capacity = battery_state_queue.capacity;
-      battery_state_msg.design_capacity = battery_state_queue.design_capacity;
-      battery_state_msg.percentage = battery_state_queue.percentage;
-      battery_state_msg.power_supply_status = battery_state_queue.status;
-      battery_state_msg.power_supply_health = battery_state_queue.health;
-      battery_state_msg.power_supply_technology =
-          battery_state_queue.technology;
-      battery_state_msg.present = battery_state_queue.present;
-      battery_state_msg.cell_temperature.capacity =
-          BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
-      battery_state_msg.cell_temperature.size =
-          BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
-      battery_state_msg.cell_temperature.data =
-          battery_state_queue.cell_temperature;
-      battery_state_msg.cell_voltage.capacity =
-          BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
-      battery_state_msg.cell_voltage.size =
-          BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
-      battery_state_msg.cell_voltage.data = battery_state_queue.cell_voltage;
-      RCSOFTCHECK(
-          rcl_publish(&battery_state_publisher, &battery_state_msg, NULL));
-    }
-    // QOS best effort
-    if (xQueueReceive(MotorStateQueue, &motor_state_queue, (TickType_t)0) ==
-        pdPASS) {
-      if (rmw_uros_epoch_synchronized()) {
-        motors_response_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        motors_response_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
-      }
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.position;
-      RCSOFTCHECK(
-          rcl_publish(&motor_state_publisher, &motors_response_msg, NULL));
-    }
-    // QOS best effort
-    if (xQueueReceive(ImuQueue, &queue_imu, (TickType_t)0) == pdPASS) {
-      if (rmw_uros_epoch_synchronized()) {
-        imu_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
-      } else {
-        LOG_DEBUG("!rmw_uros_epoch_synchronized");
-      }
-      imu_msg.header.frame_id.data = (char*)"imu_link";
-      imu_msg.orientation.x = queue_imu.orientation[0];
-      imu_msg.orientation.y = queue_imu.orientation[1];
-      imu_msg.orientation.z = queue_imu.orientation[2];
-      imu_msg.orientation.w = queue_imu.orientation[3];
-      imu_msg.angular_velocity.x = queue_imu.angular_velocity[0];
-      imu_msg.angular_velocity.y = queue_imu.angular_velocity[1];
-      imu_msg.angular_velocity.z = queue_imu.angular_velocity[2];
-      imu_msg.linear_acceleration.x = queue_imu.acceleration[0];
-      imu_msg.linear_acceleration.y = queue_imu.acceleration[1];
-      imu_msg.linear_acceleration.z = queue_imu.acceleration[2];
-      RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
-    }
-    // QOS best effort
-    if (xQueueReceive(RangeQueue, &ranges_queue, (TickType_t)0) == pdPASS) {
-      if (rmw_uros_epoch_synchronized()) {
-        range_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        range_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
-      }
-
-      range_msg.radiation_type = sensor_msgs__msg__Range__INFRARED;
-      range_msg.field_of_view = 0.26;
-      range_msg.min_range = 0.01;
-      range_msg.max_range = 0.90;
-      for (uint8_t i = 0; i < ranges_queue.size; i++) {
-        range_msg.header.frame_id.data = (char*)range_frame_names[i];
-        range_msg.range = ranges_queue.position[i];
-        RCSOFTCHECK(rcl_publish(&range_pub, &range_msg, NULL));
-      }
-    }
+void uRosTimerCallback(rcl_timer_t* timer, int64_t last_call_time) {
+  RCLC_UNUSED(last_call_time);
+  if (timer != NULL) {
+    publishBattery();
+    publishImu();
+    publishRanges();
+    publishWheelsJointState();
   }
 }
 
@@ -295,115 +187,92 @@ void uRosGetIdCallback(const void* req, void* res) {
   response->message.size = strlen(out_buffer);
 }
 
-uRosEntitiesStatus uRosCreateEntities(void) {
+bool uRosCreateEntities(void) {
   uint8_t ros_msgs_cnt = 0;
   /*===== ALLOCATE MEMORY FOR MSGS =====*/
-  MotorsResponseMsgInit(&motors_response_msg);
+  MotorsJointStateInit(&motors_joint_state_msg);
   MotorsCmdMsgInit(&motors_cmd_msg);
+  
+  /*===== INIT ROS2 =====*/
   allocator = rcl_get_default_allocator();
-  // create init_options
   init_options = rcl_get_zero_initialized_init_options();
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(
       &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options,
                                          &allocator));
-  LOG_DEBUG("Created support with option domain_id=%d",
-            UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
 
-  // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  LOG_DEBUG("Created node '%s'", NODE_NAME);
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
                                   uRosTimerCallback));
   ros_msgs_cnt++;
-  LOG_DEBUG("Created timer");
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
       &motors_cmd_subscriber, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
-      MOTORS_CMD_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' subscriber.", MOTORS_CMD_TOPIC_NAME)
+      "_motors_cmd"));
   ros_msgs_cnt++;
-#if defined(ROSBOT)
   RCCHECK(rclc_subscription_init_default(
       &left_led_subscriber, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), LEFT_LED_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' subscriber.", LEFT_LED_TOPIC_NAME)
+      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "led/left"));
   ros_msgs_cnt++;
   RCCHECK(rclc_subscription_init_default(
       &right_led_subscriber, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), RIGHT_LED_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' subscriber.", RIGHT_LED_TOPIC_NAME)
+      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "led/right"));
   ros_msgs_cnt++;
-#endif
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
       &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-      IMU_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' publisher.", IMU_TOPIC_NAME)
+      "_imu/data_raw"));
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
       &motor_state_publisher, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-      MOTOR_STATE_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' publisher.", MOTOR_STATE_TOPIC_NAME)
-#if defined(ROSBOT)
+      "_motors_response"));
   // RANGES
   RCCHECK(rclc_publisher_init_best_effort(
       &range_pub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
-      RANGES_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' publisher.", RANGES_TOPIC_NAME)
-#endif
+      "ranges"));
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
       &battery_state_publisher, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
-      BATTERY_TOPIC_NAME));
-  LOG_DEBUG("Created '%s' publisher.", BATTERY_TOPIC_NAME)
+      "battery"));
   /*===== INIT SERVICES ===== */
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
       &get_cpu_id_service, &node,
       ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger),
-      GET_CPU_ID_SERVICE_NAME));
+      "/get_cpu_id"));
   ros_msgs_cnt++;
-  LOG_DEBUG("Created '%s' service.", GET_CPU_ID_SERVICE_NAME)
   /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt,
                              &allocator));
-  LOG_DEBUG("rclc_executor_init")
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
-  LOG_DEBUG("rclc_executor_add_timer")
   RCCHECK(rclc_executor_add_subscription(&executor, &motors_cmd_subscriber,
                                          &motors_cmd_msg,
                                          &uRosMotorsCmdCallback, ON_NEW_DATA));
-  LOG_DEBUG("rclc_executor_add_subscription uRosMotorsCmdCallback")
-#if defined(ROSBOT)
   RCCHECK(rclc_executor_add_subscription(&executor, &left_led_subscriber,
                                          &led_msg, &uRosLeftLedCallback,
                                          ON_NEW_DATA));
-  LOG_DEBUG("rclc_executor_add_subscription left_led_subscriber")
   RCCHECK(rclc_executor_add_subscription(&executor, &right_led_subscriber,
                                          &led_msg, &uRosRightLedCallback,
                                          ON_NEW_DATA));
-  LOG_DEBUG("rclc_executor_add_subscription right_led_subscriber")
-#endif
   RCCHECK(rclc_executor_add_service(
       &executor, &get_cpu_id_service, &get_cpu_id_service_request,
       &get_cpu_id_service_response, uRosGetIdCallback));
-  LOG_DEBUG("Executor started")
+  LOG_DEBUG("uROS executor started")
 
   RCCHECK(rmw_uros_sync_session(1000));
   LOG_DEBUG("Clocks synchronised")
 
-  return Created;
+  return true;
 }
 
-uRosEntitiesStatus uRosDestroyEntities(void) {
+void uRosDestroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
@@ -411,10 +280,8 @@ uRosEntitiesStatus uRosDestroyEntities(void) {
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
   RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
   RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
-#if defined(ROSBOT)
   RCCHECK(rcl_subscription_fini(&left_led_subscriber, &node));
   RCCHECK(rcl_subscription_fini(&right_led_subscriber, &node));
-#endif
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
   RCCHECK(rcl_timer_fini(&timer));
   RCCHECK(rclc_executor_fini(&executor));
@@ -422,23 +289,22 @@ uRosEntitiesStatus uRosDestroyEntities(void) {
   RCCHECK(rclc_support_fini(&support));
   RCCHECK(rcl_init_options_fini(&init_options));
   LOG_DEBUG("Destroyed all microros entities.")
-  return Destroyed;
 }
 
-void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message) {
+void MotorsJointStateInit(sensor_msgs__msg__JointState* msg) {
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";
-  arg_message->position.data = msg_data_tab[0];
-  arg_message->position.capacity = arg_message->position.size =
+  msg->position.data = msg_data_tab[0];
+  msg->position.capacity = msg->position.size =
       MOT_RESP_MSG_LEN;
-  arg_message->velocity.data = msg_data_tab[1];
-  arg_message->velocity.capacity = arg_message->velocity.size =
+  msg->velocity.data = msg_data_tab[1];
+  msg->velocity.capacity = msg->velocity.size =
       MOT_RESP_MSG_LEN;
-  arg_message->effort.data = msg_data_tab[2];
-  arg_message->effort.capacity = arg_message->effort.size = MOT_RESP_MSG_LEN;
-  arg_message->header.frame_id.data = frame_id;
-  arg_message->header.frame_id.capacity = arg_message->header.frame_id.size =
+  msg->effort.data = msg_data_tab[2];
+  msg->effort.capacity = msg->effort.size = MOT_RESP_MSG_LEN;
+  msg->header.frame_id.data = frame_id;
+  msg->header.frame_id.capacity = msg->header.frame_id.size =
       strlen((const char*)frame_id);
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
   msg_name_tab[0].data = (char*)REAR_RIGHT_MOTOR_NAME;
@@ -449,13 +315,113 @@ void MotorsResponseMsgInit(sensor_msgs__msg__JointState* arg_message) {
     msg_name_tab[i].capacity = msg_name_tab[i].size =
         strlen(msg_name_tab[i].data);
   }
-  arg_message->name.capacity = arg_message->name.size = MOT_RESP_MSG_LEN;
-  arg_message->name.data = msg_name_tab;
+  msg->name.capacity = MOT_RESP_MSG_LEN;
+  msg->name.data = msg_name_tab;
+  msg->name.size = MOT_RESP_MSG_LEN;
 }
 
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message) {
+void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg) {
   static float data[MOT_CMD_MSG_LEN] = {0, 0, 0, 0};
-  arg_message->data.capacity = MOT_CMD_MSG_LEN;
-  arg_message->data.size = MOT_CMD_MSG_LEN;
-  arg_message->data.data = (float*)data;
+  msg->data.capacity = MOT_CMD_MSG_LEN;
+  msg->data.size = MOT_CMD_MSG_LEN;
+  msg->data.data = (float*)data;
+}
+
+void publishBattery()
+{
+  static battery_state_t battery_state_data;
+  if (xQueueReceive(rtos::queues::BatteryStateQueue, &battery_state_data, (TickType_t)0) ==
+      pdPASS) {
+    if (rmw_uros_epoch_synchronized()) {
+      battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+      battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+    }
+    battery_msg.voltage = battery_state_data.voltage;
+    battery_msg.temperature = battery_state_data.temperature;
+    battery_msg.current = battery_state_data.current;
+    battery_msg.charge = battery_state_data.charge_current;
+    battery_msg.capacity = battery_state_data.capacity;
+    battery_msg.design_capacity = battery_state_data.design_capacity;
+    battery_msg.percentage = battery_state_data.percentage;
+    battery_msg.power_supply_status = battery_state_data.status;
+    battery_msg.power_supply_health = battery_state_data.health;
+    battery_msg.power_supply_technology =
+        battery_state_data.technology;
+    battery_msg.present = battery_state_data.present;
+    battery_msg.cell_temperature.capacity =
+        BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
+    battery_msg.cell_temperature.size =
+        BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
+    battery_msg.cell_temperature.data =
+        battery_state_data.cell_temperature;
+    battery_msg.cell_voltage.capacity =
+        BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
+    battery_msg.cell_voltage.size =
+        BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
+    battery_msg.cell_voltage.data = battery_state_data.cell_voltage;
+    RCSOFTCHECK(
+        rcl_publish(&battery_state_publisher, &battery_msg, NULL));
+  }
+}
+
+void publishImu()
+{
+  static imu_data_t imu_data;
+  if (xQueueReceive(rtos::queues::ImuQueue, &imu_data, (TickType_t)0) == pdPASS) {
+    if (rmw_uros_epoch_synchronized()) {
+      imu_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+      imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+    } else {
+      LOG_DEBUG("!rmw_uros_epoch_synchronized");
+    }
+    imu_msg.header.frame_id.data = const_cast<char*>("imu_link");
+    imu_msg.orientation.x = imu_data.orientation[0];
+    imu_msg.orientation.y = imu_data.orientation[1];
+    imu_msg.orientation.z = imu_data.orientation[2];
+    imu_msg.orientation.w = imu_data.orientation[3];
+    imu_msg.angular_velocity.x = imu_data.angular_velocity[0];
+    imu_msg.angular_velocity.y = imu_data.angular_velocity[1];
+    imu_msg.angular_velocity.z = imu_data.angular_velocity[2];
+    imu_msg.linear_acceleration.x = imu_data.acceleration[0];
+    imu_msg.linear_acceleration.y = imu_data.acceleration[1];
+    imu_msg.linear_acceleration.z = imu_data.acceleration[2];
+    RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_msg, NULL));
+  }
+}
+
+void publishRanges()
+{
+  static motor_joint_state_t ranges_data;
+  if (xQueueReceive(rtos::queues::RangeQueue, &ranges_data, (TickType_t)0) == pdPASS) {
+    if (rmw_uros_epoch_synchronized()) {
+      range_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+      range_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+    }
+
+    range_msg.radiation_type = sensor_msgs__msg__Range__INFRARED;
+    range_msg.field_of_view = 0.26;
+    range_msg.min_range = 0.01;
+    range_msg.max_range = 0.90;
+    for (uint8_t i = 0; i < ranges_data.size; i++) {
+      range_msg.header.frame_id.data = (char*)range_frame_names[i];
+      range_msg.range = ranges_data.position[i];
+      RCSOFTCHECK(rcl_publish(&range_pub, &range_msg, NULL));
+    }
+  }
+}
+
+void publishWheelsJointState()
+{
+  static motor_joint_state_t motor_joint_state;
+  if (xQueueReceive(rtos::queues::MotorStateQueue, &motor_joint_state, (TickType_t)0) ==
+      pdPASS) {
+    if (rmw_uros_epoch_synchronized()) {
+      motors_joint_state_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+      motors_joint_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+    }
+    motors_joint_state_msg.velocity.data = motor_joint_state.velocity;
+    motors_joint_state_msg.position.data = motor_joint_state.position;
+    RCSOFTCHECK(
+        rcl_publish(&motor_state_publisher, &motors_joint_state_msg, NULL));
+  }
 }
