@@ -19,19 +19,20 @@
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
 typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 
-#define RTOS_FREQUENCY 1000      // hz
-#define FREQ_TO_TIME(freq) (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
+#define RTOS_FREQUENCY 1000  // hz
+#define FREQ_TO_TIME(freq) \
+  (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
 #define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
 
 /* CHOOSE HARDWARE CONFIG */
 
 #if defined(ROSBOT_XL)
-  #include "rosbot_xl/hardware_cfg.h"
+#include "rosbot_xl/hardware_cfg.hpp"
 #elif defined(ROSBOT)
-  #include "rosbot/hardware_cfg.h"
+#include "rosbot/hardware_cfg.hpp"
 #else
-  #error "No board version defined! Did you set correct flag in platformio.ini?"
+#error "No board version defined! Did you set correct flag in platformio.ini?"
 #endif
-#include "battery_types.h"
+#include "battery_types.hpp"
 
 #endif /* HARDWARE_CFG */

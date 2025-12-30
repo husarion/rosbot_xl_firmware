@@ -42,8 +42,7 @@ typedef enum {
   LIMN = 6
 } BatteryTechnologyTypeDef;
 
-typedef struct
-{
+typedef struct {
   // ROS battery msgs variables
   float voltage;
   float temperature;

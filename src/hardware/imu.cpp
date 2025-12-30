@@ -9,38 +9,31 @@
  *
  */
 
-#include "hardware/imu.h"
+#include "hardware/imu.hpp"
+
 #include <Wire.h>
-#include "bsp.h"
+
+#include "bsp.hpp"
 
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
 #if defined(ROSBOT)
-  #define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
+#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
 #elif defined(ROSBOT_XL)
-  #define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P1
+#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P1
 #endif
-
 
 extern TwoWire I2cBus;
 
 ImuDriver imuDriver(BNO055_ID, BNO055_ADDRESS_B, &I2cBus);
 
-ImuDriver::ImuDriver(uint8_t ImuId, uint8_t ImuAddr, TwoWire * ImuWire)
-{
+ImuDriver::ImuDriver(uint8_t ImuId, uint8_t ImuAddr, TwoWire* ImuWire) {
   this->imuBno = new Adafruit_BNO055(ImuId, ImuAddr, ImuWire);
 }
 
-ImuDriver::~ImuDriver() { }
+ImuDriver::~ImuDriver() {}
 
-bool ImuDriver::Init()
-{
-#if defined(ROSBOT)
-  // Enable power for IMU sensor
-  pinMode(IMU_POWER_ON, OUTPUT);
-  digitalWrite(IMU_POWER_ON, HIGH);
-#endif
-
+bool ImuDriver::init() {
   if (!this->imuBno->begin(OPERATION_MODE_NDOF)) {
     return false;
   }
@@ -52,13 +45,13 @@ bool ImuDriver::Init()
   return true;
 }
 
-imu_data_t ImuDriver::LoopHandler()
-{
+imu_data_t ImuDriver::loopHandler() {
   this->imuBno->getEvent(&this->event);
   imu_data_t data;
 
   // Acceleration
-  imu::Vector<3> accel = imuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  imu::Vector<3> accel =
+      imuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
   data.acceleration[0] = accel.x();
   data.acceleration[1] = accel.y();
   data.acceleration[2] = accel.z();

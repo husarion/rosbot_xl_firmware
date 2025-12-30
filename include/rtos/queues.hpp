@@ -12,4 +12,4 @@ extern QueueHandle_t uRosPingAgentStatusQueue;
 
 void createAll();
 
-}
+}  // namespace rtos::queues

@@ -1,22 +1,23 @@
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <micro_ros_cfg.h>
+
+#include "micro_ros_cfg.hpp"
 /*===== HARDEWARE =====*/
-#include <bsp.h>
-#include <hardware_cfg.h>
+#include "bsp.hpp"
+#include "hardware_cfg.hpp"
 // MOTORS
-#include <motors.h>
+#include "motors.hpp"
 // IMU
-#include "hardware/imu.h"
+#include "hardware/imu.hpp"
 // PIXEL
-#include <PixelLedLib_cfg.h>
+#include "pixel_led.hpp"
 /*===== CONNECTIVITY =====*/
 #include <LwIP.h>
 #include <STM32Ethernet.h>
-#include <UartLib.h>
 #include <hal_conf_custom.h>
-#include "stm32f407xx.h"
-#include "log.h"
+
+#include "log.hpp"
+#include "uart.hpp"
 
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
@@ -56,25 +57,24 @@ extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;
 
 /* RTOS TASKS DECLARATIONS */
-static void RclcSpinTask(void * p);
-static void ImuTask(void * p);
-static void PidHandlerTask(void * p);
-static void PixelLedTask(void * p);
-static void SbcShutdownTask(void * p);
-static void PowerBoardTask(void * p);
-static void uRosPingTask(void * p);
-static void HardwareLoopTask(void * p);
-static void RuntimeStatsTask(void * p);
+static void RclcSpinTask(void* p);
+static void ImuTask(void* p);
+static void PidHandlerTask(void* p);
+static void PixelLedTask(void* p);
+static void SbcShutdownTask(void* p);
+static void PowerBoardTask(void* p);
+static void uRosPingTask(void* p);
+static void HardwareLoopTask(void* p);
+static void RuntimeStatsTask(void* p);
 
 /* FUNCTIONS */
 
 /*==================== SETUP ========================*/
-void setup()
-{
+void setup() {
   // Hardware init
   BoardPheripheralsInit();
   PixelStrip.Init();
-  imuDriver.Init();
+  imuDriver.init();
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);
@@ -87,78 +87,67 @@ void setup()
   uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
   LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
-  s1 = xTaskCreate(
-    RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s1 != pdPASS)
-    LOG_DEBUG("S1 creation problem");
-  s2 = xTaskCreate(
-    ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s2 != pdPASS)
-    LOG_DEBUG("S2 creation problem");
-  s3 = xTaskCreate(
-    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s3 != pdPASS)
-    LOG_DEBUG("S3 creation problem");
-  s4 = xTaskCreate(
-    PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
-    NULL);
-  if (s4 != pdPASS)
-    LOG_DEBUG("S4 creation problem");
-  s5 = xTaskCreate(
-    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s5 != pdPASS)
-    LOG_DEBUG("S5 creation problem");
-  s7 = xTaskCreate(
-    SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s7 != pdPASS)
-    LOG_DEBUG("S7 creation problem");
-  s8 = xTaskCreate(
-    PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s8 != pdPASS)
-    LOG_DEBUG("S8 creation problem");
-  s9 = xTaskCreate(
-    uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s9 != pdPASS)
-    LOG_DEBUG("S9 creation problem");
-  s10 = xTaskCreate(
-    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s10 != pdPASS)
-    LOG_DEBUG("S10 creation problem");
+  s1 =
+      xTaskCreate(RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500,
+                  NULL, tskIDLE_PRIORITY + 1, NULL);
+  if (s1 != pdPASS) LOG_DEBUG("S1 creation problem");
+  s2 = xTaskCreate(ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL,
+                   tskIDLE_PRIORITY + 1, NULL);
+  if (s2 != pdPASS) LOG_DEBUG("S2 creation problem");
+  s3 = xTaskCreate(RuntimeStatsTask, "RuntimeStatsTask",
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                   NULL);
+  if (s3 != pdPASS) LOG_DEBUG("S3 creation problem");
+  s4 = xTaskCreate(PidHandlerTask, "PidHandlerTask",
+                   configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
+                   NULL);
+  if (s4 != pdPASS) LOG_DEBUG("S4 creation problem");
+  s5 = xTaskCreate(PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750,
+                   NULL, tskIDLE_PRIORITY + 1, NULL);
+  if (s5 != pdPASS) LOG_DEBUG("S5 creation problem");
+  s7 = xTaskCreate(SbcShutdownTask, "SbcShutdownTask",
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                   NULL);
+  if (s7 != pdPASS) LOG_DEBUG("S7 creation problem");
+  s8 = xTaskCreate(PowerBoardTask, "PowerBoardTask",
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                   NULL);
+  if (s8 != pdPASS) LOG_DEBUG("S8 creation problem");
+  s9 = xTaskCreate(uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500,
+                   NULL, tskIDLE_PRIORITY + 1, NULL);
+  if (s9 != pdPASS) LOG_DEBUG("S9 creation problem");
+  s10 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
+                    configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                    NULL);
+  if (s10 != pdPASS) LOG_DEBUG("S10 creation problem");
   /* START RTOS */
   LOG_DEBUG("Tasks starting");
   vTaskStartScheduler();
 }
 
-static void RclcSpinTask(void * p)
-{
+static void RclcSpinTask(void* p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
   static uRosFunctionStatus uRosPingAgentStatus;
   while (1) {
-    xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus, (TickType_t)0);
+    xQueueReceive(uRosPingAgentStatusQueue, &uRosPingAgentStatus,
+                  (TickType_t)0);
     vTaskDelayUntil(&xLastWakeTime, 1);
     uRosLoopHandler(uRosPingAgentStatus);
   }
 }
 
-static void ImuTask(void * p)
-{
+static void ImuTask(void* p) {
   static imu_data_t queue_imu;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
-    queue_imu = imuDriver.LoopHandler();
-    xQueueSendToFront(ImuQueue, (void *)&queue_imu, TickType_t(0));
+    queue_imu = imuDriver.loopHandler();
+    xQueueSendToFront(ImuQueue, (void*)&queue_imu, TickType_t(0));
     vTaskDelayUntil(&xLastWakeTime, FREQ_TO_TIME(IMU_SAMPLE_FREQ));
   }
 }
 
-static void PidHandlerTask(void * p)
-{
+static void PidHandlerTask(void* p) {
   TickType_t x_last_wake_time = xTaskGetTickCount();
   TickType_t actual_setpoint_update_time = xTaskGetTickCount();
   TickType_t last_setpoint_update_time = xTaskGetTickCount();
@@ -167,11 +156,12 @@ static void PidHandlerTask(void * p)
   static uint8_t freq_div_ptr = 0;
   while (1) {
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_TIME(PID_FREQ));
-    if (xQueueReceive(SetpointQueue, (void *)setpoint, (TickType_t)0)) {
+    if (xQueueReceive(SetpointQueue, (void*)setpoint, (TickType_t)0)) {
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
-    if (actual_setpoint_update_time - last_setpoint_update_time > MOTORS_SETPOINT_TIMEOUT) {
+    if (actual_setpoint_update_time - last_setpoint_update_time >
+        MOTORS_SETPOINT_TIMEOUT) {
       for (uint8_t i = 0; i < 4; i++) setpoint[i] = 0;
     }
     for (uint8_t i = 0; i < 4; i++) {
@@ -179,18 +169,19 @@ static void PidHandlerTask(void * p)
     }
     if (freq_div_ptr > (PID_FREQ / MOTORS_RESPONSE_FREQ)) {
       for (uint8_t i = 0; i < 4; i++) {
-        motor_state.velocity[i] = ((double)wheel_motors[i].GetVelocity()) / 1000;
-        motor_state.position[i] = ((double)(wheel_motors[i].GetWheelAbsPosition()) / 1000);
+        motor_state.velocity[i] =
+            ((double)wheel_motors[i].GetVelocity()) / 1000;
+        motor_state.position[i] =
+            ((double)(wheel_motors[i].GetWheelAbsPosition()) / 1000);
       }
-      xQueueSendToFront(MotorStateQueue, (void *)&motor_state, (TickType_t)0);
+      xQueueSendToFront(MotorStateQueue, (void*)&motor_state, (TickType_t)0);
       freq_div_ptr = 0;
     }
     freq_div_ptr++;
   }
 }
 
-static void PixelLedTask(void * p)
-{
+static void PixelLedTask(void* p) {
   while (1) {
     vTaskDelay(FREQ_TO_TIME(PIXEL_ANIMATION_FREQ));
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
@@ -199,15 +190,15 @@ static void PixelLedTask(void * p)
   }
 }
 
-static void SbcShutdownTask(void * p)
-{
+static void SbcShutdownTask(void* p) {
   IPAddress SbcIpAddr;
   SbcIpAddr.fromString(SBC_AGENT_IP);
   while (1) {
     vTaskDelay(250);
     if (PowerOffSignalLoopHandler() == Shutdown) {
       while (1) {
-        if (EthClient.connect(SbcIpAddr, SHUTDOWN_PORT, SBC_ETH_CONNECT_TIMEOUT)) {
+        if (EthClient.connect(SbcIpAddr, SHUTDOWN_PORT,
+                              SBC_ETH_CONNECT_TIMEOUT)) {
           EthClient.println("GET /shutdown HTTP/1.1");
           EthClient.stop();
           vTaskDelay(POWEROFF_DELAY);
@@ -219,11 +210,11 @@ static void SbcShutdownTask(void * p)
   }
 }
 
-static void PowerBoardTask(void * p)
-{
+static void PowerBoardTask(void* p) {
   uint16_t TimeDivider = 0;
   while (1) {
-    if (PowerBoardFirmwareVersion.length() == 0 || PowerBoardVersion.length() == 0) {
+    if (PowerBoardFirmwareVersion.length() == 0 ||
+        PowerBoardVersion.length() == 0) {
       PbInfoRequest();
     }
     TimeDivider++;
@@ -233,15 +224,17 @@ static void PowerBoardTask(void * p)
   }
 }
 
-static void uRosPingTask(void * p)
-{
+static void uRosPingTask(void* p) {
   static uRosFunctionStatus uRosPingAgentStatus;
   client_ip.fromString(CLIENT_IP);
   agent_ip.fromString(SBC_AGENT_IP);
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
+  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
+                                              AGENT_PORT);
   while (1) {
-    uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
-    xQueueSendToFront(uRosPingAgentStatusQueue, (void *)&uRosPingAgentStatus, (TickType_t)0);
+    uRosPingAgentStatus =
+        uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
+    xQueueSendToFront(uRosPingAgentStatusQueue, (void*)&uRosPingAgentStatus,
+                      (TickType_t)0);
     switch (uRosPingAgentStatus) {
       case Ok:
         SetGreenLed(On);
@@ -264,8 +257,7 @@ static void uRosPingTask(void * p)
   }
 }
 
-static void HardwareLoopTask(void * p)
-{
+static void HardwareLoopTask(void* p) {
   vTaskDelay(1000);
   FanHardwareInit();
   while (1) {
@@ -274,8 +266,7 @@ static void HardwareLoopTask(void * p)
   }
 }
 
-static void RuntimeStatsTask(void * p)
-{
+static void RuntimeStatsTask(void* p) {
   char buf[2000];
   LOG_DEBUG("runtime stats task started");
   while (1) {
@@ -293,15 +284,17 @@ void loop() { ; }
 /*=========== Runtime stats ====================*/
 HardwareTimer RuntimeStatsTimer(TIM5);  // TIM5 - 32 bit
 
-void vConfigureTimerForRunTimeStats(void)
-{
+void vConfigureTimerForRunTimeStats(void) {
   RuntimeStatsTimer.setPrescaleFactor(
-    1680);  // Set prescaler to 2564 => timer frequency = 168MHz/1680 = 100000
-            // Hz (from prediv'd by 1 clocksource of 168 MHz)
-  RuntimeStatsTimer.setOverflow(0xffffffff);  // Set overflow to 32761 => timer
-                                              // frequency = 65522 Hz / 32761 = 2 Hz
-  RuntimeStatsTimer.refresh();                // Make register changes take effect
-  RuntimeStatsTimer.resume();                 // Start
+      1680);  // Set prescaler to 2564 => timer frequency = 168MHz/1680 = 100000
+              // Hz (from prediv'd by 1 clocksource of 168 MHz)
+  RuntimeStatsTimer.setOverflow(
+      0xffffffff);              // Set overflow to 32761 => timer
+                                // frequency = 65522 Hz / 32761 = 2 Hz
+  RuntimeStatsTimer.refresh();  // Make register changes take effect
+  RuntimeStatsTimer.resume();   // Start
 }
 
-uint32_t vGetTimerValueForRunTimeStats(void) { return RuntimeStatsTimer.getCount(); }
+uint32_t vGetTimerValueForRunTimeStats(void) {
+  return RuntimeStatsTimer.getCount();
+}

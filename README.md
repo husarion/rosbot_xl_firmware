@@ -23,4 +23,3 @@ The recommended way is using the provided `husarion/micro-xrce-agent` (or `husar
 If you're following one of our tutorials, the agent service should be already included in the compose file.
 
 > In more recent versions `micro-XRCE` agent is used instead of `micro-ROS`, because ROS Domain ID functionality was added in the [v2.4.1 release of Micro-XRCE-DDS-Agent](https://github.com/eProsima/Micro-XRCE-DDS-Agent/releases/tag/v2.4.1) and so far `micro-ROS` agent wasn't updated to include this feature.
-

@@ -1,47 +1,49 @@
 ---
 repos:
+  # -------------------------
+  # Basic hygiene
+  # -------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
-      - id: check-added-large-files
-      # mesh files has to be taken into account
-        args: [--maxkb=2000]
-      - id: check-ast
-      - id: check-json
-        # vscode .json files do not follow the standard JSON format
-        exclude: ^.vscode/
-      - id: check-merge-conflict
-      - id: check-symlinks
-      - id: check-xml
-      - id: check-yaml
-      - id: debug-statements
-      - id: destroyed-symlinks
-      - id: detect-private-key
-      - id: end-of-file-fixer
-      - id: fix-byte-order-marker
-      - id: name-tests-test
-      - id: mixed-line-ending
       - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        args: [--profile, black]
-
-  - repo: https://github.com/cheshirekow/cmake-format-precommit
-    rev: v0.6.13
-    hooks:
-      - id: cmake-format
-
+  # -------------------------
+  # C / C++ formatting
+  # -------------------------
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v17.0.4
+    rev: v21.1.8
     hooks:
       - id: clang-format
-        exclude_types: [json]
+        files: \.(c|cpp|cc|cxx|h|hpp)$
+        args: [--style=Google]
 
+  # -------------------------
+  # Static analysis (fast, embedded-friendly)
+  # -------------------------
+  # - repo: https://github.com/pocc/pre-commit-hooks
+  #   rev: v1.3.5
+  #   hooks:
+  #     - id: cppcheck
+  #       args:
+  #         - --enable=all
+  #         - --std=c++17
+  #         - -Iinclude
+  #         - -Isrc
+  #     - id: clang-tidy
+      # - id: uncrustify # do almost the same as clang-format
+      # - id: cpplint # do almost the same as clang-format
+      # - id: include-what-you-use # need local installation
+
+  # -------------------------
+  # Spelling check
+  # -------------------------
   - repo: https://github.com/codespell-project/codespell
-    rev: v1.16.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         name: codespell
@@ -50,36 +52,12 @@ repos:
         language: python
         types: [text]
 
+  # -------------------------
+  # YAML formatting
+  # -------------------------
   - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
     rev: 0.2.3
     hooks:
       - id: yamlfmt
         files: ^(?!.*compose).*$
         args: [--mapping, '2', --sequence, '4', --offset, '2', --width, '100']
-
-  - repo: https://github.com/psf/black
-    rev: 23.10.1
-    hooks:
-      - id: black
-        args: [--line-length=99, --experimental-string-processing]
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
-    hooks:
-      - id: flake8
-        args: ['--ignore=E501,W503'] # ignore too long line and line break before binary operator,
-          # black checks it
-
-    # Docs - RestructuredText hooks
-  - repo: https://github.com/PyCQA/doc8
-    rev: v1.1.1
-    hooks:
-      - id: doc8
-        args: [--max-line-length=100, --ignore=D001]
-        exclude: ^.*\/CHANGELOG\.rst/.*$
-
-  - repo: https://github.com/tier4/pre-commit-hooks-ros
-    rev: v0.8.0
-    hooks:
-      - id: prettier-package-xml
-      - id: sort-package-xml

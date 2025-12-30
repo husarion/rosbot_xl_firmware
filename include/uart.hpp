@@ -1,5 +1,5 @@
 /**
- * @file UartLib.h
+ * @file uart.h
  * @author Maciej Kurcius
  * @brief
  * @version 0.1
@@ -9,12 +9,13 @@
  *
  */
 
-#ifndef UartLib_H
-#define UartLib_H
+#ifndef uart_H
+#define uart_H
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <bsp.h>
+
+#include "bsp.hpp"
 
 #define FRAME_START_BIT '<'
 #define FRAME_STOP_BIT '>'
@@ -34,30 +35,29 @@ extern QueueHandle_t BatteryStateQueue;
 
 typedef enum { ConversionOk = 0, ConversionError = 1 } UartConvStatusTypeDef;
 
-struct UartProtocolFrame
-{
+struct UartProtocolFrame {
   uint8_t cmd;
   uint8_t arg_size;
   uint8_t args[MAX_ARGS_SIZE] = {0};
   uint8_t check_sum;
 };
 
-class UartProtocolClass : public HardwareSerial
-{
-public:
-  UartProtocolClass(uint32_t arg_rx, uint32_t arg_tx, uint32_t arg_baudrate, uint8_t arg_config);
+class UartProtocolClass : public HardwareSerial {
+ public:
+  UartProtocolClass(uint32_t arg_rx, uint32_t arg_tx, uint32_t arg_baudrate,
+                    uint8_t arg_config);
   ~UartProtocolClass();
   void UartProtocolLoopHandler();
   void SendFrame(UartProtocolFrame arg_frame);
-  void SendBuffer(uint8_t arg_size, uint8_t * arg_buffer);
+  void SendBuffer(uint8_t arg_size, uint8_t* arg_buffer);
   void SendBuffer(uint8_t arg_size, String arg_buffer);
   void CleanRxBuffer(void);
 
-private:
+ private:
   void ExecuteFrame();
   int8_t StreamParse();
-  UartConvStatusTypeDef HexToByte(uint8_t * arg_byte_, uint8_t * arg_result);
-  uint8_t * ByteToHex(uint8_t arg_byte, uint8_t * arg_buffer);
+  UartConvStatusTypeDef HexToByte(uint8_t* arg_byte_, uint8_t* arg_result);
+  uint8_t* ByteToHex(uint8_t arg_byte, uint8_t* arg_buffer);
   uint8_t DecodeHex(uint8_t arg_byte);
   uint8_t EncodeHex(uint8_t arg_byte);
   UartProtocolFrame processed_frame;
@@ -65,4 +65,4 @@ private:
   volatile uint16_t rx_buffer_size = 0;
 };
 
-#endif /* UartLib_H */
+#endif /* uart_H */

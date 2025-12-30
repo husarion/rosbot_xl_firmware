@@ -9,21 +9,21 @@
  *
  */
 
-#include "bsp.h"
+#include "bsp.hpp"
 
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 #endif
-UartProtocolClass PowerBoardSerial(
-  PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD_SERIAL_BAUDRATE, PWR_BRD_SERIAL_CONFIG);
+UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX,
+                                   PWR_BRD_SERIAL_BAUDRATE,
+                                   PWR_BRD_SERIAL_CONFIG);
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
 TwoWire I2cBus(IMU_SDA, IMU_SCL);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
 
-void BoardGpioInit(void)
-{
+void BoardGpioInit(void) {
   digitalWrite(GRN_LED, LOW);
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(EN_LOC_5V, LOW);
@@ -37,29 +37,25 @@ void BoardGpioInit(void)
   pinMode(AUDIO_SHDN, OUTPUT);
 }
 
-void SetLocalPower(SwitchStateTypeDef State_)
-{
+void SetLocalPower(SwitchStateTypeDef State_) {
   if (State_ == Off) digitalWrite(EN_LOC_5V, LOW);
   if (State_ == On) digitalWrite(EN_LOC_5V, HIGH);
   if (State_ == Toggle) digitalToggle(EN_LOC_5V);
 }
 
-void SetGreenLed(SwitchStateTypeDef State_)
-{
+void SetGreenLed(SwitchStateTypeDef State_) {
   if (State_ == Off) digitalWrite(GRN_LED, LOW);
   if (State_ == On) digitalWrite(GRN_LED, HIGH);
   if (State_ == Toggle) digitalToggle(GRN_LED);
 }
 
-void SetRedLed(SwitchStateTypeDef State_)
-{
+void SetRedLed(SwitchStateTypeDef State_) {
   if (State_ == Off) digitalWrite(RD_LED, LOW);
   if (State_ == On) digitalWrite(RD_LED, HIGH);
   if (State_ == Toggle) digitalToggle(RD_LED);
 }
 
-void BoardPheripheralsInit(void)
-{
+void BoardPheripheralsInit(void) {
   BoardGpioInit();
   if (firmware_mode == fw_debug) {
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
@@ -83,16 +79,14 @@ void BoardPheripheralsInit(void)
   SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
 }
 
-PowerOffSignalTypeDef PowerOffSignalLoopHandler(void)
-{
+PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) {
   if (digitalRead(PWR_BRD_GPIO_INPUT))
     return Shutdown;
   else
     return Idle;
 }
 
-String GetBoardVersion(void)
-{
+String GetBoardVersion(void) {
   // uint8_t BoardVer2Write[] = {'v', '1', '.', '2'};
   // EepromWritePage(BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR,
   // (uint8_t*)BoardVer2Write, BOARD_VER_MEM_SIZE);
@@ -101,9 +95,9 @@ String GetBoardVersion(void)
     char RetVal[BOARD_VER_MEM_SIZE + 1];
     RetVal[BOARD_VER_MEM_SIZE] = '\0';
     for (uint8_t i = 0; i < BOARD_VER_READ_ATTEMPTS; i++) {
-      if (
-        EepromReadPage(
-          BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR, (uint8_t *)RetVal, BOARD_VER_MEM_SIZE) != -1) {
+      if (EepromReadPage(BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR,
+                         reinterpret_cast<uint8_t*>(RetVal),
+                         BOARD_VER_MEM_SIZE)) {
         BoardVersion = String(RetVal);
         return BoardVersion;
       }
@@ -116,8 +110,7 @@ String GetBoardVersion(void)
 
 void I2cBusInit(void) { I2cBus.begin(); }
 
-void TestFunction(uint8_t state)
-{
+void TestFunction(uint8_t state) {
   if (state == 1) SetGreenLed(On);
   if (state == 0) SetGreenLed(Off);
   UartProtocolFrame TestFrame;
@@ -130,8 +123,7 @@ void TestFunction(uint8_t state)
   PowerBoardSerial.SendFrame(TestFrame);
 }
 
-void PbInfoRequest(void)
-{
+void PbInfoRequest(void) {
   UartProtocolFrame PbInfoReqFrame;
   PbInfoReqFrame.arg_size = 1;
   PbInfoReqFrame.cmd = 1;
@@ -139,8 +131,7 @@ void PbInfoRequest(void)
   PowerBoardSerial.SendFrame(PbInfoReqFrame);
 }
 
-void BatteryInfoRequest(void)
-{
+void BatteryInfoRequest(void) {
   UartProtocolFrame PbInfoReqFrame;
   PbInfoReqFrame.arg_size = 18;
   PbInfoReqFrame.cmd = 2;
@@ -148,8 +139,7 @@ void BatteryInfoRequest(void)
   PowerBoardSerial.SendFrame(PbInfoReqFrame);
 }
 
-void FanHardwareInit(void)
-{
+void FanHardwareInit(void) {
   if (GetBoardVersion() == (String) "v1.1") {
     digitalWrite(FAN_PP_PIN, LOW);
     pinMode(FAN_PP_PIN, OUTPUT);
@@ -161,8 +151,7 @@ void FanHardwareInit(void)
   }
 }
 
-void FanLoopHanlder(void)
-{
+void FanLoopHanlder(void) {
   if (GetBoardVersion() == (String) "v1.1") {
     digitalWrite(FAN_PP_PIN, HIGH);
   } else if (GetBoardVersion() == (String) "v1.2") {
@@ -174,19 +163,18 @@ void FanLoopHanlder(void)
   }
 }
 
-int8_t GetInsideTemperature(void)
-{
+int8_t GetInsideTemperature(void) {
   float InsideTemp, logR2, SensorResistance, AdcValue;
   AdcValue = (float)analogRead(NTC_SENS_PIN);
   SensorResistance = (AdcValue * NTC_PULLUP_RES) / (1023 - AdcValue);
   logR2 = log(SensorResistance);
-  InsideTemp = (1.0 / (NTC_SENS_C1 + NTC_SENS_C2 * logR2 + NTC_SENS_C3 * logR2 * logR2 * logR2)) -
+  InsideTemp = (1.0 / (NTC_SENS_C1 + NTC_SENS_C2 * logR2 +
+                       NTC_SENS_C3 * logR2 * logR2 * logR2)) -
                NTC_OFFSET_VAL;
   return (int8_t)InsideTemp;
 }
 
-uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value)
-{
+uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value) {
   uint8_t DataToSend[] = {ByteAddr, Value};
   I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
   if (I2cBus.write(DataToSend, 2) == 2) {
@@ -197,8 +185,7 @@ uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value)
   return -1;
 }
 
-uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value)
-{
+uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value) {
   I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
   I2cBus.write(ByteAddr);
   I2cBus.endTransmission();
@@ -212,22 +199,22 @@ uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value)
   return -1;
 }
 
-uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uint8_t Size)
-{
+bool EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value,
+                     uint8_t Size) {
   uint8_t DataToSend[Size + 1];
   DataToSend[0] = ByteAddr;
   memcpy(DataToSend + 1, Value, Size);
   I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
   if (I2cBus.write(DataToSend, Size + 1) == Size + 1) {
     I2cBus.endTransmission();
-    return 0;
+    return true;
   }
   I2cBus.endTransmission();
-  return -1;
+  return false;
 }
 
-uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uint8_t Size)
-{
+bool EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value,
+                    uint8_t Size) {
   I2cBus.beginTransmission(EEPROM_CONTROL_BYTE(EEPROM_DEV_ID, BlockAddr));
   I2cBus.write(ByteAddr);
   I2cBus.endTransmission();
@@ -235,7 +222,7 @@ uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uin
   if (I2cBus.available()) {
     if (I2cBus.readBytes(Value, Size) == Size)
       ;
-    return 0;
+    return true;
   }
-  return -1;
+  return false;
 }

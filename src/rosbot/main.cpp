@@ -1,25 +1,26 @@
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <micro_ros_cfg.h>
+
+#include "micro_ros_cfg.hpp"
 /*===== HARDEWARE =====*/
-#include <bsp.h>
-#include <hardware_cfg.h>
-#include <battery_types.h>
-#include <ranges.h>
+#include "battery_types.hpp"
+#include "bsp.hpp"
+#include "hardware_cfg.hpp"
+#include "ranges.hpp"
 // MOTORS
-#include <motors.h>
+#include "motors.hpp"
 // IMU
-#include "hardware/imu.h"
+#include "hardware/imu.hpp"
 /*===== CONNECTIVITY =====*/
 #include <LwIP.h>
 #include <STM32Ethernet.h>
-#include <UartLib.h>
 #include <hal_conf_custom.h>
-#include "stm32f407xx.h"
+
+#include "uart.hpp"
 /*===== RTOS =====*/
-#include "rtos/tasks.h"
-#include "rtos/queues.h"
-#include "log.h"
+#include "log.hpp"
+#include "rtos/queues.hpp"
+#include "rtos/tasks.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
@@ -41,15 +42,11 @@ extern String PowerBoardVersion;
 
 /*==================== SETUP ========================*/
 void setup() {
-  Serial.setRx(FTDI_SERIAL_RX);
-  Serial.setTx(FTDI_SERIAL_TX);
-  Serial.setTimeout(FTDI_SERIAL_TIMEOUT);
-  Serial.begin(FTDI_SERIAL_BAUDRATE);
-
   // Hardware init
   BoardPheripheralsInit();
+
   uRosTransportInit();
-  if(!imuDriver.Init()) {
+  if (!imuDriver.init()) {
     LOG_ERROR("imuDriver.Init() failed!");
   }
   SetGreenLed(On);
@@ -68,15 +65,17 @@ void loop() { ; }
 /*=========== Runtime stats ====================*/
 HardwareTimer RuntimeStatsTimer(TIM5);  // TIM5 - 32 bit
 
-void vConfigureTimerForRunTimeStats(void)
-{
+void vConfigureTimerForRunTimeStats(void) {
   RuntimeStatsTimer.setPrescaleFactor(
-    1680);  // Set prescaler to 2564 => timer frequency = 168MHz/1680 = 100000
-            // Hz (from prediv'd by 1 clocksource of 168 MHz)
-  RuntimeStatsTimer.setOverflow(0xffffffff);  // Set overflow to 32761 => timer
-                                              // frequency = 65522 Hz / 32761 = 2 Hz
-  RuntimeStatsTimer.refresh();                // Make register changes take effect
-  RuntimeStatsTimer.resume();                 // Start
+      1680);  // Set prescaler to 2564 => timer frequency = 168MHz/1680 = 100000
+              // Hz (from prediv'd by 1 clocksource of 168 MHz)
+  RuntimeStatsTimer.setOverflow(
+      0xffffffff);              // Set overflow to 32761 => timer
+                                // frequency = 65522 Hz / 32761 = 2 Hz
+  RuntimeStatsTimer.refresh();  // Make register changes take effect
+  RuntimeStatsTimer.resume();   // Start
 }
 
-uint32_t vGetTimerValueForRunTimeStats(void) { return RuntimeStatsTimer.getCount(); }
+uint32_t vGetTimerValueForRunTimeStats(void) {
+  return RuntimeStatsTimer.getCount();
+}

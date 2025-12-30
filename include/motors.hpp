@@ -14,7 +14,8 @@
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
-#include <bsp.h>
+
+#include "bsp.hpp"
 
 #define M1_ENC_TIM TIM1
 #define M1_ENC_A PE9
@@ -65,7 +66,8 @@
 #define TIMEBASE_TIMER TIM6
 #define TIMEBASE_TIMER_FREQ 10000
 #define TIMEBASE_TIMER_CLOCKSOURCE_FREQ 168000000
-#define TIMEBASE_TIMER_PSC ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
+#define TIMEBASE_TIMER_PSC \
+  ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
 #define TIMEBASE_TIMER_OVERFLOW_VALUE 0xFFFF
 
 // PID PARAMETERS
@@ -94,32 +96,31 @@
 #define RAMP_ACCELERATION 2000  // rad/s^2 * 1000
 #define RAMP_FLAG false         // if true - use ramp, it false - without ramp
 
-void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_);
+void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_,
+                         uint32_t Ilim4_);
 
-class TimebaseTimerClass
-{
-public:
+class TimebaseTimerClass {
+ public:
   TimebaseTimerClass();
-  TimebaseTimerClass(TIM_TypeDef * arg_timer);
+  explicit TimebaseTimerClass(TIM_TypeDef* arg_timer);
   ~TimebaseTimerClass();
   uint64_t GetAbsTimeValue();
-  uint64_t GetTimeChange(uint64_t * arg_last_time);
+  uint64_t GetTimeChange(uint64_t* arg_last_time);
 
-private:
-  HardwareTimer * timebase_timer_ = 0;
+ private:
+  HardwareTimer* timebase_timer_ = 0;
   uint64_t time_counter_ = 0;
 };
 
-class MotorClass
-{
-public:
+class MotorClass {
+ public:
   MotorClass();
-  MotorClass(
-    uint32_t arg_pwm_pin, TIM_TypeDef * arg_pwm_timer, uint8_t arg_pwm_tim_channel,
-    uint32_t arg_a_channel_motor_pin, uint32_t arg_b_channel_motor_pin,
-    TIM_TypeDef * arg_encoder_timer, uint32_t arg_a_channel_encoder_pin,
-    uint32_t arg_b_channel_encoder_pin, int8_t arg_default_direction,
-    TimebaseTimerClass * arg_timebase_timer);
+  MotorClass(uint32_t arg_pwm_pin, TIM_TypeDef* arg_pwm_timer,
+             uint8_t arg_pwm_tim_channel, uint32_t arg_a_channel_motor_pin,
+             uint32_t arg_b_channel_motor_pin, TIM_TypeDef* arg_encoder_timer,
+             uint32_t arg_a_channel_encoder_pin,
+             uint32_t arg_b_channel_encoder_pin, int8_t arg_default_direction,
+             TimebaseTimerClass* arg_timebase_timer);
   ~MotorClass();
   // basic motor control methods
   void SoftStop(void);
@@ -138,16 +139,17 @@ public:
   void PidLoopHandler();
   void PidLoopHandler(int32_t arg_setpoint);
   void PidLoopHandler(float arg_setpoint);
-  void SetPidParameters(uint16_t arg_kp_gain, uint16_t arg_ki_gain, uint16_t arg_kd_gain);
+  void SetPidParameters(uint16_t arg_kp_gain, uint16_t arg_ki_gain,
+                        uint16_t arg_kd_gain);
   void SetPidAcceleration(uint16_t arg_ramp_acceleration);
 
-private:
+ private:
   int32_t VelocityUpdate(void);
   uint32_t GetPwmTimerOverflow(void);
   int64_t GetEncoderValue(void);
-  HardwareTimer * pwm_timer_;
-  HardwareTimer * encoder_timer_;
-  TimebaseTimerClass * timebase_tim_;
+  HardwareTimer* pwm_timer_;
+  HardwareTimer* encoder_timer_;
+  TimebaseTimerClass* timebase_tim_;
   int64_t last_encoder_value_;
   int64_t actual_encoder_value_;
   int64_t encoder_value_;
@@ -173,7 +175,7 @@ private:
   uint8_t pwm_timer_channel_;
   uint8_t pwm_pin_;
 
-protected:
+ protected:
   ;
 };
 
