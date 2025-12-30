@@ -13,24 +13,23 @@
 
 // MOTORS
 TimebaseTimerClass timebase_timer(TIMEBASE_TIMER);
-MotorClass motor_1(
-  M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1A_IN, M1B_IN, M1_ENC_TIM, M1_ENC_A, M1_ENC_B,
-  M1_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_2(
-  M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2A_IN, M2B_IN, M2_ENC_TIM, M2_ENC_A, M2_ENC_B,
-  M2_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_3(
-  M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3A_IN, M3B_IN, M3_ENC_TIM, M3_ENC_A, M3_ENC_B,
-  M3_DEFAULT_DIR, &timebase_timer);
-MotorClass motor_4(
-  M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN, M4_ENC_TIM, M4_ENC_A, M4_ENC_B,
-  M4_DEFAULT_DIR, &timebase_timer);
+MotorClass motor_1(M1_PWM_PIN, M1_PWM_TIM, M1_PWM_TIM_CH, M1A_IN, M1B_IN,
+                   M1_ENC_TIM, M1_ENC_A, M1_ENC_B, M1_DEFAULT_DIR,
+                   &timebase_timer);
+MotorClass motor_2(M2_PWM_PIN, M2_PWM_TIM, M2_PWM_TIM_CH, M2A_IN, M2B_IN,
+                   M2_ENC_TIM, M2_ENC_A, M2_ENC_B, M2_DEFAULT_DIR,
+                   &timebase_timer);
+MotorClass motor_3(M3_PWM_PIN, M3_PWM_TIM, M3_PWM_TIM_CH, M3A_IN, M3B_IN,
+                   M3_ENC_TIM, M3_ENC_A, M3_ENC_B, M3_DEFAULT_DIR,
+                   &timebase_timer);
+MotorClass motor_4(M4_PWM_PIN, M4_PWM_TIM, M4_PWM_TIM_CH, M4A_IN, M4B_IN,
+                   M4_ENC_TIM, M4_ENC_A, M4_ENC_B, M4_DEFAULT_DIR,
+                   &timebase_timer);
 MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
 
-
 #if defined(BOARD_ROSBOT_XL)
-void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_)
-{
+void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_,
+                         uint32_t Ilim4_) {
   if (GetBoardVersion() == "v1.2") {
     pinMode(Ilim1_, INPUT);
     pinMode(Ilim2_, INPUT);
@@ -50,105 +49,103 @@ void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint
 #elif defined(BOARD_CORE_2)
 // Custom timers configuration for ROSBOT_2 encoders, as using default
 // HardwareTimer::setMode() results in TIM3 using the same input as TIM8
-void ConfigureEncoderTimers(TIM_TypeDef* timer)
-{
-    // Setup the timer we're going to configure
-    TIM_HandleTypeDef htim = {0};
-    htim.Instance = timer;
-    htim.Init.Prescaler = 0;
-    htim.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim.Init.Period = 0xFFFF;
-    htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim.Init.RepetitionCounter = 0;
+void ConfigureEncoderTimers(TIM_TypeDef* timer) {
+  // Setup the timer we're going to configure
+  TIM_HandleTypeDef htim = {0};
+  htim.Instance = timer;
+  htim.Init.Prescaler = 0;
+  htim.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim.Init.Period = 0xFFFF;
+  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim.Init.RepetitionCounter = 0;
 
-    // Encoder configuration
-    TIM_Encoder_InitTypeDef encoderConfig = {0};
-    encoderConfig.EncoderMode = TIM_ENCODERMODE_TI12;
-    encoderConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-    encoderConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-    encoderConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-    encoderConfig.IC1Filter = 0;
-    encoderConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-    encoderConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-    encoderConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-    encoderConfig.IC2Filter = 0;
-  
-    // Configure and start the timer
-    HAL_TIM_Encoder_Init(&htim, &encoderConfig);
-    TIM_MasterConfigTypeDef masterConfig = {0};
-    masterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    masterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&htim, &masterConfig);
-    HAL_TIM_Encoder_Start(&htim, TIM_CHANNEL_ALL);
+  // Encoder configuration
+  TIM_Encoder_InitTypeDef encoderConfig = {0};
+  encoderConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  encoderConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  encoderConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  encoderConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  encoderConfig.IC1Filter = 0;
+  encoderConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  encoderConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  encoderConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  encoderConfig.IC2Filter = 0;
+
+  // Configure and start the timer
+  HAL_TIM_Encoder_Init(&htim, &encoderConfig);
+  TIM_MasterConfigTypeDef masterConfig = {0};
+  masterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  masterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  HAL_TIMEx_MasterConfigSynchronization(&htim, &masterConfig);
+  HAL_TIM_Encoder_Start(&htim, TIM_CHANNEL_ALL);
 }
 
 /* Override default config in HAL_TIM_Encoder_Init() */
-void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim)
-{
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitTypeDef GPIO_InitStruct2;
-    if (htim->Instance == TIM2) {
-        __GPIOA_CLK_ENABLE();
-        __TIM2_CLK_ENABLE();
-        GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
-        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-    }
-    else if (htim->Instance == TIM3) {
-        __GPIOA_CLK_ENABLE();
-        __GPIOB_CLK_ENABLE();
-        __TIM3_CLK_ENABLE();
-        GPIO_InitStruct.Pin = GPIO_PIN_4;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
-        GPIO_InitStruct2 = GPIO_InitStruct;
-        GPIO_InitStruct2.Pin = GPIO_PIN_7;
-        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct2);
-    }
-    else if (htim->Instance == TIM4) {
-        __TIM4_CLK_ENABLE();
-        __GPIOB_CLK_ENABLE();
-        GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
-        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-    }
-    else if (htim->Instance == TIM8) {
-        __TIM8_CLK_ENABLE();
-        __GPIOC_CLK_ENABLE();
-        GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-        HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-    }
+void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* htim) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitTypeDef GPIO_InitStruct2;
+  if (htim->Instance == TIM2) {
+    __GPIOA_CLK_ENABLE();
+    __TIM2_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  } else if (htim->Instance == TIM3) {
+    __GPIOA_CLK_ENABLE();
+    __GPIOB_CLK_ENABLE();
+    __TIM3_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
+    GPIO_InitStruct2 = GPIO_InitStruct;
+    GPIO_InitStruct2.Pin = GPIO_PIN_7;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct2);
+  } else if (htim->Instance == TIM4) {
+    __TIM4_CLK_ENABLE();
+    __GPIOB_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  } else if (htim->Instance == TIM8) {
+    __TIM8_CLK_ENABLE();
+    __GPIOC_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  }
 }
 #endif
 
-
 MotorClass::MotorClass() {}
 
-MotorClass::MotorClass(
-  uint32_t arg_pwm_pin, TIM_TypeDef * arg_pwm_timer, uint8_t arg_pwm_tim_channel,
-  uint32_t arg_a_channel_mot, uint32_t arg_b_channel_mot, TIM_TypeDef * arg_encoder_timer,
-  uint32_t arg_a_channel_encoder_pin, uint32_t arg_b_channel_encoder_pin,
-  int8_t arg_default_direction, TimebaseTimerClass * arg_timebase_timer)
-{
+MotorClass::MotorClass(uint32_t arg_pwm_pin, TIM_TypeDef* arg_pwm_timer,
+                       uint8_t arg_pwm_tim_channel, uint32_t arg_a_channel_mot,
+                       uint32_t arg_b_channel_mot,
+                       TIM_TypeDef* arg_encoder_timer,
+                       uint32_t arg_a_channel_encoder_pin,
+                       uint32_t arg_b_channel_encoder_pin,
+                       int8_t arg_default_direction,
+                       TimebaseTimerClass* arg_timebase_timer) {
   this->pwm_pin_ = arg_pwm_pin;
   this->pwm_timer_ = new HardwareTimer(arg_pwm_timer);
   this->pwm_timer_channel_ = arg_pwm_tim_channel;
-  this->pwm_timer_->setMode(this->pwm_timer_channel_, TIMER_OUTPUT_COMPARE_PWM1, this->pwm_pin_, 0);
+  this->pwm_timer_->setMode(this->pwm_timer_channel_, TIMER_OUTPUT_COMPARE_PWM1,
+                            this->pwm_pin_, 0);
   this->pwm_timer_->setOverflow(MOTORS_PWM_FREQUENCY, HERTZ_FORMAT);
-  this->pwm_timer_->setCaptureCompare(this->pwm_timer_channel_, 0, TICK_COMPARE_FORMAT);
+  this->pwm_timer_->setCaptureCompare(this->pwm_timer_channel_, 0,
+                                      TICK_COMPARE_FORMAT);
   this->pwm_timer_->resume();
   this->a_channel_motor_pin_ = arg_a_channel_mot;
   this->b_channel_motor_pin_ = arg_b_channel_mot;
@@ -159,8 +156,9 @@ MotorClass::MotorClass(
   this->b_channel_encoder_pin_ = arg_b_channel_encoder_pin;
   this->encoder_timer_ = new HardwareTimer(arg_encoder_timer);
 #if defined(BOARD_ROSBOT_XL)
-  this->encoder_timer_->setMode(
-    1, TIMER_INPUT_ENCODER_MODE12, this->a_channel_encoder_pin_, this->b_channel_encoder_pin_);
+  this->encoder_timer_->setMode(1, TIMER_INPUT_ENCODER_MODE12,
+                                this->a_channel_encoder_pin_,
+                                this->b_channel_encoder_pin_);
 #elif defined(BOARD_CORE_2)
   ConfigureEncoderTimers(arg_encoder_timer);
 #endif
@@ -172,54 +170,53 @@ MotorClass::MotorClass(
   this->default_direction_ = arg_default_direction;
   this->timebase_tim_ = arg_timebase_timer;
   this->last_time_ = this->timebase_tim_->GetAbsTimeValue();
-  this->last_encoder_value_ = this->actual_encoder_value_ = this->GetEncoderValue();
+  this->last_encoder_value_ = this->actual_encoder_value_ =
+      this->GetEncoderValue();
 }
-
 
 MotorClass::~MotorClass() { ; }
 
-void MotorClass::SetPidSetpoint(int32_t arg_setpoint) { this->input_ = arg_setpoint; }
+void MotorClass::SetPidSetpoint(int32_t arg_setpoint) {
+  this->input_ = arg_setpoint;
+}
 
-void MotorClass::SetPidSetpoint(float arg_setpoint)
-{
+void MotorClass::SetPidSetpoint(float arg_setpoint) {
   this->input_ = (int32_t)(arg_setpoint * 1000);
 }
 
-void MotorClass::PidLoopHandler(int32_t arg_setpoint)
-{
+void MotorClass::PidLoopHandler(int32_t arg_setpoint) {
   this->SetPidSetpoint(arg_setpoint);
   this->PidLoopHandler();
 }
 
-void MotorClass::PidLoopHandler(float arg_setpoint)
-{
+void MotorClass::PidLoopHandler(float arg_setpoint) {
   this->SetPidSetpoint(arg_setpoint);
   this->PidLoopHandler();
 }
 
-int32_t MotorClass::VelocityUpdate(void)
-{
+int32_t MotorClass::VelocityUpdate(void) {
   this->time_change_ = this->timebase_tim_->GetTimeChange(&this->last_time_);
   this->actual_encoder_value_ = this->GetEncoderValue();
   this->actual_velocity_ =
-    TICK_TO_RAD_X_1000(this->actual_encoder_value_ - this->last_encoder_value_) * 10000 /
-    (int64_t)(this->time_change_ * this->default_direction_);
+      TICK_TO_RAD_X_1000(this->actual_encoder_value_ -
+                         this->last_encoder_value_) *
+      10000 / (int64_t)(this->time_change_ * this->default_direction_);
   this->last_encoder_value_ = this->actual_encoder_value_;
   return actual_velocity_;
 }
 
 int32_t MotorClass::GetVelocity(void) { return this->actual_velocity_; }
 
-int64_t MotorClass::GetWheelAbsPosition(void)
-{
-  return (int64_t)TICK_TO_RAD_X_1000(
-    this->GetEncoderValue() * (int64_t)this->GetDefaultDirection());
+int64_t MotorClass::GetWheelAbsPosition(void) {
+  return (int64_t)TICK_TO_RAD_X_1000(this->GetEncoderValue() *
+                                     (int64_t)this->GetDefaultDirection());
 }
 
-int8_t MotorClass::GetDefaultDirection(void) { return this->default_direction_; }
+int8_t MotorClass::GetDefaultDirection(void) {
+  return this->default_direction_;
+}
 
-int64_t MotorClass::GetEncoderValue(void)
-{
+int64_t MotorClass::GetEncoderValue(void) {
   int8_t flag = encoder_timer_->getUnderOverFlow(ENCODER_COUNTER_MAX_VALUE);
   if (flag == 1) {
     encoder_value_ += ENCODER_COUNTER_MAX_VALUE;
@@ -230,16 +227,14 @@ int64_t MotorClass::GetEncoderValue(void)
   return (encoder_value_ + encoder_timer_->getCount() - ENCODER_COUNTER_OFFSET);
 }
 
-void MotorClass::SetPwm(uint32_t arg_value)
-{
+void MotorClass::SetPwm(uint32_t arg_value) {
   uint32_t pwm_tim_max = this->GetPwmTimerOverflow();
   this->pwm_timer_->setCaptureCompare(
-    this->pwm_timer_channel_, pwm_tim_max - constrain(arg_value, 0, pwm_tim_max),
-    TICK_COMPARE_FORMAT);
+      this->pwm_timer_channel_,
+      pwm_tim_max - constrain(arg_value, 0, pwm_tim_max), TICK_COMPARE_FORMAT);
 }
 
-void MotorClass::SetMove(int32_t arg_velocity)
-{
+void MotorClass::SetMove(int32_t arg_velocity) {
   this->SetPwm(abs(arg_velocity));
   if ((arg_velocity * (int32_t)this->default_direction_) > 0) {
     ;  // backward move
@@ -258,31 +253,29 @@ void MotorClass::SetMove(int32_t arg_velocity)
   }
 }
 
-void MotorClass::EmgStop(void)
-{
+void MotorClass::EmgStop(void) {
   pinMode(this->a_channel_motor_pin_, OUTPUT);
   pinMode(this->b_channel_motor_pin_, OUTPUT);
   digitalWrite(this->a_channel_motor_pin_, LOW);
   digitalWrite(this->b_channel_motor_pin_, LOW);
 }
 
-void MotorClass::SoftStop(void)
-{
+void MotorClass::SoftStop(void) {
   pinMode(this->a_channel_motor_pin_, OUTPUT);
   pinMode(this->b_channel_motor_pin_, OUTPUT);
   digitalWrite(this->a_channel_motor_pin_, HIGH);
   digitalWrite(this->b_channel_motor_pin_, HIGH);
 }
 
-int16_t MotorClass::GetWheelAngle(void)
-{
+int16_t MotorClass::GetWheelAngle(void) {
   return (int16_t)this->actual_encoder_value_ % TICK_PER_RADIAN_X_1000;
 }
 
-uint32_t MotorClass::GetPwmTimerOverflow(void) { return this->pwm_timer_->getOverflow(); }
+uint32_t MotorClass::GetPwmTimerOverflow(void) {
+  return this->pwm_timer_->getOverflow();
+}
 
-void MotorClass::PidLoopHandler(void)
-{
+void MotorClass::PidLoopHandler(void) {
   if (RAMP_FLAG) {
     if (this->actual_input_ < this->input_) {
       if ((this->actual_input_ + RAMP_ACCELERATION) > this->input_)
@@ -300,7 +293,8 @@ void MotorClass::PidLoopHandler(void)
     this->actual_input_ = this->input_;
   }
   actual_error_ = (this->actual_input_) - this->VelocityUpdate();
-  error_sum_ = constrain(this->error_sum_, (-1 * this->max_error_sum_), this->max_error_sum_);
+  error_sum_ = constrain(this->error_sum_, (-1 * this->max_error_sum_),
+                         this->max_error_sum_);
   this->output_ = this->kp_gain_ * actual_error_;
   this->output_ += this->ki_gain_ * this->error_sum_;
   this->output_ += this->kd_gain_ * (this->actual_error_ - this->last_error_);
@@ -312,20 +306,20 @@ void MotorClass::PidLoopHandler(void)
 
 TimebaseTimerClass::TimebaseTimerClass() { ; }
 
-TimebaseTimerClass::TimebaseTimerClass(TIM_TypeDef * arg_timer)
-{
+TimebaseTimerClass::TimebaseTimerClass(TIM_TypeDef* arg_timer) {
   this->timebase_timer_ = new HardwareTimer(arg_timer);
   this->timebase_timer_->setPrescaleFactor(TIMEBASE_TIMER_PSC);
-  this->timebase_timer_->setOverflow(TIMEBASE_TIMER_OVERFLOW_VALUE, TICK_FORMAT);
+  this->timebase_timer_->setOverflow(TIMEBASE_TIMER_OVERFLOW_VALUE,
+                                     TICK_FORMAT);
   this->timebase_timer_->refresh();
   this->timebase_timer_->resume();
 }
 
 TimebaseTimerClass::~TimebaseTimerClass() { ; }
 
-uint64_t TimebaseTimerClass::GetAbsTimeValue()
-{
-  int8_t flag = this->timebase_timer_->getUnderOverFlow(TIMEBASE_TIMER_OVERFLOW_VALUE);
+uint64_t TimebaseTimerClass::GetAbsTimeValue() {
+  int8_t flag =
+      this->timebase_timer_->getUnderOverFlow(TIMEBASE_TIMER_OVERFLOW_VALUE);
   if (flag == 1) {
     time_counter_ += TIMEBASE_TIMER_OVERFLOW_VALUE;
   }
@@ -335,8 +329,7 @@ uint64_t TimebaseTimerClass::GetAbsTimeValue()
   return (time_counter_ + this->timebase_timer_->getCount());
 }
 
-uint64_t TimebaseTimerClass::GetTimeChange(uint64_t * arg_last_time)
-{
+uint64_t TimebaseTimerClass::GetTimeChange(uint64_t* arg_last_time) {
   uint64_t ret_val = this->GetAbsTimeValue() - *arg_last_time;
   *arg_last_time = this->GetAbsTimeValue();
   return ret_val;

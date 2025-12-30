@@ -12,7 +12,6 @@
 #ifndef HARDWARE_CFG_ROSBOT_2
 #define HARDWARE_CFG_ROSBOT_2
 
-
 /* OTHERS */
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
 
@@ -32,16 +31,19 @@
 #define NTC_SENS_C1 0.001112613927
 #define NTC_SENS_C2 0.000237277392
 #define NTC_SENS_C3 0.000000071670
-#define NTC_PULLUP_RES 5230          // NTC pull up resisior
-#define NTC_OFFSET_VAL (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
+#define NTC_PULLUP_RES 5230  // NTC pull up resisior
+#define NTC_OFFSET_VAL \
+  (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
 
 /* SBC */
 #define SBC_SERIAL Serial1
 #define SBC_SERIAL_BAUDRATE 576000
 #define SBC_SERIAL_TX PA9
 #define SBC_SERIAL_RX PA10
-#define SBC_SERIAL_TIMEOUT 1 // ms
-#define SBC_STATUS PG6 // According to "Core2 v1.3 schematics", this should be connected to GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define SBC_SERIAL_TIMEOUT 1  // ms
+#define SBC_STATUS \
+  PG6  // According to "Core2 v1.3 schematics", this should be connected to
+       // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
 #define RPI_CONSOLE PG5
 #define RPI_BTN PG7
 
@@ -50,14 +52,14 @@
 #define FTDI_SERIAL_BAUDRATE 115200
 #define FTDI_SERIAL_TX PB10
 #define FTDI_SERIAL_RX PB11
-#define FTDI_SERIAL_TIMEOUT 1 // ms
+#define FTDI_SERIAL_TIMEOUT 1  // ms
 
 /* IMU */
 #define IMU_POWER_ON PG4
-#define IMU_SDA PC9 // I2C3
-#define IMU_SCL PA8 // I2C3
+#define IMU_SDA PC9         // I2C3
+#define IMU_SCL PA8         // I2C3
 #define IMU_SAMPLE_FREQ 25  // Hz
-#define IMU_ID 0xA0 // used internally by the Adafruit Unified Sensor API ?
+#define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
 
@@ -68,8 +70,8 @@
 #define M23_FAULT PE0
 
 #define M1_ENC_TIM TIM8
-#define M1_ENC_A PC6 // TIM8_CH1
-#define M1_ENC_B PC7 // TIM8_CH2
+#define M1_ENC_A PC6  // TIM8_CH1
+#define M1_ENC_B PC7  // TIM8_CH2
 #define M1_PWM_TIM TIM11
 #define M1_PWM_TIM_CH 1
 #define M1_PWM_PIN PF7
@@ -78,8 +80,8 @@
 #define M1_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
 
 #define M2_ENC_TIM TIM3
-#define M2_ENC_A PB4 // TIM3_CH1
-#define M2_ENC_B PA7 // TIM3_CH2
+#define M2_ENC_A PB4  // TIM3_CH1
+#define M2_ENC_B PA7  // TIM3_CH2
 #define M2_PWM_TIM TIM13
 #define M2_PWM_TIM_CH 1
 #define M2_PWM_PIN PF8
@@ -88,8 +90,8 @@
 #define M2_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
 
 #define M3_ENC_TIM TIM2
-#define M3_ENC_A PA0 // TIM2_CH1_ETR
-#define M3_ENC_B PA1 // TIM2_CH2
+#define M3_ENC_A PA0  // TIM2_CH1_ETR
+#define M3_ENC_B PA1  // TIM2_CH2
 #define M3_PWM_TIM TIM10
 #define M3_PWM_TIM_CH 1
 #define M3_PWM_PIN PF6
@@ -98,8 +100,8 @@
 #define M3_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
 
 #define M4_ENC_TIM TIM4
-#define M4_ENC_A PB6 // TIM4_CH1
-#define M4_ENC_B PB7 // TIM4_CH2
+#define M4_ENC_A PB6  // TIM4_CH1
+#define M4_ENC_B PB7  // TIM4_CH2
 #define M4_PWM_TIM TIM14
 #define M4_PWM_TIM_CH 1
 #define M4_PWM_PIN PF9

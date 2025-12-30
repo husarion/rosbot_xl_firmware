@@ -12,7 +12,6 @@
 #ifndef HARDWARE_CFG_ROSBOT_XL
 #define HARDWARE_CFG_ROSBOT_XL
 
-
 /* OTHERS */
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
 
@@ -40,8 +39,9 @@
 #define NTC_SENS_C1 0.001112613927
 #define NTC_SENS_C2 0.000237277392
 #define NTC_SENS_C3 0.000000071670
-#define NTC_PULLUP_RES 5230          // NTC pull up resisior
-#define NTC_OFFSET_VAL (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
+#define NTC_PULLUP_RES 5230  // NTC pull up resisior
+#define NTC_OFFSET_VAL \
+  (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
 
 /* PERIPHERALS */
 #define EN_LOC_5V PF13

@@ -17,23 +17,23 @@
 #include <Wire.h>
 #include <hardware_cfg.h>
 
-typedef struct
-{
+typedef struct {
   float Orientation[4];
   float AngularVelocity[3];
   float LinearAcceleration[3];
-} imu_queue_t;
+} imu_data_t;
 
-class ImuDriver
-{
-public:
-  ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire * ImuWire_);
+class ImuDriver {
+ public:
+  ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_);
   ~ImuDriver();
   bool Init();
-  imu_queue_t LoopHandler();
+  imu_data_t loopHandler();
 
-private:
-  Adafruit_BNO055 * ImuBno;
+ private:
+  Adafruit_BNO055* ImuBno;
 };
+
+extern ImuDriver imuDriver;
 
 #endif /* ImuLibCfg_H */

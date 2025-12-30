@@ -30,16 +30,16 @@
     {
       "label": "Build and deploy: rosbot_2",
       "type": "shell",
-      "command": "bash",
+      "command": "platformio",
       "args": [
-        "${workspaceFolder}/scripts/deploy_firmware.sh",
-        "192.168.77.2",
-        "husarion",
-        "${workspaceFolder}/.pio/build/rosbot_2_digital_board/firmware.bin"
+        "run",
+        "-e",
+        "rosbot_2_digital_board",
+        "--target",
+        "upload"
       ],
       "group": "build",
       "problemMatcher": ["$platformio"],
-      "dependsOn": ["Build rosbot_2"]
     }
   ]
 }

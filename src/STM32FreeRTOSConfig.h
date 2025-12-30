@@ -98,14 +98,14 @@ extern char _Min_Stack_Size; /* Defined in the linker script */
  * needs.
  */
 #ifndef configMINIMAL_STACK_SIZE
-#define configMINIMAL_STACK_SIZE ((uint16_t)((uint32_t) & _Min_Stack_Size / 8))
+#define configMINIMAL_STACK_SIZE ((uint16_t)((uint32_t)&_Min_Stack_Size / 8))
 #endif
 #ifndef configTOTAL_HEAP_SIZE
 #define configTOTAL_HEAP_SIZE \
-  ((size_t)((uint32_t) & _estack - (uint32_t) & _Min_Stack_Size - (uint32_t) & _end))
+  ((size_t)((uint32_t)&_estack - (uint32_t)&_Min_Stack_Size - (uint32_t)&_end))
 #endif
 #ifndef configISR_STACK_SIZE_WORDS
-#define configISR_STACK_SIZE_WORDS ((uint32_t) & _Min_Stack_Size / 4)
+#define configISR_STACK_SIZE_WORDS ((uint32_t)&_Min_Stack_Size / 4)
 #endif
 
 #define configUSE_PREEMPTION 1
@@ -131,7 +131,8 @@ extern char _Min_Stack_Size; /* Defined in the linker script */
 
 extern void vConfigureTimerForRunTimeStats(void);
 extern uint32_t vGetTimerValueForRunTimeStats(void);
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() \
+  vConfigureTimerForRunTimeStats()
 #define portGET_RUN_TIME_COUNTER_VALUE() vGetTimerValueForRunTimeStats()
 
 /*
@@ -203,8 +204,7 @@ header file. */
 #define configASSERT(x)       \
   if ((x) == 0) {             \
     taskDISABLE_INTERRUPTS(); \
-    for (;;)                  \
-      ;                       \
+    for (;;);                 \
   }
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS

@@ -15,6 +15,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <motors.h>
+
 #include "UartLib.h"
 #include "hardware_cfg.h"
 
@@ -45,8 +46,10 @@ int8_t GetInsideTemperature(void);
 // EEPROM FUNCTIONS
 
 uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t value);
-uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * value);
-uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uint8_t Size);
-uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uint8_t Size);
+uint8_t EepromReadByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* value);
+uint8_t EepromWritePage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value,
+                        uint8_t Size);
+uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t* Value,
+                       uint8_t Size);
 
 #endif /* BSP_H */

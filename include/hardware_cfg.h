@@ -18,27 +18,27 @@
 
 typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 
-#define PRINT_DEBUG(...) \
-    do { \
-        if (firmware_mode == fw_debug) { \
-            Serial.printf("[%s : %d] ", __FILE__, __LINE__); \
-            Serial.printf(__VA_ARGS__); \
-            Serial.printf("\r\n"); \
-        } \
-    } while (0);
+#define PRINT_DEBUG(...)                               \
+  do {                                                 \
+    if (firmware_mode == fw_debug) {                   \
+      Serial.printf("[%s : %d] ", __FILE__, __LINE__); \
+      Serial.printf(__VA_ARGS__);                      \
+      Serial.printf("\r\n");                           \
+    }                                                  \
+  } while (0);
 
-#define FREQ_TO_DELAY_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
+#define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
 
 /* CHOOSE HARDWARE CONFIG */
 
 #if defined(BOARD_ROSBOT_XL)
-  // #warning "INFO: Selected config: BOARD_ROSBOT_XL"
-  #include "hardware_cfg_rosbot_xl.h"
+// #warning "INFO: Selected config: BOARD_ROSBOT_XL"
+#include "hardware_cfg_rosbot_xl.h"
 #elif defined(BOARD_CORE_2)
-  // #warning "INFO: Selected config: BOARD_CORE_2"
-  #include "hardware_cfg_rosbot_2.h"
+// #warning "INFO: Selected config: BOARD_CORE_2"
+#include "hardware_cfg_rosbot_2.h"
 #else
-  #error "No board version defined! Did you set correct flag in platformio.ini?"
+#error "No board version defined! Did you set correct flag in platformio.ini?"
 #endif
 
 #endif /* HARDWARE_CFG */

@@ -12,6 +12,8 @@
 #ifndef BATTERY_TYPES_H
 #define BATTERY_TYPES_H
 
+#include "hardware_cfg.h"
+
 typedef enum {
   unknown_status = 0,
   charging = 1,
@@ -42,8 +44,7 @@ typedef enum {
   LIMN = 6
 } BatteryTechnologyTypeDef;
 
-typedef struct
-{
+typedef struct {
   // ROS battery msgs variables
   float voltage;
   float temperature;
@@ -58,6 +59,6 @@ typedef struct
   BatteryHealthTypeDef health;
   BatteryTechnologyTypeDef technology;
   bool present;
-} battery_state_queue_t;
+} battery_state_t;
 
 #endif /* BATTERY_TYPES_H */
