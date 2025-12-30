@@ -4,18 +4,22 @@
 /*===== HARDEWARE =====*/
 #include <bsp.h>
 #include <hardware_cfg.h>
+#include <battery_types.h>
 // MOTORS
 #include <motors.h>
 // IMU
 #include <ImuLib_cfg.h>
 // PIXEL
-#include <PixelLedLib_cfg.h>
+#if defined(BOARD_ROSBOT_XL)
+  #include <PixelLedLib_cfg.h>
+#endif
 /*===== CONNECTIVITY =====*/
 #include <LwIP.h>
 #include <STM32Ethernet.h>
 #include <UartLib.h>
 #include <hal_conf_custom.h>
 #include "stm32f407xx.h"
+
 
 /* VARIABLES */
 bool uRosInitSuccesfull = false;
@@ -25,10 +29,8 @@ QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
 QueueHandle_t uRosPingAgentStatusQueue;
-portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
 
 /* EXTERN VARIABLES */
-extern UartProtocolClass PowerBoardSerial;
 
 // IMU
 extern ImuDriver ImuBno;
@@ -42,14 +44,15 @@ extern rcl_publisher_t motor_state_publisher;
 // MOTORS
 extern TimebaseTimerClass timebase_timer;
 extern MotorClass wheel_motors[];
+
+#if defined(BOARD_ROSBOT_XL)
+extern UartProtocolClass PowerBoardSerial;
 // LED
 extern PixelLedClass pixel_strip;
+#endif
 
 // ETHERNET
-IPAddress client_ip;
-IPAddress agent_ip;
 EthernetClient EthClient;
-byte mac[] = {0x02, 0x47, 0x00, 0x00, 0x00, 0x01};
 
 // REST
 FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
@@ -74,11 +77,17 @@ void setup()
 {
   // Hardware init
   BoardPheripheralsInit();
-  PixelStrip.Init();
-  ImuBno.Init();
+  uRosTransportInit();
+  if(!ImuBno.Init()) {
+    PRINT_DEBUG("ImuBno.Init() failed!");
+  }
   SetGreenLed(On);
   delay(150);
   SetGreenLed(Off);
+
+#if defined(BOARD_ROSBOT_XL)
+  PixelStrip.Init();
+#endif
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
@@ -86,52 +95,58 @@ void setup()
   ImuQueue = xQueueCreate(1, sizeof(imu_queue_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_queue_t));
   uRosPingAgentStatusQueue = xQueueCreate(1, sizeof(uRosFunctionStatus));
-  if (firmware_mode == fw_debug) Serial.printf("Queues created\r\n");
+  PRINT_DEBUG("Queues created");
+
   /* RTOS TASKS CREATION */
-  s1 = xTaskCreate(
-    RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s1 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S1 creation problem\r\n");
-  s2 = xTaskCreate(
-    ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s2 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S2 creation problem\r\n");
-  s3 = xTaskCreate(
-    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s3 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S3 creation problem\r\n");
-  s4 = xTaskCreate(
-    PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3,
-    NULL);
-  if (s4 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S4 creation problem\r\n");
-  s5 = xTaskCreate(
-    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s5 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S5 creation problem\r\n");
-  s7 = xTaskCreate(
-    SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s7 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S7 creation problem\r\n");
-  s8 = xTaskCreate(
-    PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-    NULL);
-  if (s8 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S8 creation problem\r\n");
-  s9 = xTaskCreate(
-    uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s9 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S9 creation problem\r\n");
-  s10 = xTaskCreate(
-    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL,
-    tskIDLE_PRIORITY + 1, NULL);
-  if (s10 != pdPASS)
-    if (firmware_mode == fw_debug) Serial.printf("S10 creation problem\r\n");
+  if (xTaskCreate(
+    RclcSpinTask, "RclcSpinTask", configMINIMAL_STACK_SIZE + 2500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S1 creation problem");
+  }
+
+  if (xTaskCreate(
+    ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S2 creation problem");
+  }
+
+  if (xTaskCreate(
+    RuntimeStatsTask, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S3 creation problem");
+  }
+
+  if (xTaskCreate(
+    PidHandlerTask, "PidHandlerTask", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 3, NULL) != pdPASS) {
+    PRINT_DEBUG("S4 creation problem");
+  }
+
+#if defined(BOARD_ROSBOT_XL)
+  if (xTaskCreate(
+    PixelLedTask, "PixelLedTask", configMINIMAL_STACK_SIZE + 750, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S5 creation problem");
+  }
+
+  if (xTaskCreate(
+    SbcShutdownTask, "SbcShutdownTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S7 creation problem");
+  }
+
+  if (xTaskCreate(
+    PowerBoardTask, "PowerBoardTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S8 creation problem");
+  }
+
+  if (xTaskCreate(
+    HardwareLoopTask, "BoardHardwareLoopTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S10 creation problem");
+    }
+#endif
+
+  if (xTaskCreate(
+    uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+    PRINT_DEBUG("S9 creation problem");
+  }
+  
   /* START RTOS */
-  if (firmware_mode == fw_debug) Serial.printf("Tasks starting\r\n");
+  PRINT_DEBUG("Tasks starting");
   vTaskStartScheduler();
 }
 
@@ -154,7 +169,7 @@ static void ImuTask(void * p)
   while (1) {
     queue_imu = ImuBno.LoopHandler();
     xQueueSendToFront(ImuQueue, (void *)&queue_imu, TickType_t(0));
-    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TIME(IMU_SAMPLE_FREQ));
+    vTaskDelayUntil(&xLastWakeTime, FREQ_TO_DELAY_TICKS(IMU_SAMPLE_FREQ));
   }
 }
 
@@ -167,7 +182,7 @@ static void PidHandlerTask(void * p)
   static motor_state_queue_t motor_state;
   static uint8_t freq_div_ptr = 0;
   while (1) {
-    vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TIME(PID_FREQ));
+    vTaskDelayUntil(&x_last_wake_time, FREQ_TO_DELAY_TICKS(PID_FREQ));
     if (xQueueReceive(SetpointQueue, (void *)setpoint, (TickType_t)0)) {
       last_setpoint_update_time = xTaskGetTickCount();
     }
@@ -190,12 +205,13 @@ static void PidHandlerTask(void * p)
   }
 }
 
+#if defined(BOARD_ROSBOT_XL)
 static void PixelLedTask(void * p)
 {
   while (1) {
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    vTaskDelay(FREQ_TO_DELAY_TICKS(PIXEL_ANIMATION_FREQ));
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
-    vTaskDelay(FREQ_TO_DELAY_TIME(PIXEL_ANIMATION_FREQ));
+    vTaskDelay(FREQ_TO_DELAY_TICKS(PIXEL_ANIMATION_FREQ));
     PixelIddleAnimation(&PixelStrip, 0x0F, 0x00, 0x00, 0x0F, 50);
   }
 }
@@ -234,57 +250,56 @@ static void PowerBoardTask(void * p)
   }
 }
 
-static void uRosPingTask(void * p)
-{
-  static uRosFunctionStatus uRosPingAgentStatus;
-  client_ip.fromString(CLIENT_IP);
-  agent_ip.fromString(SBC_AGENT_IP);
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
-  while (1) {
-    uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
-    xQueueSendToFront(uRosPingAgentStatusQueue, (void *)&uRosPingAgentStatus, (TickType_t)0);
-    switch (uRosPingAgentStatus) {
-      case Ok:
-        SetGreenLed(On);
-        SetRedLed(Off);
-        break;
-      case Error:
-        SetGreenLed(Off);
-        SetRedLed(Toggle);
-        break;
-      case Default:
-        SetGreenLed(Toggle);
-        SetRedLed(Off);
-        break;
-      default:
-        SetGreenLed(Off);
-        SetRedLed(Off);
-        break;
-    }
-    vTaskDelay(FREQ_TO_DELAY_TIME(PING_AGENT_FREQUENCY));
-  }
-}
-
 static void HardwareLoopTask(void * p)
 {
-  vTaskDelay(1000);
   FanHardwareInit();
   while (1) {
     FanLoopHanlder();
     vTaskDelay(100);
   }
 }
+#endif
+
+static void uRosPingTask(void * p)
+{
+  static uRosFunctionStatus uRosPingAgentStatus;
+  while (1) {
+    uRosPingAgentStatus = uRosPingAgent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS);
+    xQueueSendToFront(uRosPingAgentStatusQueue, (void *)&uRosPingAgentStatus, (TickType_t)0);
+    switch (uRosPingAgentStatus) {
+      case Ok:
+        SetGreenLed(Toggle);
+        SetRedLed(Off);
+        break;
+      case Error:
+        PRINT_DEBUG("rmw_uros_ping_agent() error!");
+        SetGreenLed(Off);
+        SetRedLed(On);
+        break;
+      case Default:
+         SetGreenLed(On);
+         SetRedLed(On);
+        break;
+      default:
+        SetGreenLed(Off);
+        SetRedLed(Off);
+        break;
+    }
+    vTaskDelay(FREQ_TO_DELAY_TICKS(PING_AGENT_FREQUENCY));
+  }
+}
 
 static void RuntimeStatsTask(void * p)
 {
   char buf[2000];
-  if (firmware_mode == fw_debug) Serial.printf("runtime stats task started\r\n");
+  PRINT_DEBUG("runtime stats task started");
   while (1) {
     if (firmware_mode == fw_debug) {
       vTaskGetRunTimeStats(buf);
-      Serial.printf("\r\n%s\r\n-------------", buf);
+      // Serial.printf("\r\n%s\r\n-------------", buf);
     }
     vTaskDelay(100);
+
   }
 }
 

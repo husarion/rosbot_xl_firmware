@@ -14,35 +14,46 @@
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 #endif
+#if defined(BOARD_ROSBOT_XL)
 UartProtocolClass PowerBoardSerial(
   PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX, PWR_BRD_SERIAL_BAUDRATE, PWR_BRD_SERIAL_CONFIG);
+HardwareTimer FanTimer(FAN_PWM_TIMER);
+#elif defined(BOARD_CORE_2)
+HardwareSerial SBC_SERIAL(SBC_SERIAL_TX, SBC_SERIAL_RX);
+#endif
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
 TwoWire I2cBus(IMU_SDA, IMU_SCL);
-HardwareTimer FanTimer(FAN_PWM_TIMER);
 
 void BoardGpioInit(void)
 {
   digitalWrite(GRN_LED, LOW);
   pinMode(GRN_LED, OUTPUT);
-  digitalWrite(EN_LOC_5V, LOW);
-  pinMode(EN_LOC_5V, OUTPUT);
   digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
+#if defined(BOARD_CORE_2)
+  digitalWrite(GRN_LED2, LOW);
+  pinMode(GRN_LED2, OUTPUT);
+#elif defined(BOARD_ROSBOT_XL)
+  digitalWrite(EN_LOC_5V, LOW);
+  pinMode(EN_LOC_5V, OUTPUT);
   digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
   pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
   pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
   digitalWrite(AUDIO_SHDN, HIGH);
   pinMode(AUDIO_SHDN, OUTPUT);
+#endif
 }
 
+#if defined(BOARD_ROSBOT_XL)
 void SetLocalPower(SwitchStateTypeDef State_)
 {
   if (State_ == Off) digitalWrite(EN_LOC_5V, LOW);
   if (State_ == On) digitalWrite(EN_LOC_5V, HIGH);
   if (State_ == Toggle) digitalToggle(EN_LOC_5V);
 }
+#endif
 
 void SetGreenLed(SwitchStateTypeDef State_)
 {
@@ -50,6 +61,15 @@ void SetGreenLed(SwitchStateTypeDef State_)
   if (State_ == On) digitalWrite(GRN_LED, HIGH);
   if (State_ == Toggle) digitalToggle(GRN_LED);
 }
+
+#if defined(BOARD_CORE_2)
+void SetGreenLed2(SwitchStateTypeDef State_)
+{
+  if (State_ == Off) digitalWrite(GRN_LED2, LOW);
+  if (State_ == On) digitalWrite(GRN_LED2, HIGH);
+  if (State_ == Toggle) digitalToggle(GRN_LED2);
+}
+#endif
 
 void SetRedLed(SwitchStateTypeDef State_)
 {
@@ -64,35 +84,45 @@ void BoardPheripheralsInit(void)
   if (firmware_mode == fw_debug) {
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
   }
-  // SBC Serial port init
-  SBC_SERIAL.setRx(SBC_SERIAL_RX);
-  SBC_SERIAL.setTx(SBC_SERIAL_TX);
-  SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
-  SBC_SERIAL.println("Hello SBC");
+
+#if defined(BOARD_ROSBOT_XL)
   // Power Board Serial port init
   PowerBoardSerial.setTimeout(PWR_BRD_SERIAL_TIMEOUT);
   PowerBoardSerial.begin(PWR_BRD_SERIAL_BAUDRATE);
-// External Serial port init
-#if EXT_SERIAL_EN_FLAG == 1
-  EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
-  EXT_SERIAL.println("Hello external device");
-#endif
   SetLocalPower(On);
+  // External Serial port init
+  #if EXT_SERIAL_EN_FLAG == 1
+    EXT_SERIAL.begin(EXT_SERIAL_BAUDRATE);
+    EXT_SERIAL.println("Hello external device");
+  SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
+  #endif
+#elif defined(BOARD_CORE_2)
+  // FTDI UART-USB init
+  FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
+  FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
+  FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
+  FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
+#endif
+
   I2cBusInit();
   delay(250);
-  SetMaxMotorsCurrent(ILIM1, ILIM2, ILIM3, ILIM4);
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void)
 {
+#if defined(BOARD_ROSBOT_XL)
   if (digitalRead(PWR_BRD_GPIO_INPUT))
     return Shutdown;
   else
     return Idle;
+#elif defined(BOARD_CORE_2)
+  return Idle;
+#endif
 }
 
 String GetBoardVersion(void)
 {
+#if defined(BOARD_ROSBOT_XL)
   // uint8_t BoardVer2Write[] = {'v', '1', '.', '2'};
   // EepromWritePage(BOARD_VER_MEM_BLOCK, BOARD_VER_MEM_ADDR,
   // (uint8_t*)BoardVer2Write, BOARD_VER_MEM_SIZE);
@@ -111,11 +141,18 @@ String GetBoardVersion(void)
     }
     BoardVersion = (String) "v1.1";
   }
+#elif defined(BOARD_CORE_2)
+    static String BoardVersion = (String) "core2";
+#endif
   return BoardVersion;
 }
 
-void I2cBusInit(void) { I2cBus.begin(); }
+void I2cBusInit(void)
+{
+  I2cBus.begin();
+}
 
+#if defined(BOARD_ROSBOT_XL)
 void TestFunction(uint8_t state)
 {
   if (state == 1) SetGreenLed(On);
@@ -173,6 +210,7 @@ void FanLoopHanlder(void)
     }
   }
 }
+#endif
 
 int8_t GetInsideTemperature(void)
 {
@@ -185,6 +223,7 @@ int8_t GetInsideTemperature(void)
   return (int8_t)InsideTemp;
 }
 
+#if defined(BOARD_ROSBOT_XL)
 uint8_t EepromWriteByte(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t Value)
 {
   uint8_t DataToSend[] = {ByteAddr, Value};
@@ -239,3 +278,4 @@ uint8_t EepromReadPage(uint8_t BlockAddr, uint8_t ByteAddr, uint8_t * Value, uin
   }
   return -1;
 }
+#endif

@@ -12,6 +12,7 @@
 #include <STM32FreeRTOS.h>
 #include <UartLib.h>
 #include <math.h>
+#include <battery_types.h>
 
 extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;

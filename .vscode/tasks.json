@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build rosbot_XL",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "rosbot_xl_digital_board"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    },
+
+    {
+      "label": "Build rosbot_2",
+      "type": "shell",
+      "command": "platformio",
+      "args": [
+        "run",
+        "-e",
+        "rosbot_2_digital_board"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"]
+    },
+
+    {
+      "label": "Build and deploy: rosbot_2",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/deploy_firmware.sh",
+        "192.168.77.2",
+        "husarion",
+        "${workspaceFolder}/.pio/build/rosbot_2_digital_board/firmware.bin"
+      ],
+      "group": "build",
+      "problemMatcher": ["$platformio"],
+      "dependsOn": ["Build rosbot_2"]
+    }
+  ]
+}

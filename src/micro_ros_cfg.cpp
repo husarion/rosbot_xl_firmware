@@ -10,6 +10,7 @@
  */
 
 #include <micro_ros_cfg.h>
+#include <battery_types.h>
 
 // ROS PUBLISHERS
 rcl_publisher_t imu_publisher;
@@ -18,10 +19,17 @@ rcl_publisher_t battery_state_publisher;
 // ROS SUBSCRIPTIONS
 rcl_subscription_t subscriber;
 rcl_subscription_t motors_cmd_subscriber;
+#if defined(BOARD_CORE_2)
+rcl_subscription_t left_led_subscriber;
+rcl_subscription_t right_led_subscriber;
+#endif
 // ROS MESSAGES
 sensor_msgs__msg__Imu imu_msg;
 std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
+#if defined(BOARD_CORE_2)
+std_msgs__msg__Bool led_msg;
+#endif
 sensor_msgs__msg__JointState motors_response_msg;
 sensor_msgs__msg__BatteryState battery_state_msg;
 // ROS SERVICES
@@ -43,7 +51,7 @@ extern FirmwareModeTypeDef firmware_mode;
 void ErrorLoop(const char * func)
 {
   for (int i = 0; i < 4; ++i) {
-    if (firmware_mode == fw_debug) Serial.printf("In error loop from function %s\r\n", func);
+    PRINT_DEBUG("In error loop from function %s", func)
     SetRedLed(Toggle);
     SetGreenLed(Off);
     delay(500);
@@ -52,9 +60,51 @@ void ErrorLoop(const char * func)
   NVIC_SystemReset();
 }
 
+
+void uRosTransportInit(void)
+{
+#if defined(BOARD_ROSBOT_XL)
+  IPAddress client_ip;
+  IPAddress agent_ip;
+  byte mac[] = {CLIENT_MAC_ADDR};
+  client_ip.fromString(CLIENT_IP);
+  agent_ip.fromString(SBC_AGENT_IP);
+  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip, AGENT_PORT);
+#elif defined(BOARD_CORE_2)
+  rmw_uros_set_custom_transport(
+    /* Enable XRCE framing */
+    true,
+    /* Arguments for open function */
+    NULL,
+    /* Open transport callback */
+    [](struct uxrCustomTransport * transport) -> bool {
+      SBC_SERIAL.setRx(SBC_SERIAL_RX);
+      SBC_SERIAL.setTx(SBC_SERIAL_TX);
+      SBC_SERIAL.setTimeout(SBC_SERIAL_TIMEOUT);
+      SBC_SERIAL.begin(SBC_SERIAL_BAUDRATE);
+      return SBC_SERIAL ? true : false;
+    },
+    /* Close transport callback */
+    [](struct uxrCustomTransport * transport) -> bool {
+      SBC_SERIAL.end();
+      return true;
+    },
+    /* Write transport callback */
+    [](struct uxrCustomTransport * transport, const uint8_t *buf, size_t len, uint8_t *errcode) -> unsigned int {
+      return SBC_SERIAL.write(buf, len);
+    },
+    /* Read transport callback */
+    [](struct uxrCustomTransport * transport, uint8_t *buf, size_t len, int timeout, uint8_t *errcode) -> unsigned int {
+      SBC_SERIAL.setTimeout(timeout);
+      return SBC_SERIAL.readBytes((char *)buf, len);
+    }
+  );
+#endif
+}
+
 uRosFunctionStatus uRosPingAgent(void)
 {
-  if (rmw_uros_ping_agent(AGENT_RECONNECTION_TIMEOUT, AGENT_RECONNECTION_ATTEMPTS) == RMW_RET_OK)
+  if (rmw_uros_ping_agent(PING_AGENT_TIMEOUT, PING_AGENT_ATTEMPTS) == RMW_RET_OK)
     return Ok;
   else
     return Error;  // if false
@@ -101,6 +151,28 @@ void uRosMotorsCmdCallback(const void * arg_input_message)
   }
   xQueueSendToFront(SetpointQueue, (void *)setpoint, (TickType_t)0);
 }
+
+#if defined(BOARD_CORE_2)
+void uRosLeftLedCallback(const void * arg_led_msg)
+{
+  std_msgs__msg__Bool * led_msg = (std_msgs__msg__Bool *)arg_led_msg;
+  if (led_msg->data == true) {
+    SetGreenLed(On);
+  } else {
+    SetGreenLed(Off);
+  }
+}
+
+void uRosRightLedCallback(const void * arg_led_msg)
+{
+  std_msgs__msg__Bool * led_msg = (std_msgs__msg__Bool *)arg_led_msg;
+  if (led_msg->data == true) {
+    SetGreenLed2(On);
+  } else {
+    SetGreenLed2(Off);
+  }
+}
+#endif
 
 void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
 {
@@ -149,6 +221,8 @@ void uRosTimerCallback(rcl_timer_t * arg_timer, int64_t arg_last_call_time)
       if (rmw_uros_epoch_synchronized()) {
         imu_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
         imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+      } else {
+        PRINT_DEBUG("!rmw_uros_epoch_synchronized");
       }
       imu_msg.header.frame_id.data = (char *)"imu_link";
       imu_msg.orientation.x = queue_imu.Orientation[0];
@@ -206,60 +280,77 @@ uRosEntitiesStatus uRosCreateEntities(void)
   RCCHECK(rcl_init_options_init(&init_options, allocator));
   RCCHECK(rcl_init_options_set_domain_id(&init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
-  if (firmware_mode == fw_debug)
-    Serial.printf(
-      "Created support with option domain_id=%d\r\n", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
+  PRINT_DEBUG("Created support with option domain_id=%d", UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
 
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  if (firmware_mode == fw_debug) Serial.printf("Created node `%s`\r\n", NODE_NAME);
+  PRINT_DEBUG("Created node '%s'", NODE_NAME)
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), uRosTimerCallback));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created timer\r\n");
+  PRINT_DEBUG("Created timer")
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
     &motors_cmd_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
-    "_motors_cmd"));
+    MOTORS_CMD_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' subscriber.", MOTORS_CMD_TOPIC_NAME)
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_cmd' subscriber\r\n");
+#if defined(BOARD_CORE_2)
+  RCCHECK(rclc_subscription_init_default(
+    &left_led_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+    LEFT_LED_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' subscriber.", LEFT_LED_TOPIC_NAME)
+  ros_msgs_cnt++;
+  RCCHECK(rclc_subscription_init_default(
+    &right_led_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+    RIGHT_LED_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' subscriber.", RIGHT_LED_TOPIC_NAME)
+  ros_msgs_cnt++;
+#endif
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
-    &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), "_imu/data_raw"));
-  // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_imu/data_raw' publisher.\r\n");
+    &imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu), IMU_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' publisher.", IMU_TOPIC_NAME)
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
-    &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-    "_motors_response"));
-  // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created '_motors_response' publisher.\r\n");
+    &motor_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState), MOTOR_STATE_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' publisher.", MOTOR_STATE_TOPIC_NAME)
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
-    &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
-    "battery_state"));
-  // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'battery_state' publisher.\r\n");
+    &battery_state_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState), BATTERY_TOPIC_NAME));
+  PRINT_DEBUG("Created '%s' publisher.", BATTERY_TOPIC_NAME)
   /*===== INIT SERVICES ===== */
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK(rclc_service_init_default(
-    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
+    &get_cpu_id_service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), GET_CPU_ID_SERVICE_NAME));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created 'get_cpu_id_service' service.\r\n");
+  PRINT_DEBUG("Created '%s' service.", GET_CPU_ID_SERVICE_NAME)
   /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
+  PRINT_DEBUG("rclc_executor_init")
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
+  PRINT_DEBUG("rclc_executor_add_timer")
   RCCHECK(rclc_executor_add_subscription(
     &executor, &motors_cmd_subscriber, &motors_cmd_msg, &uRosMotorsCmdCallback, ON_NEW_DATA));
+  PRINT_DEBUG("rclc_executor_add_subscription uRosMotorsCmdCallback")
+#if defined(BOARD_CORE_2)
+  RCCHECK(rclc_executor_add_subscription(
+    &executor, &left_led_subscriber, &led_msg, &uRosLeftLedCallback, ON_NEW_DATA));
+  PRINT_DEBUG("rclc_executor_add_subscription left_led_subscriber")
+  RCCHECK(rclc_executor_add_subscription(
+    &executor, &right_led_subscriber, &led_msg, &uRosRightLedCallback, ON_NEW_DATA));
+  PRINT_DEBUG("rclc_executor_add_subscription right_led_subscriber")
+#endif
   RCCHECK(rclc_executor_add_service(
     &executor, &get_cpu_id_service, &get_cpu_id_service_request, &get_cpu_id_service_response,
     uRosGetIdCallback));
-  if (firmware_mode == fw_debug) Serial.printf("Executor started\r\n");
+  PRINT_DEBUG("Executor started")
 
   RCCHECK(rmw_uros_sync_session(1000));
-  if (firmware_mode == fw_debug) Serial.printf("Clocks synchronised\r\n");
+  PRINT_DEBUG("Clocks synchronised")
+
   return Created;
 }
 
@@ -272,13 +363,17 @@ uRosEntitiesStatus uRosDestroyEntities(void)
   RCCHECK(rcl_publisher_fini(&motor_state_publisher, &node));
   RCCHECK(rcl_publisher_fini(&battery_state_publisher, &node));
   RCCHECK(rcl_subscription_fini(&motors_cmd_subscriber, &node));
+#if defined(BOARD_CORE_2)
+  RCCHECK(rcl_subscription_fini(&left_led_subscriber, &node));
+  RCCHECK(rcl_subscription_fini(&right_led_subscriber, &node));
+#endif
   RCCHECK(rcl_service_fini(&get_cpu_id_service, &node));
   RCCHECK(rcl_timer_fini(&timer));
   RCCHECK(rclc_executor_fini(&executor));
   RCCHECK(rcl_node_fini(&node));
   RCCHECK(rclc_support_fini(&support));
   RCCHECK(rcl_init_options_fini(&init_options));
-  if (firmware_mode == fw_debug) Serial.printf("Destroyed all microros entities.\r\n");
+  PRINT_DEBUG("Destroyed all microros entities.")
   return Destroyed;
 }
 

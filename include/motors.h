@@ -16,85 +16,76 @@
 #include <STM32FreeRTOS.h>
 #include <bsp.h>
 
-#define M1_ENC_TIM TIM1
-#define M1_ENC_A PE9
-#define M1_ENC_B PE11
-#define M1_PWM_TIM TIM10
-#define M1_PWM_PIN PF6
-#define M1_PWM_TIM_CH 1
-#define M1A_IN PE12
-#define M1B_IN PE13
-#define M1_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
 
-#define M2_ENC_TIM TIM2
-#define M2_ENC_A PA15
-#define M2_ENC_B PB3
-#define M2_PWM_TIM TIM11
-#define M2_PWM_PIN PF7
-#define M2_PWM_TIM_CH 1
-#define M2A_IN PG11
-#define M2B_IN PG12
-#define M2_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
+#if defined(BOARD_ROSBOT_XL)
+  // HARDWARE DEFINES
+  #define MOTORS_SETPOINT_TIMEOUT 3000  // ms
+  #define MOTORS_PWM_FREQUENCY 15000    // Hz
+  #define GEARBOX_RATIO 50
+  // #define MAX_ANG_VEL 20000  // rad/s * 1000
+  // #define MAX_CURRENT 0x01
+  // #define REDUCED_CURRENT 0x00
+  #define RAMP_ACCELERATION 2000  // rad/s^2 * 1000
+  #define RAMP_FLAG false         // if true - use ramp, it false - without ramp
 
-#define M3_ENC_TIM TIM3
-#define M3_ENC_A PC6
-#define M3_ENC_B PC7
-#define M3_PWM_TIM TIM13
-#define M3_PWM_PIN PF8
-#define M3_PWM_TIM_CH 1
-#define M3A_IN PG5
-#define M3B_IN PG6
-#define M3_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
+  // PID PARAMETERS
+  #define PID_FREQ 100       // max 1000Hz
+  #define PID_DEFAULT_KP 49  // KP * 1000
+  #define PID_DEFAULT_KI 8   // KI * 1000
+  #define PID_DEFAULT_KD 0
+  // #define MAX_ERR_SUM (1000000 / PID_DEFAULT_KI)
 
-#define M4_ENC_TIM TIM4
-#define M4_ENC_A PD12
-#define M4_ENC_B PD13
-#define M4_PWM_TIM TIM14
-#define M4_PWM_PIN PF9
-#define M4_PWM_TIM_CH 1
-#define M4A_IN PD10
-#define M4B_IN PD11
-#define M4_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
+  // MOTORS ENCODERS PARAMETERS
+  #define ENC_RESOLUTION 64
+  #define ENCODER_COUNTER_MAX_VALUE 0xFFFF
+  #define ENCODER_COUNTER_OFFSET (ENCODER_COUNTER_MAX_VALUE / 2)
+  #define TICK_PER_REAR (ENC_RESOLUTION * GEARBOX_RATIO)
+  #define TICK_PER_RADIAN TICK_PER_REAR / (2 * PI)
+  #define TICK_PER_RADIAN_X_1000 TICK_PER_RADIAN * 1000
+  #define TICK_TO_RAD_X_1000(arg) (int64_t((arg) * 1000 * 2 * PI) / TICK_PER_REAR)
 
-#define ILIM1 PE10
-#define ILIM2 PG15
-#define ILIM3 PG7
-#define ILIM4 PD14
+  // MOTORS TIMEBASE TIMER
+  #define TIMEBASE_TIMER TIM6
+  #define TIMEBASE_TIMER_FREQ 10000
+  #define TIMEBASE_TIMER_CLOCKSOURCE_FREQ 168000000
+  #define TIMEBASE_TIMER_PSC ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
+  #define TIMEBASE_TIMER_OVERFLOW_VALUE 0xFFFF
 
-// MOTORS TIMEBASE TIMER
-#define TIMEBASE_TIMER TIM6
-#define TIMEBASE_TIMER_FREQ 10000
-#define TIMEBASE_TIMER_CLOCKSOURCE_FREQ 168000000
-#define TIMEBASE_TIMER_PSC ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
-#define TIMEBASE_TIMER_OVERFLOW_VALUE 0xFFFF
+  void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_);
+#elif defined(BOARD_CORE_2)
+  // HARDWARE DEFINES
+  #define MOTORS_SETPOINT_TIMEOUT 3000  // ms
+  #define MOTORS_PWM_FREQUENCY 18000    // Hz
+  #define GEARBOX_RATIO 34
+  // #define MAX_ANG_VEL 1  // rad/s * 1000
+  // #define MAX_CURRENT 0x01
+  // #define REDUCED_CURRENT 0x00
+  #define RAMP_ACCELERATION 2000  // rad/s^2 * 1000
+  #define RAMP_FLAG false         // if true - use ramp, it false - without ramp
 
-// PID PARAMETERS
-#define PID_FREQ 100       // max 1000Hz
-#define PID_DEFAULT_KP 49  // KP * 1000
-#define PID_DEFAULT_KI 8   // KI * 1000
-#define PID_DEFAULT_KD 0
-#define MAX_ERR_SUM (1000000 / PID_DEFAULT_KI)
+  // PID PARAMETERS
+  #define PID_FREQ 100       // max 1000Hz
+  #define PID_DEFAULT_KP 0.8  // KP * 1000
+  #define PID_DEFAULT_KI 0.2   // KI * 1000
+  #define PID_DEFAULT_KD 0.015
+  // #define MAX_ERR_SUM (1000000 / PID_DEFAULT_KI)
 
-// MOTORS ENCODERS PARAMETERS
-#define ENC_RESOLUTION 64
-#define ENCODER_COUNTER_MAX_VALUE 0xFFFF
-#define ENCODER_COUNTER_OFFSET (ENCODER_COUNTER_MAX_VALUE / 2)
-#define TICK_PER_REAR (ENC_RESOLUTION * GEARBOX_RATIO)
-#define TICK_PER_RADIAN TICK_PER_REAR / (2 * PI)
-#define TICK_PER_RADIAN_X_1000 TICK_PER_RADIAN * 1000
-#define TICK_TO_RAD_X_1000(arg) (int64_t((arg) * 1000 * 2 * PI) / TICK_PER_REAR)
+  // MOTORS ENCODERS PARAMETERS
+  #define ENC_RESOLUTION 48
+  #define ENCODER_COUNTER_MAX_VALUE 0xFFFF
+  #define ENCODER_COUNTER_OFFSET (ENCODER_COUNTER_MAX_VALUE / 2)
+  #define TICK_PER_REAR (ENC_RESOLUTION * GEARBOX_RATIO)
+  #define TICK_PER_RADIAN TICK_PER_REAR / (2 * PI)
+  #define TICK_PER_RADIAN_X_1000 TICK_PER_RADIAN * 1000
+  #define TICK_TO_RAD_X_1000(arg) (int64_t((arg) * 1000 * 2 * PI) / TICK_PER_REAR)
 
-// HARDWARE DEFINES
-#define MOTORS_SETPOINT_TIMEOUT 3000  // ms
-#define MOTORS_PWM_FREQUENCY 15000    // Hz
-#define GEARBOX_RATIO 50
-#define MAX_ANG_VEL 20000  // rad/s * 1000
-#define MAX_CURRENT 0x01
-#define REDUCED_CURRENT 0x00
-#define RAMP_ACCELERATION 2000  // rad/s^2 * 1000
-#define RAMP_FLAG false         // if true - use ramp, it false - without ramp
-
-void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_);
+  // MOTORS TIMEBASE TIMER
+  #define TIMEBASE_TIMER TIM6
+  #define TIMEBASE_TIMER_FREQ 10000
+  #define TIMEBASE_TIMER_CLOCKSOURCE_FREQ 168000000
+  #define TIMEBASE_TIMER_PSC ((TIMEBASE_TIMER_CLOCKSOURCE_FREQ / TIMEBASE_TIMER_FREQ) / 2)
+  #define TIMEBASE_TIMER_OVERFLOW_VALUE 0xFFFF
+#endif
 
 class TimebaseTimerClass
 {

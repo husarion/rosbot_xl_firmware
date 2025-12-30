@@ -27,6 +27,8 @@ MotorClass motor_4(
   M4_DEFAULT_DIR, &timebase_timer);
 MotorClass wheel_motors[] = {motor_1, motor_2, motor_3, motor_4};
 
+
+#if defined(BOARD_ROSBOT_XL)
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint32_t Ilim4_)
 {
   if (GetBoardVersion() == "v1.2") {
@@ -45,6 +47,93 @@ void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_, uint
     digitalWrite(Ilim4_, HIGH);
   }
 }
+#elif defined(BOARD_CORE_2)
+// Custom timers configuration for ROSBOT_2 encoders, as using default
+// HardwareTimer::setMode() results in TIM3 using the same input as TIM8
+void ConfigureEncoderTimers(TIM_TypeDef* timer)
+{
+    // Setup the timer we're going to configure
+    TIM_HandleTypeDef htim = {0};
+    htim.Instance = timer;
+    htim.Init.Prescaler = 0;
+    htim.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim.Init.Period = 0xFFFF;
+    htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim.Init.RepetitionCounter = 0;
+
+    // Encoder configuration
+    TIM_Encoder_InitTypeDef encoderConfig = {0};
+    encoderConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+    encoderConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+    encoderConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+    encoderConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+    encoderConfig.IC1Filter = 0;
+    encoderConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+    encoderConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+    encoderConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+    encoderConfig.IC2Filter = 0;
+  
+    // Configure and start the timer
+    HAL_TIM_Encoder_Init(&htim, &encoderConfig);
+    TIM_MasterConfigTypeDef masterConfig = {0};
+    masterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    masterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    HAL_TIMEx_MasterConfigSynchronization(&htim, &masterConfig);
+    HAL_TIM_Encoder_Start(&htim, TIM_CHANNEL_ALL);
+}
+
+/* Override default config in HAL_TIM_Encoder_Init() */
+void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef *htim)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitTypeDef GPIO_InitStruct2;
+    if (htim->Instance == TIM2) {
+        __GPIOA_CLK_ENABLE();
+        __TIM2_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    }
+    else if (htim->Instance == TIM3) {
+        __GPIOA_CLK_ENABLE();
+        __GPIOB_CLK_ENABLE();
+        __TIM3_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_4;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
+        GPIO_InitStruct2 = GPIO_InitStruct;
+        GPIO_InitStruct2.Pin = GPIO_PIN_7;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct2);
+    }
+    else if (htim->Instance == TIM4) {
+        __TIM4_CLK_ENABLE();
+        __GPIOB_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    }
+    else if (htim->Instance == TIM8) {
+        __TIM8_CLK_ENABLE();
+        __GPIOC_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
+        HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    }
+}
+#endif
+
 
 MotorClass::MotorClass() {}
 
@@ -69,8 +158,12 @@ MotorClass::MotorClass(
   this->a_channel_encoder_pin_ = arg_a_channel_encoder_pin;
   this->b_channel_encoder_pin_ = arg_b_channel_encoder_pin;
   this->encoder_timer_ = new HardwareTimer(arg_encoder_timer);
+#if defined(BOARD_ROSBOT_XL)
   this->encoder_timer_->setMode(
     1, TIMER_INPUT_ENCODER_MODE12, this->a_channel_encoder_pin_, this->b_channel_encoder_pin_);
+#elif defined(BOARD_CORE_2)
+  ConfigureEncoderTimers(arg_encoder_timer);
+#endif
   this->encoder_timer_->setOverflow(ENCODER_COUNTER_MAX_VALUE);
   this->encoder_timer_->refresh();
   this->encoder_timer_->setCount(ENCODER_COUNTER_OFFSET);
@@ -81,6 +174,7 @@ MotorClass::MotorClass(
   this->last_time_ = this->timebase_tim_->GetAbsTimeValue();
   this->last_encoder_value_ = this->actual_encoder_value_ = this->GetEncoderValue();
 }
+
 
 MotorClass::~MotorClass() { ; }
 
