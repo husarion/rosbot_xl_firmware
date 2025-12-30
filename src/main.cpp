@@ -12,7 +12,7 @@
 // IMU
 #include <ImuLib_cfg.h>
 // PIXEL
-#if defined(BOARD_ROSBOT_XL)
+#if defined(ROSBOT_XL)
 #include <PixelLedLib_cfg.h>
 #endif
 /*===== CONNECTIVITY =====*/
@@ -50,7 +50,7 @@ extern rcl_publisher_t motor_state_publisher;
 extern TimebaseTimerClass timebase_timer;
 extern MotorClass wheel_motors[];
 
-#if defined(BOARD_ROSBOT_XL)
+#if defined(ROSBOT_XL)
 extern UartProtocolClass PowerBoardSerial;
 // LED
 extern PixelLedClass pixel_strip;

@@ -28,7 +28,7 @@ ImuDriver::ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_) {
 ImuDriver::~ImuDriver() { ; }
 
 bool ImuDriver::Init() {
-#if defined(BOARD_CORE_2)
+#if defined(ROSBOT)
   // Enable power for IMU sensor
   pinMode(IMU_POWER_ON, OUTPUT);
   digitalWrite(IMU_POWER_ON, HIGH);

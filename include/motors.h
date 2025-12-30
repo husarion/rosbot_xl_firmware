@@ -16,7 +16,7 @@
 #include <STM32FreeRTOS.h>
 #include <bsp.h>
 
-#if defined(BOARD_ROSBOT_XL)
+#if defined(ROSBOT_XL)
 // HARDWARE DEFINES
 #define MOTORS_SETPOINT_TIMEOUT 3000  // ms
 #define MOTORS_PWM_FREQUENCY 15000    // Hz
@@ -53,7 +53,7 @@
 
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_,
                          uint32_t Ilim4_);
-#elif defined(BOARD_CORE_2)
+#elif defined(ROSBOT)
 // HARDWARE DEFINES
 #define MOTORS_SETPOINT_TIMEOUT 3000  // ms
 #define MOTORS_PWM_FREQUENCY 18000    // Hz
