@@ -30,7 +30,7 @@
 /*===== ROS SRVS TYPES =====*/
 #include <std_srvs/srv/trigger.h>
 /*===== REST =====*/
-#include <ImuLib_cfg.h>
+#include <imu.hpp>
 #include <STM32FreeRTOS.h>
 #include <bsp.h>
 #include <hardware_cfg.h>

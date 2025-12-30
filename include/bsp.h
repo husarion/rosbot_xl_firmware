@@ -14,7 +14,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <motors.h>
+#include <motors.hpp>
 
 #include "UartLib.h"
 #include "hardware_cfg.h"

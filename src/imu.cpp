@@ -9,7 +9,7 @@
  *
  */
 
-#include "ImuLib_cfg.h"
+#include "imu.hpp"
 
 #include <Wire.h>
 

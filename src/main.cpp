@@ -8,9 +8,9 @@
 
 #include "log.hpp"
 // MOTORS
-#include <motors.h>
+#include <motors.hpp>
 // IMU
-#include <ImuLib_cfg.h>
+#include <imu.hpp>
 // PIXEL
 #if defined(ROSBOT_XL)
 #include <PixelLedLib_cfg.h>

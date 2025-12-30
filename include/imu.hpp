@@ -1,5 +1,5 @@
 /**
- * @file ImuLib_cfg.h
+ * @file imu.hpp
  * @author Maciej Kurcius
  * @brief
  * @version 0.1

@@ -4,10 +4,10 @@
 #include <STM32FreeRTOS.h>
 
 #include "battery_types.h"
-#include "ImuLib_cfg.h"
+#include "imu.hpp"
 #include "log.hpp"
 #include "micro_ros_cfg.h"
-#include "motors.h"
+#include "motors.hpp"
 #include "rtos/queues.hpp"
 
 namespace rtos::queues {

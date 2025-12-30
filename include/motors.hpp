@@ -1,5 +1,5 @@
 /**
- * @file motors.h
+ * @file motors.hpp
  * @author Maciej Kurcius
  * @brief
  * @version 0.1

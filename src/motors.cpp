@@ -9,7 +9,7 @@
  *
  */
 
-#include "motors.h"
+#include "motors.hpp"
 
 // MOTORS
 TimebaseTimerClass timebase_timer(TIMEBASE_TIMER);
