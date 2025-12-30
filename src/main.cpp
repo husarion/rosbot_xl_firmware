@@ -6,7 +6,7 @@
 #include <bsp.h>
 #include <hardware_cfg.h>
 
-#include "log.hpp"
+#include "log.h"
 // MOTORS
 #include <motors.hpp>
 // IMU

@@ -5,7 +5,7 @@
 
 #include "battery_types.h"
 #include "imu.hpp"
-#include "log.hpp"
+#include "log.h"
 #include "micro_ros_cfg.h"
 #include "motors.hpp"
 #include "rtos/queues.hpp"

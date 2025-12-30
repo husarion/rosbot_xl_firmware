@@ -17,53 +17,57 @@
 
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
-extern TwoWire I2cBus;
-
-ImuDriver imuDriver(IMU_ID, IMU_ADDR_B, &I2cBus);
-
-ImuDriver::ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_) {
-  this->ImuBno = new Adafruit_BNO055(ImuId_, ImuAddr_, ImuWire_);
-}
-
-ImuDriver::~ImuDriver() { ; }
-
-bool ImuDriver::Init() {
 #if defined(ROSBOT)
-  // Enable power for IMU sensor
-  pinMode(IMU_POWER_ON, OUTPUT);
-  digitalWrite(IMU_POWER_ON, HIGH);
+#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
+#elif defined(ROSBOT_XL)
+#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P1
 #endif
 
-  // OPERATION_MODE_IMUPLUS fuses accelerometer and gyroscope data for
-  // orientation
-  if (this->ImuBno->begin(OPERATION_MODE_IMUPLUS)) {
-    this->ImuBno->setAxisRemap(Adafruit_BNO055::REMAP_CONFIG_P1);
-    this->ImuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
-    this->ImuBno->setExtCrystalUse(true);
+extern TwoWire I2cBus;
+
+ImuDriver imuDriver(BNO055_ID, BNO055_ADDRESS_B, &I2cBus);
+
+ImuDriver::ImuDriver(uint8_t ImuId, uint8_t ImuAddr, TwoWire* ImuWire) {
+  this->imuBno = new Adafruit_BNO055(ImuId, ImuAddr, ImuWire);
+}
+
+ImuDriver::~ImuDriver() {}
+
+bool ImuDriver::init() {
+  if (!this->imuBno->begin(OPERATION_MODE_NDOF)) {
     return false;
   }
+
+  imuBno->setAxisRemap(ROBOT_IMU_AXIS_CONFIG);
+  imuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
+  imuBno->setExtCrystalUse(true);
+
   return true;
 }
 
 imu_data_t ImuDriver::loopHandler() {
-  imu_data_t ImuQueue;
-  imu::Quaternion Quaternion;
-  double* buffer =
-      &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER))[0];
-  ImuQueue.LinearAcceleration[0] = (float)buffer[0];
-  ImuQueue.LinearAcceleration[1] = (float)buffer[1];
-  ImuQueue.LinearAcceleration[2] = (float)buffer[2];
-  buffer = &(this->ImuBno->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE))[0];
+  // this->imuBno->getEvent(&this->event);
+  imu_data_t data;
 
-  // by default angular velocity is in deg/s
-  ImuQueue.AngularVelocity[0] = (float)buffer[0] * DEGREESPERSEC_TO_RADPERSEC;
-  ImuQueue.AngularVelocity[1] = (float)buffer[1] * DEGREESPERSEC_TO_RADPERSEC;
-  ImuQueue.AngularVelocity[2] = (float)buffer[2] * DEGREESPERSEC_TO_RADPERSEC;
+  // Acceleration
+  imu::Vector<3> accel =
+      imuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  data.acceleration[0] = accel.x();
+  data.acceleration[1] = accel.y();
+  data.acceleration[2] = accel.z();
 
-  Quaternion = this->ImuBno->getQuat();
-  ImuQueue.Orientation[0] = Quaternion.x();
-  ImuQueue.Orientation[1] = Quaternion.y();
-  ImuQueue.Orientation[2] = Quaternion.z();
-  ImuQueue.Orientation[3] = Quaternion.w();
-  return ImuQueue;
+  // Gyroscope
+  imu::Vector<3> gyro = imuBno->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+  data.angular_velocity[0] = gyro.x() * DEGREESPERSEC_TO_RADPERSEC;
+  data.angular_velocity[1] = gyro.y() * DEGREESPERSEC_TO_RADPERSEC;
+  data.angular_velocity[2] = gyro.z() * DEGREESPERSEC_TO_RADPERSEC;
+
+  // Orientation (quaternion)
+  imu::Quaternion q = imuBno->getQuat();
+  data.orientation[0] = q.x();
+  data.orientation[1] = q.y();
+  data.orientation[2] = q.z();
+  data.orientation[3] = q.w();
+
+  return data;
 }

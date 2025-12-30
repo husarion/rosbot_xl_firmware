@@ -9,31 +9,30 @@
  *
  */
 
-#ifndef ImuLibCfg_H
-#define ImuLibCfg_H
+#pragma once
 
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-#include <hardware_cfg.h>
+
+#include "hardware_cfg.h"
 
 typedef struct {
-  float Orientation[4];
-  float AngularVelocity[3];
-  float LinearAcceleration[3];
+  float orientation[4];       // quaternion: x y z w
+  float angular_velocity[3];  // rad/s
+  float acceleration[3];      // m/s^2
 } imu_data_t;
 
 class ImuDriver {
  public:
   ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_);
   ~ImuDriver();
-  bool Init();
+  bool init();
   imu_data_t loopHandler();
 
  private:
-  Adafruit_BNO055* ImuBno;
+  Adafruit_BNO055* imuBno;
+  sensors_event_t event;
 };
 
 extern ImuDriver imuDriver;
-
-#endif /* ImuLibCfg_H */

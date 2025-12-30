@@ -10,6 +10,8 @@
  */
 
 #include "bsp.h"
+#include "imu.hpp"
+#include "log.h"
 
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
@@ -101,6 +103,14 @@ void BoardPheripheralsInit(void) {
 
   I2cBusInit();
   delay(250);
+
+  // Enable power for IMU sensor
+  pinMode(IMU_POWER_ON, OUTPUT);
+  digitalWrite(IMU_POWER_ON, HIGH);
+
+  if (!imuDriver.init()) {
+    LOG_ERROR("imuDriver.Init() failed!");
+  }
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) {
