@@ -17,6 +17,7 @@
 #include <hal_conf_custom.h>
 
 #include "log.hpp"
+#include "rtos/queues.hpp"
 #include "uart.hpp"
 
 /* VARIABLES */
@@ -38,8 +39,8 @@ extern std_msgs__msg__String msgs;
 extern sensor_msgs__msg__Imu imu_msg;
 extern sensor_msgs__msg__JointState motors_cmd_msg;
 extern sensor_msgs__msg__JointState motors_response_msg;
-extern rcl_publisher_t imu_publisher;
-extern rcl_publisher_t motor_state_publisher;
+extern rcl_publisher_t imu_pub;
+extern rcl_publisher_t motor_state_pub;
 // MOTORS
 extern TimebaseTimerClass timebase_timer;
 // LED
@@ -84,7 +85,7 @@ void setup() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_t));
-  uRosAgentConectionQueue = xQueueCreate(1, sizeof(u_ros_status_t));
+  uRosAgentConectionQueue = xQueueCreate(1, sizeof(u_ros_state_t));
   LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
   s1 =
@@ -128,9 +129,9 @@ void setup() {
 static void uRosSpinTask(void* p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  static u_ros_status_t uRosPingAgentStatus;
+  static u_ros_state_t uRosPingAgentStatus;
   while (1) {
-    xQueueReceive(uRosAgentConectionQueue, &uRosPingAgentStatus,
+    xQueueReceive(rtos::queues::uRosAgentConectionQueue, &uRosPingAgentStatus,
                   (TickType_t)0);
     vTaskDelayUntil(&xLastWakeTime, 1);
     uRosLoopHandler(uRosPingAgentStatus);
@@ -142,7 +143,7 @@ static void ImuTask(void* p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     queue_imu = imuDriver.loopHandler();
-    xQueueSendToFront(ImuQueue, (void*)&queue_imu, TickType_t(0));
+    xQueueOverwrite(rtos::queues::ImuQueue, (void*)&queue_imu);
     vTaskDelayUntil(&xLastWakeTime, FREQ_TO_TIME(IMU_SAMPLE_FREQ));
   }
 }
@@ -156,7 +157,8 @@ static void PidHandlerTask(void* p) {
   static uint8_t freq_div_ptr = 0;
   while (1) {
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_TIME(PID_FREQ));
-    if (xQueueReceive(SetpointQueue, (void*)setpoint, (TickType_t)0)) {
+    if (xQueueReceive(rtos::queues::SetpointQueue, (void*)setpoint,
+                      (TickType_t)0)) {
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
@@ -174,7 +176,7 @@ static void PidHandlerTask(void* p) {
         motor_state.position[i] =
             ((double)(wheel_motors[i].GetWheelAbsPosition()) / 1000);
       }
-      xQueueSendToFront(MotorStateQueue, (void*)&motor_state, (TickType_t)0);
+      xQueueOverwrite(rtos::queues::MotorStateQueue, (void*)&motor_state);
       freq_div_ptr = 0;
     }
     freq_div_ptr++;
@@ -225,7 +227,7 @@ static void PowerBoardTask(void* p) {
 }
 
 static void uRosPingTask(void* p) {
-  static u_ros_status_t uRosPingAgentStatus;
+  static u_ros_state_t uRosPingAgentStatus;
   client_ip.fromString(CLIENT_IP);
   agent_ip.fromString(SBC_AGENT_IP);
   set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
@@ -233,8 +235,8 @@ static void uRosPingTask(void* p) {
   while (1) {
     uRosPingAgentStatus =
         uRosPingAgent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS);
-    xQueueSendToFront(uRosAgentConectionQueue, (void*)&uRosPingAgentStatus,
-                      (TickType_t)0);
+    xQueueOverwrite(rtos::queues::uRosAgentConectionQueue,
+                      (void*)&uRosPingAgentStatus);
     switch (uRosPingAgentStatus) {
       case Ok:
         SetGreenLed(On);

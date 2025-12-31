@@ -37,7 +37,7 @@
 
 /* SBC */
 #define SBC_SERIAL Serial1
-#define SBC_SERIAL_BAUDRATE 576000
+#define SBC_SERIAL_BAUDRATE 921600
 #define SBC_SERIAL_TX PA9
 #define SBC_SERIAL_RX PA10
 #define SBC_SERIAL_TIMEOUT 1  // ms
@@ -58,7 +58,7 @@
 #define IMU_POWER_ON PG4
 #define IMU_SDA PC9         // I2C3
 #define IMU_SCL PA8         // I2C3
-#define IMU_SAMPLE_FREQ 25  // Hz
+#define IMU_SAMPLE_FREQ 50  // Hz
 #define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29

@@ -24,19 +24,12 @@ void destroy();
 void task(void* pvParameters);
 }  // namespace RuntimeStatsTask
 
-namespace uRosPingTask {
+namespace uRosTask {
 extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
-}  // namespace uRosPingTask
-
-namespace uRosSpinTask {
-extern TaskHandle_t handle;
-void create();
-void destroy();
-void task(void* pvParameters);
-}  // namespace uRosSpinTask
+}  // namespace uRosTask
 
 void createAll();
 

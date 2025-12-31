@@ -42,6 +42,7 @@ bool ImuDriver::init() {
   imuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
   imuBno->setExtCrystalUse(true);
 
+  delay(10);
   return true;
 }
 

@@ -19,6 +19,7 @@
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
+#include <rmw_microros/rmw_microros.h>
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/string.h>
@@ -44,7 +45,7 @@
 /* DEFINES */
 #define uROS_PING_TIMEOUT_MS 50
 #define uROS_PING_ATTEMPTS 2
-#define uROS_PING_FREQUENCY 1.0
+#define uROS_PING_FREQUENCY 5.0
 #define uROS_SPIN_DELAY_MS 1
 // Motors msgs defines
 #define MOT_CMD_MSG_LEN 4
@@ -55,23 +56,29 @@
 #define REAR_RIGHT_MOTOR_NAME "rr_wheel_joint"
 #define MOTORS_RESPONSE_FREQ 50
 // uRos topics
-#define NODE_NAME "stm32_node"
+#define NODE_NAME "rosbot_hw"
+
+#define RCCHECK_RETURN(fn)                     \
+  {                                     \
+    rcl_ret_t rc = fn;                  \
+    if (rc != RCL_RET_OK) return false; \
+  }
 
 #define RCCHECK(fn)                                                       \
   {                                                                       \
-    rcl_ret_t temp_rc = fn;                                               \
-    if ((temp_rc != RCL_RET_OK)) {                                        \
+    rcl_ret_t rc = fn;                                               \
+    if ((rc != RCL_RET_OK)) {                                        \
       LOG_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", \
-                temp_rc, __FUNCTION__);                                   \
+                rc, __FUNCTION__);                                   \
       ErrorLoop(__FUNCTION__);                                            \
     }                                                                     \
   }
 #define RCSOFTCHECK(fn)                                                       \
   {                                                                           \
-    rcl_ret_t temp_rc = fn;                                                   \
-    if ((temp_rc != RCL_RET_OK)) {                                            \
+    rcl_ret_t rc = fn;                                                   \
+    if ((rc != RCL_RET_OK)) {                                            \
       LOG_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", \
-                temp_rc, __FUNCTION__);                                       \
+                rc, __FUNCTION__);                                       \
     }                                                                         \
   }
 
@@ -87,16 +94,15 @@ typedef enum {
   AGENT_AVAILABLE,
   CONNECTED,
   DISCONNECTED
-} u_ros_status_t;
+} u_ros_state_t;
 
-typedef enum { NotCreated = 0, Created = 1, Destroyed = 3 } u_ros_entities_status_t;
+typedef enum {
+  NotCreated = 0,
+  Created = 1,
+  Destroyed = 3
+} u_ros_entities_status_t;
 
 /* EXTERN */
-// extern variables
-extern QueueHandle_t SetpointQueue;
-extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t ImuQueue;  // extern functions
-extern QueueHandle_t RangeQueue;
 extern "C" int clock_gettime(clockid_t unused, struct timespec* tp);
 
 /* FUNCTIONS */
@@ -115,5 +121,7 @@ void publishBattery();
 void publishImu();
 void publishRanges();
 void publishWheelsJointState();
+
+void uRosLoop();
 
 #endif /* MICRO_ROC_CFG_H */

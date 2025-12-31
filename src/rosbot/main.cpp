@@ -3,8 +3,8 @@
 /*===== HARDEWARE =====*/
 #include "battery_types.hpp"
 #include "bsp.hpp"
-#include "hardware_cfg.hpp"
 #include "hardware/imu.hpp"
+#include "hardware_cfg.hpp"
 #include "micro_ros_cfg.hpp"
 /*===== RTOS =====*/
 #include "rtos/queues.hpp"
@@ -28,7 +28,7 @@ void setup() {
 }
 
 /*============== LOOP ===============*/
-void loop() { ; }
+void loop() {}
 
 /*=========== Runtime stats ====================*/
 HardwareTimer RuntimeStatsTimer(TIM5);  // TIM5 - 32 bit
@@ -47,4 +47,3 @@ void vConfigureTimerForRunTimeStats(void) {
 uint32_t vGetTimerValueForRunTimeStats(void) {
   return RuntimeStatsTimer.getCount();
 }
-

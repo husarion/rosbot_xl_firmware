@@ -1,7 +1,6 @@
 #include "rtos/tasks.hpp"
 
 #include <STM32FreeRTOS.h>
-#include <micro_ros_arduino.h>
 
 #include "hardware/imu.hpp"
 #include "log.hpp"
@@ -18,7 +17,7 @@ TaskHandle_t handle = nullptr;
 
 void create() {
   auto result = xTaskCreate(task, "ImuTask", configMINIMAL_STACK_SIZE + 750,
-                            nullptr, tskIDLE_PRIORITY + 1, &handle);
+                            nullptr, 1, &handle);
   if (result != pdPASS) {
     LOG_ERROR("IMU task creation failed!");
   } else {
@@ -41,7 +40,7 @@ void task(void* pvParameters) {
 
   while (1) {
     imu_data = imuDriver.loopHandler();
-    xQueueSendToFront(rtos::queues::ImuQueue, &imu_data, 0);
+    xQueueOverwrite(rtos::queues::ImuQueue, &imu_data);
     vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(IMU_SAMPLE_FREQ));
   }
 }
@@ -55,7 +54,7 @@ TaskHandle_t handle = nullptr;
 
 void create() {
   auto result = xTaskCreate(task, "PidTask", configMINIMAL_STACK_SIZE + 1000,
-                            nullptr, tskIDLE_PRIORITY + 3, &handle);
+                            nullptr, 3, &handle);
   if (result != pdPASS) {
     LOG_ERROR("PID task creation failed!");
   } else {
@@ -100,7 +99,7 @@ void task(void* pvParameters) {
         motor_state.position[i] =
             wheel_motors[i].GetWheelAbsPosition() / 1000.0;
       }
-      xQueueSendToFront(rtos::queues::MotorStateQueue, &motor_state, 0);
+      xQueueOverwrite(rtos::queues::MotorStateQueue, &motor_state);
       freq_div_ptr = 0;
     }
     freq_div_ptr++;
@@ -117,7 +116,7 @@ TaskHandle_t handle = nullptr;
 void create() {
   auto result =
       xTaskCreate(task, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500,
-                  nullptr, tskIDLE_PRIORITY + 1, &handle);
+                  nullptr, 1, &handle);
   if (result != pdPASS) {
     LOG_ERROR("RuntimeStatsTask creation failed!");
   } else {
@@ -138,7 +137,7 @@ void task(void* pvParameters) {
   char buf[2000];
 
   while (1) {
-    if (firmware_log_level >= LOG_LEVEL_INFO) {
+    if (firmware_log_level <= LOG_LEVEL_INFO) {
       vTaskGetRunTimeStats(buf);
       LOG_INFO("\r\n-------------\r\n%s", buf);
     }
@@ -149,19 +148,19 @@ void task(void* pvParameters) {
 
 }  // namespace RuntimeStatsTask
 
-// ================= UROS PING TASK ======================
-namespace uRosPingTask {
+// ================= uROS TASK ======================
+namespace uRosTask {
 
 TaskHandle_t handle = nullptr;
 
 void create() {
   auto result =
-      xTaskCreate(task, "uRosPingTask", configMINIMAL_STACK_SIZE + 500, nullptr,
-                  tskIDLE_PRIORITY + 1, &handle);
+      xTaskCreate(task, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
+                  nullptr, 2, &handle);
   if (result != pdPASS) {
-    LOG_ERROR("uRosPingTask creation failed!");
+    LOG_ERROR("uRosTask creation failed!");
   } else {
-    LOG_INFO("uRosPingTask started");
+    LOG_INFO("uRosTask started");
   }
 }
 
@@ -169,73 +168,26 @@ void destroy() {
   if (handle != nullptr) {
     vTaskDelete(handle);
     handle = nullptr;
-    LOG_INFO("uRosPingTask stopped");
+    LOG_INFO("uRosTask stopped");
   }
 }
 
 void task(void* pvParameters) {
   UNUSED(pvParameters);
-  bool connected;
 
   while (1) {
-    connected = uRosPingAgent();
-    xQueueSendToFront(rtos::queues::uRosAgentConectionQueue, &connected, 0);
-
-    if (connected) {
-      SetGreenLed(On);
-    } else {
-      SetGreenLed(Off);
-    }
-    vTaskDelay(FREQ_TO_TICKS(uROS_PING_FREQUENCY));
+    uRosLoop();
+    // vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
   }
 }
 
-}  // namespace uRosPingTask
-
-// ================= uROS SPIN TASK ======================
-namespace uRosSpinTask {
-
-TaskHandle_t handle = nullptr;
-
-void create() {
-  auto result =
-      xTaskCreate(task, "uRosSpinTask", configMINIMAL_STACK_SIZE + 2500,
-                  nullptr, tskIDLE_PRIORITY + 1, &handle);
-  if (result != pdPASS) {
-    LOG_ERROR("uRosSpinTask creation failed!");
-  } else {
-    LOG_INFO("uRosSpinTask started");
-  }
-}
-
-void destroy() {
-  if (handle != nullptr) {
-    vTaskDelete(handle);
-    handle = nullptr;
-    LOG_INFO("uRosSpinTask stopped");
-  }
-}
-
-void task(void* pvParameters) {
-  UNUSED(pvParameters);
-  TickType_t wake_time = xTaskGetTickCount();
-  bool connected;
-
-  while (1) {
-    xQueueReceive(rtos::queues::uRosAgentConectionQueue, &connected, 0);
-    uRosLoopHandler(connected);
-    vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
-  }
-}
-
-}  // namespace uRosSpinTask
+}  // namespace uRosTask
 
 void createAll() {
   ImuTask::create();
   // PidTask::create();
   RuntimeStatsTask::create();
-  uRosPingTask::create();
-  uRosSpinTask::create();
+  uRosTask::create();
 }
 
 }  // namespace rtos::tasks

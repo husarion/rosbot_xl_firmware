@@ -3,9 +3,9 @@
 
 #include <STM32FreeRTOS.h>
 
-#include "micro_ros_cfg.hpp"
-#include "hardware/imu.hpp"
 #include "battery_types.hpp"
+#include "hardware/imu.hpp"
+#include "micro_ros_cfg.hpp"
 #include "motors.hpp"
 #include "ranges.hpp"
 
