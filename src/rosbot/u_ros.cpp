@@ -49,26 +49,25 @@ rcl_subscription_t motors_cmd_sub;
 rcl_subscription_t left_led_sub;
 rcl_subscription_t right_led_sub;
 // MESSAGES
+builtin_interfaces__msg__Time now;
 sensor_msgs__msg__BatteryState battery_msg;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__Range range_msg;
 sensor_msgs__msg__JointState motors_joint_state_msg;
 std_msgs__msg__Bool led_msg;
-std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
 // SERVICES
 rcl_service_t get_cpu_id_service;
 std_srvs__srv__Trigger_Request get_cpu_id_service_request;
 std_srvs__srv__Trigger_Response get_cpu_id_service_response;
 // ROS ENTITIES
+u_ros_state_t state = WAITING;
 rcl_init_options_t init_options;
 rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-u_ros_state_t ping_agent_status;
-builtin_interfaces__msg__Time now;
 
 void BlinkRedLed(int duration_ms) {
   SetRedLed(On);
@@ -102,7 +101,7 @@ void ErrorLoop(const char* func) {
   NVIC_SystemReset();
 }
 
-void uRosTransportInit(void) {
+void transportInit(void) {
   rmw_uros_set_custom_transport(
       /* Enable XRCE framing */
       true,
@@ -134,16 +133,12 @@ void uRosTransportInit(void) {
       });
 }
 
-bool uRosPingAgent(void) {
+bool pingAgent(void) {
   return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
          RMW_RET_OK;
 }
 
-bool uRosPingAgent(int timeout_ms, uint8_t attempts) {
-  return rmw_uros_ping_agent(timeout_ms, attempts) == RMW_RET_OK;
-}
-
-void uRosMotorsCmdCallback(const void* input_message) {
+void motorsCmdCallback(const void* input_message) {
   static double setpoint[] = {0, 0, 0, 0};
   static std_msgs__msg__Float32MultiArray* setpoint_msg;
   setpoint_msg = (std_msgs__msg__Float32MultiArray*)input_message;
@@ -165,7 +160,7 @@ void uRosRightLedCallback(const void* msg) {
   SetGreenLed2(led_msg->data ? On : Off);
 }
 
-void uRosTimerCallback(rcl_timer_t* timer, int64_t last_call_time) {
+void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     publishBattery();
@@ -206,11 +201,13 @@ void uRosGetIdCallback(const void* req, void* res) {
   response->message.size = strlen(out_buffer);
 }
 
-bool uRosCreateEntities(void) {
+bool createEntities(void) {
   uint8_t ros_msgs_cnt = 0;
   /*===== MSGS =====*/
-  MotorsJointStateInit(&motors_joint_state_msg);
-  MotorsCmdMsgInit(&motors_cmd_msg);
+  motorsJointStateInit(&motors_joint_state_msg);
+  motorsCmdMsgInit(&motors_cmd_msg);
+  std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
+  std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
 
   /*===== INIT ROS2 =====*/
   allocator = rcl_get_default_allocator();
@@ -226,7 +223,7 @@ bool uRosCreateEntities(void) {
 
   /*===== TIMERS =====*/
   RCCHECK_RETURN(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
-                                         uRosTimerCallback));
+                                         timerCallback));
   ros_msgs_cnt++;
   /*===== SUBSCRIBERS ===== */
   RCCHECK_RETURN(rclc_subscription_init_best_effort(
@@ -257,8 +254,6 @@ bool uRosCreateEntities(void) {
       &range_pub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
       "ranges"));
   /*===== SERVICES ===== */
-  std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
-  std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
   RCCHECK_RETURN(rclc_service_init_default(
       &get_cpu_id_service, &node,
       ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "/get_cpu_id"));
@@ -270,7 +265,7 @@ bool uRosCreateEntities(void) {
                                     &allocator));
   RCCHECK_RETURN(rclc_executor_add_timer(&executor, &timer));
   RCCHECK_RETURN(rclc_executor_add_subscription(
-      &executor, &motors_cmd_sub, &motors_cmd_msg, &uRosMotorsCmdCallback,
+      &executor, &motors_cmd_sub, &motors_cmd_msg, &motorsCmdCallback,
       ON_NEW_DATA));
   RCCHECK_RETURN(rclc_executor_add_subscription(
       &executor, &left_led_sub, &led_msg, &uRosLeftLedCallback, ON_NEW_DATA));
@@ -286,27 +281,27 @@ bool uRosCreateEntities(void) {
   return true;
 }
 
-void uRosDestroyEntities(void) {
+void destroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-  rcl_timer_fini(&timer);
-  rcl_publisher_fini(&battery_pub, &node);
-  rcl_publisher_fini(&imu_pub, &node);
-  rcl_publisher_fini(&motor_state_pub, &node);
-  rcl_publisher_fini(&range_pub, &node);
-  rcl_subscription_fini(&motors_cmd_sub, &node);
-  rcl_subscription_fini(&left_led_sub, &node);
-  rcl_subscription_fini(&right_led_sub, &node);
-  rcl_service_fini(&get_cpu_id_service, &node);
-  rclc_executor_fini(&executor);
-  rcl_node_fini(&node);
-  rclc_support_fini(&support);
-  rcl_init_options_fini(&init_options);
+  RCCHECK_WARN(rcl_timer_fini(&timer));
+  RCCHECK_WARN(rcl_publisher_fini(&battery_pub, &node));
+  RCCHECK_WARN(rcl_publisher_fini(&imu_pub, &node));
+  RCCHECK_WARN(rcl_publisher_fini(&motor_state_pub, &node));
+  RCCHECK_WARN(rcl_publisher_fini(&range_pub, &node));
+  RCCHECK_WARN(rcl_subscription_fini(&motors_cmd_sub, &node));
+  RCCHECK_WARN(rcl_subscription_fini(&left_led_sub, &node));
+  RCCHECK_WARN(rcl_subscription_fini(&right_led_sub, &node));
+  RCCHECK_WARN(rcl_service_fini(&get_cpu_id_service, &node));
+  RCCHECK_WARN(rclc_executor_fini(&executor));
+  RCCHECK_WARN(rcl_node_fini(&node));
+  RCCHECK_WARN(rclc_support_fini(&support));
+  RCCHECK_WARN(rcl_init_options_fini(&init_options));
   LOG_INFO("uROS communication stopped");
 }
 
-void MotorsJointStateInit(sensor_msgs__msg__JointState* msg) {
+void motorsJointStateInit(sensor_msgs__msg__JointState* msg) {
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";
@@ -333,7 +328,7 @@ void MotorsJointStateInit(sensor_msgs__msg__JointState* msg) {
   msg->name.size = MOT_RESP_MSG_LEN;
 }
 
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg) {
+void motorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg) {
   static float data[MOT_CMD_MSG_LEN] = {0, 0, 0, 0};
   msg->data.capacity = MOT_CMD_MSG_LEN;
   msg->data.size = MOT_CMD_MSG_LEN;
@@ -341,7 +336,7 @@ void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg) {
 }
 
 void publishBattery() {
-  RCSOFTCHECK(rcl_publish(&battery_pub, &battery_msg, NULL));
+  RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
   return;
 
   static battery_state_t battery_state_data;
@@ -371,7 +366,7 @@ void publishBattery() {
         BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
     battery_msg.cell_voltage.size = BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
     battery_msg.cell_voltage.data = battery_state_data.cell_voltage;
-    RCSOFTCHECK(rcl_publish(&battery_pub, &battery_msg, NULL));
+    RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
   }
 }
 
@@ -396,12 +391,12 @@ void publishImu() {
     imu_msg.linear_acceleration.x = imu_data.acceleration[0];
     imu_msg.linear_acceleration.y = imu_data.acceleration[1];
     imu_msg.linear_acceleration.z = imu_data.acceleration[2];
-    RCSOFTCHECK(rcl_publish(&imu_pub, &imu_msg, NULL));
+    RCCHECK_WARN(rcl_publish(&imu_pub, &imu_msg, NULL));
   }
 }
 
 void publishRanges() {
-  RCSOFTCHECK(rcl_publish(&range_pub, &range_msg, NULL));
+  RCCHECK_WARN(rcl_publish(&range_pub, &range_msg, NULL));
   return;
 
   static motor_joint_state_t ranges_data;
@@ -419,13 +414,13 @@ void publishRanges() {
     for (uint8_t i = 0; i < ranges_data.size; i++) {
       range_msg.header.frame_id.data = (char*)range_frame_names[i];
       range_msg.range = ranges_data.position[i];
-      RCSOFTCHECK(rcl_publish(&range_pub, &range_msg, NULL));
+      RCCHECK_WARN(rcl_publish(&range_pub, &range_msg, NULL));
     }
   }
 }
 
 void publishWheelsJointState() {
-  RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
+  RCCHECK_WARN(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
   return;
 
   static motor_joint_state_t motor_joint_state;
@@ -437,32 +432,30 @@ void publishWheelsJointState() {
     }
     motors_joint_state_msg.velocity.data = motor_joint_state.velocity;
     motors_joint_state_msg.position.data = motor_joint_state.position;
-    RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
+    RCCHECK_WARN(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
   }
 }
 
-u_ros_state_t state = WAITING;
-
-void uRosLoop() {
+void loop() {
   switch (state) {
     case WAITING:
-      if (uRosPingAgent()) {
+      if (pingAgent()) {
         state = AGENT_AVAILABLE;
       }
       vTaskDelay(pdMS_TO_TICKS(500));
       break;
 
     case AGENT_AVAILABLE:
-      if (uRosCreateEntities()) {
+      if (createEntities()) {
         state = CONNECTED;
       } else {
-        uRosDestroyEntities();
+        destroyEntities();
         state = WAITING;
       }
       break;
 
     case CONNECTED:
-      if (!uRosPingAgent()) {
+      if (!pingAgent()) {
         state = DISCONNECTED;
         break;
       }
@@ -474,7 +467,7 @@ void uRosLoop() {
       break;
 
     case DISCONNECTED:
-      uRosDestroyEntities();
+      destroyEntities();
       SetRedLed(On);
       state = WAITING;
       break;

@@ -63,11 +63,11 @@ namespace u_ros {
       ErrorLoop(__FUNCTION__);                                                \
     }                                                                         \
   }
-#define RCSOFTCHECK(fn)                                                       \
+#define RCCHECK_WARN(fn)                                                       \
   {                                                                           \
     rcl_ret_t rc = fn;                                                        \
     if ((rc != RCL_RET_OK)) {                                                 \
-      LOG_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", \
+      LOG_WARN("RCSOFTCHECK FAILED due to return code: %d in function %s()", \
                 rc, __FUNCTION__);                                            \
     }                                                                         \
   }
@@ -79,27 +79,20 @@ typedef enum {
   DISCONNECTED
 } u_ros_state_t;
 
-typedef enum {
-  NotCreated = 0,
-  Created = 1,
-  Destroyed = 3
-} u_ros_entities_status_t;
-
 /* EXTERN */
 extern "C" int clock_gettime(clockid_t unused, struct timespec* tp);
 
 /* FUNCTIONS */
 void ErrorLoop(const char* func);
-void uRosTransportInit(void);
-bool uRosPingAgent(void);
-bool uRosPingAgent(int timeout_ms, uint8_t attempts);
-void uRosLoop();
-void uRosMotorsCmdCallback(const void* input_message);
-void uRosTimerCallback(rcl_timer_t* timer, int64_t last_call_time);
-bool uRosCreateEntities(void);
-void uRosDestroyEntities(void);
-void MotorsJointStateInit(sensor_msgs__msg__JointState* msg);
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg);
+void transportInit(void);
+bool pingAgent(void);
+void loop();
+void motorsCmdCallback(const void* input_message);
+void timerCallback(rcl_timer_t* timer, int64_t last_call_time);
+bool createEntities(void);
+void destroyEntities(void);
+void motorsJointStateInit(sensor_msgs__msg__JointState* msg);
+void motorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg);
 void publishBattery();
 void publishImu();
 void publishRanges();

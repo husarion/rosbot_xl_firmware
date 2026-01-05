@@ -15,7 +15,7 @@
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
 
-#include "micro_ros_cfg.hpp"
+#include "u_ros.hpp"
 /*===== HARDEWARE =====*/
 #include "bsp.hpp"
 #include "hardware_cfg.hpp"
@@ -41,20 +41,12 @@ QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t BatteryStateQueue;
-QueueHandle_t uRosAgentConectionQueue;
-portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9, s10;
+portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 extern UartProtocolClass PowerBoardSerial;
 
-// microROS
-extern std_msgs__msg__String msgs;
-extern sensor_msgs__msg__Imu imu_msg;
-extern sensor_msgs__msg__JointState motors_cmd_msg;
-extern sensor_msgs__msg__JointState motors_response_msg;
-extern rcl_publisher_t imu_pub;
-extern rcl_publisher_t motor_state_pub;
 // MOTORS
 extern TimebaseTimerClass timebase_timer;
 // LED
@@ -72,13 +64,12 @@ extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;
 
 /* RTOS TASKS DECLARATIONS */
-static void uRosSpinTask(void* p);
+static void uRosTask(void* p);
 static void ImuTask(void* p);
 static void PidHandlerTask(void* p);
 static void PixelLedTask(void* p);
 static void SbcShutdownTask(void* p);
 static void PowerBoardTask(void* p);
-static void uRosPingTask(void* p);
 static void HardwareLoopTask(void* p);
 static void RuntimeStatsTask(void* p);
 
@@ -99,11 +90,10 @@ void setup() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_t));
-  uRosAgentConectionQueue = xQueueCreate(1, sizeof(u_ros_state_t));
   LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
   s1 =
-      xTaskCreate(uRosSpinTask, "uRosSpinTask", configMINIMAL_STACK_SIZE + 2500,
+      xTaskCreate(uRosTask, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
                   NULL, tskIDLE_PRIORITY + 1, NULL);
   if (s1 != pdPASS) LOG_DEBUG("S1 creation problem");
   s2 = xTaskCreate(ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL,
@@ -128,27 +118,21 @@ void setup() {
                    configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                    NULL);
   if (s8 != pdPASS) LOG_DEBUG("S8 creation problem");
-  s9 = xTaskCreate(uRosPingTask, "uRosPingTask", configMINIMAL_STACK_SIZE + 500,
-                   NULL, tskIDLE_PRIORITY + 1, NULL);
-  if (s9 != pdPASS) LOG_DEBUG("S9 creation problem");
-  s10 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
+  s9 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
                     configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
                     NULL);
-  if (s10 != pdPASS) LOG_DEBUG("S10 creation problem");
+  if (s9 != pdPASS) LOG_DEBUG("S9 creation problem");
   /* START RTOS */
   LOG_DEBUG("Tasks starting");
   vTaskStartScheduler();
 }
 
-static void uRosSpinTask(void* p) {
+static void uRosTask(void* p) {
   UNUSED(p);
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  static u_ros_state_t uRosPingAgentStatus;
   while (1) {
-    xQueueReceive(rtos::queues::uRosAgentConectionQueue, &uRosPingAgentStatus,
-                  (TickType_t)0);
-    vTaskDelayUntil(&xLastWakeTime, 1);
-    uRosLoopHandler(uRosPingAgentStatus);
+    u_ros::loop();
+    // vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
   }
 }
 
@@ -237,39 +221,6 @@ static void PowerBoardTask(void* p) {
     if (TimeDivider % 5 != 0) BatteryInfoRequest();
     PowerBoardSerial.UartProtocolLoopHandler();
     vTaskDelay(150);
-  }
-}
-
-static void uRosPingTask(void* p) {
-  static u_ros_state_t uRosPingAgentStatus;
-  client_ip.fromString(CLIENT_IP);
-  agent_ip.fromString(SBC_AGENT_IP);
-  set_microros_native_ethernet_udp_transports(mac, client_ip, agent_ip,
-                                              AGENT_PORT);
-  while (1) {
-    uRosPingAgentStatus =
-        uRosPingAgent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS);
-    xQueueOverwrite(rtos::queues::uRosAgentConectionQueue,
-                    (void*)&uRosPingAgentStatus);
-    switch (uRosPingAgentStatus) {
-      case Ok:
-        SetGreenLed(On);
-        SetRedLed(Off);
-        break;
-      case Error:
-        SetGreenLed(Off);
-        SetRedLed(Toggle);
-        break;
-      case Default:
-        SetGreenLed(Toggle);
-        SetRedLed(Off);
-        break;
-      default:
-        SetGreenLed(Off);
-        SetRedLed(Off);
-        break;
-    }
-    vTaskDelay(FREQ_TO_TIME(uROS_PING_FREQUENCY));
   }
 }
 

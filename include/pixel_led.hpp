@@ -79,5 +79,3 @@ void PixelIddleAnimation(PixelLedClass* PixelStrip_, uint8_t Red_,
     PixelDelay(Interval_);
   }
 }
-
-#endif /* PixelLedLibCfg_H */

@@ -189,7 +189,7 @@ void task(void* pvParameters) {
   UNUSED(pvParameters);
 
   while (1) {
-    u_ros::uRosLoop();
+    u_ros::loop();
     // vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
   }
 }

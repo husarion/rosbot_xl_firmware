@@ -32,7 +32,7 @@ FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
-  u_ros::uRosTransportInit();
+  u_ros::transportInit();
 
   // RTOS init
   rtos::queues::createAll();

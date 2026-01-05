@@ -12,87 +12,138 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "micro_ros_cfg.hpp"
+#include "u_ros.hpp"
 
 #include "rtos/queues.hpp"
+#include "log.hpp"
+#include "hardware/imu.hpp"
+#include "battery_types.hpp"
 
-// ROS PUBLISHERS
+/*===== ROS MSGS TYPES =====*/
+#include <builtin_interfaces/msg/time.h>
+#include <sensor_msgs/msg/battery_state.h>
+#include <sensor_msgs/msg/imu.h>
+#include <sensor_msgs/msg/joint_state.h>
+#include <sensor_msgs/msg/range.h>
+#include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/string.h>
+#include <std_srvs/srv/trigger.h>
+
+/*===== MICRO ROS =====*/
+#include <rcl/time.h>
+#include <rclc/executor.h>
+
+#include "bsp.hpp"
+
+namespace u_ros {
+
+// PUBLISHERS
+rcl_publisher_t battery_pub;
+// rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
 rcl_publisher_t imu_pub;
 rcl_publisher_t motor_state_pub;
-rcl_publisher_t battery_pub;
-// ROS SUBSCRIPTIONS
-rcl_subscription_t subscriber;
+rcl_publisher_t range_pub;
+// SUBSCRIPTIONS
 rcl_subscription_t motors_cmd_sub;
-// ROS MESSAGES
+rcl_subscription_t left_led_sub;
+rcl_subscription_t right_led_sub;
+// MESSAGES
+builtin_interfaces__msg__Time now;
+sensor_msgs__msg__BatteryState battery_msg;
 sensor_msgs__msg__Imu imu_msg;
-std_msgs__msg__String msgs;
+sensor_msgs__msg__Range range_msg;
+sensor_msgs__msg__JointState motors_joint_state_msg;
+std_msgs__msg__Bool led_msg;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
-sensor_msgs__msg__JointState motors_response_msg;
-sensor_msgs__msg__BatteryState battery_state_msg;
-// ROS SERVICES
+// SERVICES
 rcl_service_t get_cpu_id_service;
-// ROS REQUESTS AND RESPONSES
 std_srvs__srv__Trigger_Request get_cpu_id_service_request;
 std_srvs__srv__Trigger_Response get_cpu_id_service_response;
-// ROS
+// ROS ENTITIES
+u_ros_state_t state = WAITING;
 rcl_init_options_t init_options;
 rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-u_ros_state_t ping_agent_status;
-// REST
-extern FirmwareModeTypeDef firmware_mode;
+
+
+void BlinkRedLed(int duration_ms) {
+  SetRedLed(On);
+  delay(duration_ms);
+  SetRedLed(Off);
+  delay(200);
+}
 
 void ErrorLoop(const char* func) {
-  for (int i = 0; i < 4; ++i) {
-    if (firmware_mode == fw_debug)
-      Serial.printf("In error loop from function %s\r\n", func);
-    SetRedLed(Toggle);
-    SetGreenLed(Off);
-    delay(500);
+  LOG_ERROR("In error loop from function %s", func);
+  SetRedLed(Off);
+  SetGreenLed(Off);
+  delay(500);
+
+  // 2 SOS signals: ... --- ...
+  for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(200);
+    }
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(600);
+    }
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(200);
+    }
+    delay(1000);
   }
-  // Reset the uC when microros fails
+
+  LOG_ERROR("System resetting...");
   NVIC_SystemReset();
 }
 
-u_ros_state_t uRosPingAgent(void) {
-  if (rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
-      RMW_RET_OK)
-    return Ok;
-  else
-    return Error;  // if false
+bool pingAgent(void) {
+  return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
+         RMW_RET_OK;
 }
 
-u_ros_state_t uRosPingAgent(uint8_t arg_timeout, uint8_t arg_attempts) {
-  if (rmw_uros_ping_agent((int)arg_timeout, arg_attempts) == RMW_RET_OK)
-    return Ok;
-  else
-    return Error;  // if false
-}
+void loop() {
+  switch (state) {
+    case WAITING:
+      if (pingAgent()) {
+        state = AGENT_AVAILABLE;
+      }
+      vTaskDelay(pdMS_TO_TICKS(500));
+      break;
 
-u_ros_state_t uRosLoopHandler(u_ros_state_t arg_u_ros_status) {
-  static u_ros_entities_status_t entities_status = NotCreated;
-  if (arg_u_ros_status == Ok) {
-    if (entities_status != Created) {
-      entities_status = uRosCreateEntities();
-      return Pending;
-    } else {
-      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
-      return Ok;
-    }
-  } else {
-    if (entities_status != Destroyed && entities_status != NotCreated) {
-      entities_status = uRosDestroyEntities();
-      entities_status = Destroyed;
-      return Error;
-    }
+    case AGENT_AVAILABLE:
+      if (createEntities()) {
+        state = CONNECTED;
+      } else {
+        destroyEntities();
+        state = WAITING;
+      }
+      break;
+
+    case CONNECTED:
+      if (!pingAgent()) {
+        state = DISCONNECTED;
+        break;
+      }
+
+      rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
+
+      SetRedLed(Off);
+      vTaskDelay(pdMS_TO_TICKS(1));
+      break;
+
+    case DISCONNECTED:
+      destroyEntities();
+      SetRedLed(On);
+      state = WAITING;
+      break;
   }
-  return Default;
 }
 
-void uRosMotorsCmdCallback(const void* arg_input_message) {
+void motorsCmdCallback(const void* arg_input_message) {
   static double setpoint[] = {0, 0, 0, 0};
   static std_msgs__msg__Float32MultiArray* setpoint_msg;
   setpoint_msg = (std_msgs__msg__Float32MultiArray*)arg_input_message;
@@ -104,7 +155,7 @@ void uRosMotorsCmdCallback(const void* arg_input_message) {
   xQueueOverwrite(rtos::queues::SetpointQueue, (void*)setpoint);
 }
 
-void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
+void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
   RCLC_UNUSED(arg_last_call_time);
   static imu_data_t queue_imu;
   static motor_joint_state_t motor_state_queue;
@@ -114,44 +165,44 @@ void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
     if (xQueueReceive(rtos::queues::BatteryStateQueue, &battery_state_queue,
                       (TickType_t)0) == pdPASS) {
       if (rmw_uros_epoch_synchronized()) {
-        battery_state_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        battery_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+        battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+        battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
       }
-      battery_state_msg.voltage = battery_state_queue.voltage;
-      battery_state_msg.temperature = battery_state_queue.temperature;
-      battery_state_msg.current = battery_state_queue.current;
-      battery_state_msg.charge = battery_state_queue.charge_current;
-      battery_state_msg.capacity = battery_state_queue.capacity;
-      battery_state_msg.design_capacity = battery_state_queue.design_capacity;
-      battery_state_msg.percentage = battery_state_queue.percentage;
-      battery_state_msg.power_supply_status = battery_state_queue.status;
-      battery_state_msg.power_supply_health = battery_state_queue.health;
-      battery_state_msg.power_supply_technology =
+      battery_msg.voltage = battery_state_queue.voltage;
+      battery_msg.temperature = battery_state_queue.temperature;
+      battery_msg.current = battery_state_queue.current;
+      battery_msg.charge = battery_state_queue.charge_current;
+      battery_msg.capacity = battery_state_queue.capacity;
+      battery_msg.design_capacity = battery_state_queue.design_capacity;
+      battery_msg.percentage = battery_state_queue.percentage;
+      battery_msg.power_supply_status = battery_state_queue.status;
+      battery_msg.power_supply_health = battery_state_queue.health;
+      battery_msg.power_supply_technology =
           battery_state_queue.technology;
-      battery_state_msg.present = battery_state_queue.present;
-      battery_state_msg.cell_temperature.capacity =
+      battery_msg.present = battery_state_queue.present;
+      battery_msg.cell_temperature.capacity =
           BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
-      battery_state_msg.cell_temperature.size =
+      battery_msg.cell_temperature.size =
           BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE;
-      battery_state_msg.cell_temperature.data =
+      battery_msg.cell_temperature.data =
           battery_state_queue.cell_temperature;
-      battery_state_msg.cell_voltage.capacity =
+      battery_msg.cell_voltage.capacity =
           BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
-      battery_state_msg.cell_voltage.size =
+      battery_msg.cell_voltage.size =
           BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
-      battery_state_msg.cell_voltage.data = battery_state_queue.cell_voltage;
-      RCSOFTCHECK(rcl_publish(&battery_pub, &battery_state_msg, NULL));
+      battery_msg.cell_voltage.data = battery_state_queue.cell_voltage;
+      RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
     }
     // QOS best effort
     if (xQueueReceive(rtos::queues::MotorStateQueue, &motor_state_queue,
                       (TickType_t)0) == pdPASS) {
       if (rmw_uros_epoch_synchronized()) {
-        motors_response_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        motors_response_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
+        motors_joint_state_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+        motors_joint_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
       }
-      motors_response_msg.velocity.data = motor_state_queue.velocity;
-      motors_response_msg.position.data = motor_state_queue.position;
-      RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_response_msg, NULL));
+      motors_joint_state_msg.velocity.data = motor_state_queue.velocity;
+      motors_joint_state_msg.position.data = motor_state_queue.position;
+      RCCHECK_WARN(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
     }
     // QOS best effort
     if (xQueueReceive(rtos::queues::ImuQueue, &queue_imu, (TickType_t)0) ==
@@ -171,7 +222,7 @@ void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
       imu_msg.linear_acceleration.x = queue_imu.acceleration[0];
       imu_msg.linear_acceleration.y = queue_imu.acceleration[1];
       imu_msg.linear_acceleration.z = queue_imu.acceleration[2];
-      RCSOFTCHECK(rcl_publish(&imu_pub, &imu_msg, NULL));
+      RCCHECK_WARN(rcl_publish(&imu_pub, &imu_msg, NULL));
     }
   }
 }
@@ -205,11 +256,11 @@ void uRosGetIdCallback(const void* req, void* res) {
   response->message.size = strlen(out_buffer);
 }
 
-u_ros_entities_status_t uRosCreateEntities(void) {
+bool createEntities(void) {
   uint8_t ros_msgs_cnt = 0;
   /*===== ALLOCATE MEMORY FOR MSGS =====*/
-  MotorsJointStateInit(&motors_response_msg);
-  MotorsCmdMsgInit(&motors_cmd_msg);
+  motorsJointStateInit(&motors_joint_state_msg);
+  motorsCmdMsgInit(&motors_cmd_msg);
   allocator = rcl_get_default_allocator();
   // create init_options
   init_options = rcl_get_zero_initialized_init_options();
@@ -218,51 +269,45 @@ u_ros_entities_status_t uRosCreateEntities(void) {
       &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
   RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options,
                                          &allocator));
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created support with option domain_id=%d\r\n",
+  LOG_DEBUG("Created support with option domain_id=%d\r\n",
                   UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV);
 
   // create node
   RCCHECK(rclc_node_init_default(&node, NODE_NAME, "", &support));
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created node `%s`\r\n", NODE_NAME);
+  LOG_DEBUG("Created node `%s`\r\n", NODE_NAME);
   /*===== INIT TIMERS =====*/
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
-                                  uRosTimerCallback));
+                                  timerCallback));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug) Serial.printf("Created timer\r\n");
+  LOG_DEBUG("Created timer\r\n");
   /*===== INIT SUBSCRIBERS ===== */
   RCCHECK(rclc_subscription_init_best_effort(
       &motors_cmd_sub, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
       "_motors_cmd"));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created '_motors_cmd' subscriber\r\n");
+  LOG_DEBUG("Created '_motors_cmd' subscriber\r\n");
   /*===== INIT PUBLISHERS ===== */
   // IMU
   RCCHECK(rclc_publisher_init_best_effort(
       &imu_pub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
       "_imu/data_raw"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created '_imu/data_raw' publisher.\r\n");
+  LOG_DEBUG("Created '_imu/data_raw' publisher.\r\n");
   // MOTORS RESPONSE
   RCCHECK(rclc_publisher_init_best_effort(
       &motor_state_pub, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
       "_motors_response"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created '_motors_response' publisher.\r\n");
+  LOG_DEBUG("Created '_motors_response' publisher.\r\n");
   // BATTERY STATE
   RCCHECK(rclc_publisher_init_best_effort(
       &battery_pub, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
       "battery_state"));
   // ros_msgs_cnt++;
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created 'battery_state' publisher.\r\n");
+  LOG_DEBUG("Created 'battery_state' publisher.\r\n");
   /*===== INIT SERVICES ===== */
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
@@ -270,26 +315,25 @@ u_ros_entities_status_t uRosCreateEntities(void) {
       &get_cpu_id_service, &node,
       ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger), "get_cpu_id"));
   ros_msgs_cnt++;
-  if (firmware_mode == fw_debug)
-    Serial.printf("Created 'get_cpu_id_service' service.\r\n");
+  LOG_DEBUG("Created 'get_cpu_id_service' service.\r\n");
   /*===== CREATE ENTITIES ===== */
   RCCHECK(rclc_executor_init(&executor, &support.context, ros_msgs_cnt,
                              &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
   RCCHECK(rclc_executor_add_subscription(&executor, &motors_cmd_sub,
                                          &motors_cmd_msg,
-                                         &uRosMotorsCmdCallback, ON_NEW_DATA));
+                                         &motorsCmdCallback, ON_NEW_DATA));
   RCCHECK(rclc_executor_add_service(
       &executor, &get_cpu_id_service, &get_cpu_id_service_request,
       &get_cpu_id_service_response, uRosGetIdCallback));
-  if (firmware_mode == fw_debug) Serial.printf("Executor started\r\n");
+  LOG_DEBUG("Executor started\r\n");
 
   RCCHECK(rmw_uros_sync_session(1000));
-  if (firmware_mode == fw_debug) Serial.printf("Clocks synchronised\r\n");
-  return Created;
+  LOG_DEBUG("Clocks synchronised\r\n");
+  return true;
 }
 
-u_ros_entities_status_t uRosDestroyEntities(void) {
+void destroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
@@ -303,12 +347,10 @@ u_ros_entities_status_t uRosDestroyEntities(void) {
   RCCHECK(rcl_node_fini(&node));
   RCCHECK(rclc_support_fini(&support));
   RCCHECK(rcl_init_options_fini(&init_options));
-  if (firmware_mode == fw_debug)
-    Serial.printf("Destroyed all microros entities.\r\n");
-  return Destroyed;
+  LOG_DEBUG("Destroyed all microros entities.\r\n");
 }
 
-void MotorsJointStateInit(sensor_msgs__msg__JointState* arg_message) {
+void motorsJointStateInit(sensor_msgs__msg__JointState* arg_message) {
   static rosidl_runtime_c__String msg_name_tab[MOT_RESP_MSG_LEN];
   static double msg_data_tab[3][MOT_RESP_MSG_LEN];
   char* frame_id = (char*)"motors_response";
@@ -336,9 +378,10 @@ void MotorsJointStateInit(sensor_msgs__msg__JointState* arg_message) {
   arg_message->name.data = msg_name_tab;
 }
 
-void MotorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message) {
+void motorsCmdMsgInit(std_msgs__msg__Float32MultiArray* arg_message) {
   static float data[MOT_CMD_MSG_LEN] = {0, 0, 0, 0};
   arg_message->data.capacity = MOT_CMD_MSG_LEN;
   arg_message->data.size = MOT_CMD_MSG_LEN;
   arg_message->data.data = data;
 }
+}  // namespace u_ros
