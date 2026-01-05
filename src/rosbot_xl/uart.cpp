@@ -141,7 +141,7 @@ void UartProtocolClass::ExecuteFrame() {
       if (this->processed_frame.arg_size != BATTERY_STATE_MSG_LENGTH) {
         break;
       }
-      battery_state_t battery_state;
+      battery_data_t battery_state;
       battery_state.voltage = (float(this->processed_frame.args[1] << 8 |
                                      this->processed_frame.args[2])) *
                               0.001;
@@ -177,7 +177,7 @@ void UartProtocolClass::ExecuteFrame() {
       battery_state.present = (bool)this->processed_frame.args[17];
       battery_state.cell_temperature[0] = NAN;
       battery_state.cell_voltage[0] = NAN;
-      xQueueOverwrite(rtos::queues::BatteryStateQueue, (void*)&battery_state);
+      xQueueOverwrite(rtos::queues::BatteryQueue, (void*)&battery_state);
     } break;
     default:
       break;

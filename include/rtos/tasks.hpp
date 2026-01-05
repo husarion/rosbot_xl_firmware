@@ -16,7 +16,18 @@
 
 #include <STM32FreeRTOS.h>
 
+#define RTOS_FREQUENCY 1000  // hz
+#define FREQ_TO_TIME(freq) \
+  (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
+#define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
 namespace rtos::tasks {
+
+namespace BatteryTask {
+extern TaskHandle_t handle;
+void create();
+void destroy();
+void task(void* pvParameters);
+}  // namespace BatteryTask
 
 namespace ImuTask {
 extern TaskHandle_t handle;

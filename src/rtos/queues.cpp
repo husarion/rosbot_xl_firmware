@@ -16,7 +16,7 @@
 
 #include <STM32FreeRTOS.h>
 
-#include "battery_types.hpp"
+#include "battery.hpp"
 #include "hardware/imu.hpp"
 #include "motors.hpp"
 #include "ranges.hpp"
@@ -28,7 +28,7 @@ QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
 QueueHandle_t RangeQueue;
-QueueHandle_t BatteryStateQueue;
+QueueHandle_t BatteryQueue;
 QueueHandle_t uRosAgentConectionQueue;
 
 void createAll() {
@@ -36,7 +36,7 @@ void createAll() {
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   RangeQueue = xQueueCreate(1, sizeof(ranges_queue_t));
-  BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_t));
+  BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
   uRosAgentConectionQueue = xQueueCreate(1, sizeof(bool));
 }
 

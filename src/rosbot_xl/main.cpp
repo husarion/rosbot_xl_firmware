@@ -40,7 +40,7 @@ bool uRosInitSuccesfull = false;
 QueueHandle_t SetpointQueue;
 QueueHandle_t MotorStateQueue;
 QueueHandle_t ImuQueue;
-QueueHandle_t BatteryStateQueue;
+QueueHandle_t BatteryQueue;
 portBASE_TYPE s1, s2, s3, s4, s5, s6, s7, s8, s9;
 
 /* EXTERN VARIABLES */
@@ -89,12 +89,11 @@ void setup() {
   SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
-  BatteryStateQueue = xQueueCreate(1, sizeof(battery_state_t));
+  BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
   LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
-  s1 =
-      xTaskCreate(uRosTask, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
-                  NULL, tskIDLE_PRIORITY + 1, NULL);
+  s1 = xTaskCreate(uRosTask, "uRosTask", configMINIMAL_STACK_SIZE + 2500, NULL,
+                   tskIDLE_PRIORITY + 1, NULL);
   if (s1 != pdPASS) LOG_DEBUG("S1 creation problem");
   s2 = xTaskCreate(ImuTask, "ImuTask", configMINIMAL_STACK_SIZE + 750, NULL,
                    tskIDLE_PRIORITY + 1, NULL);
@@ -119,8 +118,8 @@ void setup() {
                    NULL);
   if (s8 != pdPASS) LOG_DEBUG("S8 creation problem");
   s9 = xTaskCreate(HardwareLoopTask, "BoardHardwareLoopTask",
-                    configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
-                    NULL);
+                   configMINIMAL_STACK_SIZE + 500, NULL, tskIDLE_PRIORITY + 1,
+                   NULL);
   if (s9 != pdPASS) LOG_DEBUG("S9 creation problem");
   /* START RTOS */
   LOG_DEBUG("Tasks starting");

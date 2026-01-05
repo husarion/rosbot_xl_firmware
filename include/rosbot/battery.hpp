@@ -14,17 +14,19 @@
 
 #pragma once
 
-#include <STM32FreeRTOS.h>
+#include <Arduino.h>
 
-namespace rtos::queues {
+typedef struct {
+  float voltage;
+  float temperature;
+  float current;
+} battery_data_t;
 
-extern QueueHandle_t SetpointQueue;
-extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t ImuQueue;
-extern QueueHandle_t RangeQueue;
-extern QueueHandle_t BatteryQueue;
-extern QueueHandle_t uRosAgentConectionQueue;
+namespace battery
+{
 
-void createAll();
+battery_data_t loop();
+battery_data_t readBattery();
+float percentage(float voltage);
 
-}  // namespace rtos::queues
+}  // namespace battery

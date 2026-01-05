@@ -15,7 +15,7 @@
 #include <Arduino.h>
 
 /*===== HARDEWARE =====*/
-#include "battery_types.hpp"
+#include "battery.hpp"
 #include "bsp.hpp"
 #include "hardware/imu.hpp"
 #include "hardware_cfg.hpp"

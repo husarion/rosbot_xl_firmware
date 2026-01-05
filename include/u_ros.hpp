@@ -21,6 +21,9 @@
 #include <rmw_microros/rmw_microros.h>
 
 /*===== ROS MSGS TYPES =====*/
+#include <sensor_msgs/msg/battery_state.h>
+#include <sensor_msgs/msg/imu.h>
+#include <sensor_msgs/msg/range.h>
 #include <sensor_msgs/msg/joint_state.h>
 #include <std_msgs/msg/float32_multi_array.h>
 
@@ -60,16 +63,16 @@ namespace u_ros {
     if ((rc != RCL_RET_OK)) {                                                 \
       LOG_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", rc, \
                 __FUNCTION__);                                                \
-      ErrorLoop(__FUNCTION__);                                                \
+      errorLoop(__FUNCTION__);                                                \
     }                                                                         \
   }
-#define RCCHECK_WARN(fn)                                                       \
-  {                                                                           \
-    rcl_ret_t rc = fn;                                                        \
-    if ((rc != RCL_RET_OK)) {                                                 \
+#define RCCHECK_WARN(fn)                                                     \
+  {                                                                          \
+    rcl_ret_t rc = fn;                                                       \
+    if ((rc != RCL_RET_OK)) {                                                \
       LOG_WARN("RCSOFTCHECK FAILED due to return code: %d in function %s()", \
-                rc, __FUNCTION__);                                            \
-    }                                                                         \
+               rc, __FUNCTION__);                                            \
+    }                                                                        \
   }
 
 typedef enum {
@@ -83,16 +86,22 @@ typedef enum {
 extern "C" int clock_gettime(clockid_t unused, struct timespec* tp);
 
 /* FUNCTIONS */
-void ErrorLoop(const char* func);
+void errorLoop(const char* func);
 void transportInit(void);
 bool pingAgent(void);
 void loop();
-void motorsCmdCallback(const void* input_message);
-void timerCallback(rcl_timer_t* timer, int64_t last_call_time);
 bool createEntities(void);
 void destroyEntities(void);
-void motorsJointStateInit(sensor_msgs__msg__JointState* msg);
-void motorsCmdMsgInit(std_msgs__msg__Float32MultiArray* msg);
+
+void motorsCmdCallback(const void* input_message);
+void timerCallback(rcl_timer_t* timer, int64_t last_call_time);
+
+void initBatteryMsg(sensor_msgs__msg__BatteryState* msg);
+void initImuMsg(sensor_msgs__msg__Imu* msg);
+void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg);
+void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg);
+void initRangeMsg(sensor_msgs__msg__Range* msg);
+
 void publishBattery();
 void publishImu();
 void publishRanges();

@@ -16,6 +16,7 @@
 
 #include <STM32FreeRTOS.h>
 
+#include "battery.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "motors.hpp"
@@ -23,6 +24,41 @@
 #include "u_ros.hpp"
 
 namespace rtos::tasks {
+
+// ================= BATTERY TASK ======================
+namespace BatteryTask {
+TaskHandle_t handle = nullptr;
+void create() {
+  auto result = xTaskCreate(task, "BatteryTask", configMINIMAL_STACK_SIZE + 500,
+                            nullptr, 1, &handle);
+  if (result != pdPASS) {
+    LOG_ERROR("Battery task creation failed!");
+  } else {
+    LOG_INFO("Battery task started");
+  }
+}
+
+void destroy() {
+  if (handle != nullptr) {
+    vTaskDelete(handle);
+    handle = nullptr;
+    LOG_INFO("Battery task stopped");
+  }
+}
+
+void task(void* pvParameters) {
+  UNUSED(pvParameters);
+  TickType_t wake_time = xTaskGetTickCount();
+  battery_data_t battery_data;
+
+  while (1) {
+    battery_data = battery::loop();
+    xQueueOverwrite(rtos::queues::BatteryQueue, &battery_data);
+    vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(BATTERY_SAMPLE_FREQ));
+  }
+}
+
+}  // namespace BatteryTask
 
 // ================= IMU TASK ======================
 namespace ImuTask {
@@ -197,6 +233,7 @@ void task(void* pvParameters) {
 }  // namespace uRosTask
 
 void createAll() {
+  BatteryTask::create();
   ImuTask::create();
   // PidTask::create();
   RuntimeStatsTask::create();

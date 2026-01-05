@@ -28,10 +28,10 @@ extern FirmwareModeTypeDef firmware_mode;
 TwoWire I2cBus(IMU_SDA, IMU_SCL);
 
 void BoardGpioInit(void) {
-  digitalWrite(GRN_LED, LOW);
-  pinMode(GRN_LED, OUTPUT);
   digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
+  digitalWrite(GRN_LED, LOW);
+  pinMode(GRN_LED, OUTPUT);
   digitalWrite(GRN_LED2, LOW);
   pinMode(GRN_LED2, OUTPUT);
 }

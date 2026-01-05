@@ -14,17 +14,11 @@
 
 #pragma once
 
-#include <STM32FreeRTOS.h>
+#include "hardware_cfg.hpp"
 
-namespace rtos::queues {
-
-extern QueueHandle_t SetpointQueue;
-extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t ImuQueue;
-extern QueueHandle_t RangeQueue;
-extern QueueHandle_t BatteryQueue;
-extern QueueHandle_t uRosAgentConectionQueue;
-
-void createAll();
-
-}  // namespace rtos::queues
+/* CHOOSE HARDWARE CONFIG */
+#if defined(ROSBOT_XL)
+#include "rosbot_xl/battery.hpp"
+#elif defined(ROSBOT)
+#include "rosbot/battery.hpp"
+#endif

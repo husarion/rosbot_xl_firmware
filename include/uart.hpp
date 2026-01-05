@@ -33,7 +33,7 @@
 #define POWER_BOARD_VERSION_MSG_LENGTH 25
 
 // extern variables
-extern QueueHandle_t BatteryStateQueue;
+extern QueueHandle_t BatteryQueue;
 
 typedef enum { ConversionOk = 0, ConversionError = 1 } UartConvStatusTypeDef;
 
