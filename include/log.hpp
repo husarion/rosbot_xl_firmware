@@ -1,4 +1,4 @@
-// Copyright 2024 Husarion sp. z o.o.
+// Copyright 2022 Husarion sp. z o.o.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,9 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// Description: Logging utilities. Adds macros: LOG_DEBUG, LOG_INFO, LOG_WARN,
-// LOG_ERROR
 
 #pragma once
 #include <Arduino.h>

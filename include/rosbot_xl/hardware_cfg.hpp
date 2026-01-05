@@ -1,16 +1,18 @@
-/**
- * @file hardware_cfg.h
- * @author Maciej Kurcius
- * @brief
- * @version 0.1
- * @date 2022-02-09
- *
- * @copyright Copyright (c) 2022
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef ROSBOT_XL__HARDWARE_CFG
-#define ROSBOT_XL__HARDWARE_CFG
+#pragma once
 
 /* OTHERS */
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
@@ -217,5 +219,3 @@
 // (BATTERY_CELLS_PARALLEL * BATTERY_CELLS_SERIES) #define
 // BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE (BATTERY_CELLS_PARALLEL *
 // BATTERY_CELLS_SERIES)
-
-#endif /* ROSBOT_XL__HARDWARE_CFG */

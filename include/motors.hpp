@@ -1,66 +1,23 @@
-/**
- * @file motors.h
- * @author Maciej Kurcius
- * @brief
- * @version 0.1
- * @date 2021-12-16
- *
- * @copyright Copyright (c) 2021
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef MOTORS_H
-#define MOTORS_H
+#pragma once
 
 #include <Arduino.h>
 #include <STM32FreeRTOS.h>
 
 #include "bsp.hpp"
-
-#define M1_ENC_TIM TIM1
-#define M1_ENC_A PE9
-#define M1_ENC_B PE11
-#define M1_PWM_TIM TIM10
-#define M1_PWM_PIN PF6
-#define M1_PWM_TIM_CH 1
-#define M1A_IN PE12
-#define M1B_IN PE13
-#define M1_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
-
-#define M2_ENC_TIM TIM2
-#define M2_ENC_A PA15
-#define M2_ENC_B PB3
-#define M2_PWM_TIM TIM11
-#define M2_PWM_PIN PF7
-#define M2_PWM_TIM_CH 1
-#define M2A_IN PG11
-#define M2B_IN PG12
-#define M2_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
-
-#define M3_ENC_TIM TIM3
-#define M3_ENC_A PC6
-#define M3_ENC_B PC7
-#define M3_PWM_TIM TIM13
-#define M3_PWM_PIN PF8
-#define M3_PWM_TIM_CH 1
-#define M3A_IN PG5
-#define M3B_IN PG6
-#define M3_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
-
-#define M4_ENC_TIM TIM4
-#define M4_ENC_A PD12
-#define M4_ENC_B PD13
-#define M4_PWM_TIM TIM14
-#define M4_PWM_PIN PF9
-#define M4_PWM_TIM_CH 1
-#define M4A_IN PD10
-#define M4B_IN PD11
-#define M4_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
-
-#define ILIM1 PE10
-#define ILIM2 PG15
-#define ILIM3 PG7
-#define ILIM4 PD14
 
 // MOTORS TIMEBASE TIMER
 #define TIMEBASE_TIMER TIM6
@@ -95,6 +52,13 @@
 #define REDUCED_CURRENT 0x00
 #define RAMP_ACCELERATION 2000  // rad/s^2 * 1000
 #define RAMP_FLAG false         // if true - use ramp, it false - without ramp
+
+/* TYPE DEF */
+typedef struct {
+  uint8_t size = 4;
+  double velocity[4];
+  double position[4];
+} motor_joint_state_t;
 
 void SetMaxMotorsCurrent(uint32_t Ilim1_, uint32_t Ilim2_, uint32_t Ilim3_,
                          uint32_t Ilim4_);
@@ -180,5 +144,3 @@ class MotorClass {
 };
 
 extern MotorClass wheel_motors[4];
-
-#endif /* MOTORS_H */

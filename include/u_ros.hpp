@@ -1,44 +1,34 @@
-/**
- * @file micro_ros_cfg.h
- * @author Maciej Kurcius
- * @brief
- * @version 0.1
- * @date 2022-04-05
- *
- * @copyright Copyright (c) 2022
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#ifndef MICRO_ROS_CFG_H
-#define MICRO_ROS_CFG_H
+#pragma once
 
 /*===== MICRO ROS =====*/
 #include <micro_ros_arduino.h>
-#include <micro_ros_utilities/string_utilities.h>
-#include <rcl/error_handling.h>
 #include <rcl/rcl.h>
-#include <rclc/executor.h>
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
-/*===== ROS MSGS TYPES =====*/
-#include <std_msgs/msg/bool.h>
-#include <std_msgs/msg/string.h>
-// #include <std_msgs/msg/int64.h>
-#include <sensor_msgs/msg/battery_state.h>
-#include <sensor_msgs/msg/imu.h>
-#include <sensor_msgs/msg/joint_state.h>
-#include <sensor_msgs/msg/range.h>
-#include <std_msgs/msg/float32_multi_array.h>
-/*===== ROS SRVS TYPES =====*/
-#include <std_srvs/srv/trigger.h>
-/*===== REST =====*/
-#include <STM32FreeRTOS.h>
 
-#include "bsp.hpp"
-#include "hardware/imu.hpp"
+/*===== ROS MSGS TYPES =====*/
+#include <sensor_msgs/msg/joint_state.h>
+#include <std_msgs/msg/float32_multi_array.h>
+
+/*===== REST =====*/
 #include "hardware_cfg.hpp"
 #include "log.hpp"
 
+namespace u_ros {
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
   255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
@@ -58,36 +48,29 @@
 // uRos topics
 #define NODE_NAME "rosbot_hw"
 
-#define RCCHECK_RETURN(fn)                     \
+#define RCCHECK_RETURN(fn)              \
   {                                     \
     rcl_ret_t rc = fn;                  \
     if (rc != RCL_RET_OK) return false; \
   }
 
-#define RCCHECK(fn)                                                       \
-  {                                                                       \
-    rcl_ret_t rc = fn;                                               \
-    if ((rc != RCL_RET_OK)) {                                        \
-      LOG_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", \
-                rc, __FUNCTION__);                                   \
-      ErrorLoop(__FUNCTION__);                                            \
-    }                                                                     \
+#define RCCHECK(fn)                                                           \
+  {                                                                           \
+    rcl_ret_t rc = fn;                                                        \
+    if ((rc != RCL_RET_OK)) {                                                 \
+      LOG_DEBUG("RCCHECK FAILED due to return code: %d in function %s()", rc, \
+                __FUNCTION__);                                                \
+      ErrorLoop(__FUNCTION__);                                                \
+    }                                                                         \
   }
 #define RCSOFTCHECK(fn)                                                       \
   {                                                                           \
-    rcl_ret_t rc = fn;                                                   \
-    if ((rc != RCL_RET_OK)) {                                            \
+    rcl_ret_t rc = fn;                                                        \
+    if ((rc != RCL_RET_OK)) {                                                 \
       LOG_DEBUG("RCSOFTCHECK FAILED due to return code: %d in function %s()", \
-                rc, __FUNCTION__);                                       \
+                rc, __FUNCTION__);                                            \
     }                                                                         \
   }
-
-/* TYPE DEF */
-typedef struct {
-  uint8_t size = 4;
-  double velocity[4];
-  double position[4];
-} motor_joint_state_t;
 
 typedef enum {
   WAITING,
@@ -110,7 +93,7 @@ void ErrorLoop(const char* func);
 void uRosTransportInit(void);
 bool uRosPingAgent(void);
 bool uRosPingAgent(int timeout_ms, uint8_t attempts);
-void uRosLoopHandler(bool connected);
+void uRosLoop();
 void uRosMotorsCmdCallback(const void* input_message);
 void uRosTimerCallback(rcl_timer_t* timer, int64_t last_call_time);
 bool uRosCreateEntities(void);
@@ -122,6 +105,4 @@ void publishImu();
 void publishRanges();
 void publishWheelsJointState();
 
-void uRosLoop();
-
-#endif /* MICRO_ROC_CFG_H */
+}  // namespace u_ros

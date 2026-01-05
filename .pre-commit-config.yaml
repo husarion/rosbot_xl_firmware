@@ -61,3 +61,16 @@ repos:
       - id: yamlfmt
         files: ^(?!.*compose).*$
         args: [--mapping, '2', --sequence, '4', --offset, '2', --width, '100']
+
+  # -------------------------
+  # Copyright check
+  # -------------------------
+  - repo: local
+    hooks:
+      - id: ament_copyright
+        name: ament_copyright
+        description: Check if copyright notice is available in all files.
+        stages: [pre-commit]
+        entry: ament_copyright
+        language: system
+        exclude: ^.*\.md$

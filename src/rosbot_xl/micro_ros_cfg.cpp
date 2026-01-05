@@ -1,13 +1,16 @@
-/**
- * @file micro_ros_cfg.cpp
- * @author Maciej Kurcius
- * @brief
- * @version 0.1
- * @date 2022-04-05
- *
- * @copyright Copyright (c) 2022
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "micro_ros_cfg.hpp"
 
@@ -137,8 +140,7 @@ void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
       battery_state_msg.cell_voltage.size =
           BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE;
       battery_state_msg.cell_voltage.data = battery_state_queue.cell_voltage;
-      RCSOFTCHECK(
-          rcl_publish(&battery_pub, &battery_state_msg, NULL));
+      RCSOFTCHECK(rcl_publish(&battery_pub, &battery_state_msg, NULL));
     }
     // QOS best effort
     if (xQueueReceive(rtos::queues::MotorStateQueue, &motor_state_queue,
@@ -149,8 +151,7 @@ void uRosTimerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
       }
       motors_response_msg.velocity.data = motor_state_queue.velocity;
       motors_response_msg.position.data = motor_state_queue.position;
-      RCSOFTCHECK(
-          rcl_publish(&motor_state_pub, &motors_response_msg, NULL));
+      RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_response_msg, NULL));
     }
     // QOS best effort
     if (xQueueReceive(rtos::queues::ImuQueue, &queue_imu, (TickType_t)0) ==

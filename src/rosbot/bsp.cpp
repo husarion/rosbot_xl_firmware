@@ -1,13 +1,16 @@
-/**
- * @file bsp.h
- * @author Maciej Kurcius
- * @brief Board support package
- * @version 0.1
- * @date 2022-01-20
- *
- * @copyright Copyright (c) 2021
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "bsp.hpp"
 
@@ -29,18 +32,8 @@ void BoardGpioInit(void) {
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
-#if defined(ROSBOT)
   digitalWrite(GRN_LED2, LOW);
   pinMode(GRN_LED2, OUTPUT);
-#elif defined(ROSBOT_XL)
-  digitalWrite(EN_LOC_5V, LOW);
-  pinMode(EN_LOC_5V, OUTPUT);
-  digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
-  pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
-  pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
-  digitalWrite(AUDIO_SHDN, HIGH);
-  pinMode(AUDIO_SHDN, OUTPUT);
-#endif
 }
 
 void SetGreenLed(SwitchStateTypeDef State_) {

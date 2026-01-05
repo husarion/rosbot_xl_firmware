@@ -1,37 +1,54 @@
-/**
- * @file micro_ros_cfg.cpp
- * @author Maciej Kurcius
- * @brief
- * @version 0.1
- * @date 2022-04-05
- *
- * @copyright Copyright (c) 2022
- *
- */
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#include "micro_ros_cfg.hpp"
+#include "u_ros.hpp"
 
+/*===== ROS MSGS TYPES =====*/
 #include <builtin_interfaces/msg/time.h>
+#include <sensor_msgs/msg/battery_state.h>
+#include <sensor_msgs/msg/imu.h>
+#include <sensor_msgs/msg/joint_state.h>
+#include <sensor_msgs/msg/range.h>
+#include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/string.h>
+#include <std_srvs/srv/trigger.h>
+
+/*===== MICRO ROS =====*/
 #include <rcl/time.h>
+#include <rclc/executor.h>
 
 #include "battery_types.hpp"
+#include "bsp.hpp"
 #include "buttons.hpp"
+#include "hardware/imu.hpp"
 #include "log.hpp"
 #include "ranges.hpp"
 #include "rtos/queues.hpp"
 
+namespace u_ros {
 
-// ROS PUBLISHERS
+// PUBLISHERS
 rcl_publisher_t battery_pub;
 rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
 rcl_publisher_t imu_pub;
 rcl_publisher_t motor_state_pub;
 rcl_publisher_t range_pub;
-// ROS SUBSCRIPTIONS
+// SUBSCRIPTIONS
 rcl_subscription_t motors_cmd_sub;
 rcl_subscription_t left_led_sub;
 rcl_subscription_t right_led_sub;
-// ROS MESSAGES
+// MESSAGES
 sensor_msgs__msg__BatteryState battery_msg;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__Range range_msg;
@@ -39,12 +56,11 @@ sensor_msgs__msg__JointState motors_joint_state_msg;
 std_msgs__msg__Bool led_msg;
 std_msgs__msg__String msgs;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
-// ROS SERVICES
+// SERVICES
 rcl_service_t get_cpu_id_service;
-// ROS REQUESTS AND RESPONSES
 std_srvs__srv__Trigger_Request get_cpu_id_service_request;
 std_srvs__srv__Trigger_Response get_cpu_id_service_response;
-// ROS
+// ROS ENTITIES
 rcl_init_options_t init_options;
 rclc_executor_t executor;
 rclc_support_t support;
@@ -54,14 +70,35 @@ rcl_timer_t timer;
 u_ros_state_t ping_agent_status;
 builtin_interfaces__msg__Time now;
 
+void BlinkRedLed(int duration_ms) {
+  SetRedLed(On);
+  delay(duration_ms);
+  SetRedLed(Off);
+  delay(200);
+}
+
 void ErrorLoop(const char* func) {
-  for (int i = 0; i < 4; ++i) {
-    LOG_ERROR("In error loop from function %s", func);
-    SetRedLed(Toggle);
-    SetGreenLed(Off);
-    delay(500);
+  LOG_ERROR("In error loop from function %s", func);
+  SetRedLed(Off);
+  SetGreenLed(Off);
+  SetGreenLed2(Off);
+  delay(500);
+
+  // 2 SOS signals: ... --- ...
+  for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(200);
+    }
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(600);
+    }
+    for (int i = 0; i < 3; ++i) {
+      BlinkRedLed(200);
+    }
+    delay(1000);
   }
-  // Reset the uC when microros fails
+
+  LOG_ERROR("System resetting...");
   NVIC_SystemReset();
 }
 
@@ -104,31 +141,6 @@ bool uRosPingAgent(void) {
 
 bool uRosPingAgent(int timeout_ms, uint8_t attempts) {
   return rmw_uros_ping_agent(timeout_ms, attempts) == RMW_RET_OK;
-}
-
-void uRosLoopHandler(bool connected) {
-  static u_ros_state_t state = WAITING;
-
-  switch (state) {
-    case WAITING:
-      state = connected ? AGENT_AVAILABLE : WAITING;
-      break;
-    case AGENT_AVAILABLE:
-      state = uRosCreateEntities() ? CONNECTED : DISCONNECTED;
-      break;
-    case CONNECTED:
-      state = connected ? CONNECTED : DISCONNECTED;
-      if (state == CONNECTED) {
-        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
-      }
-      break;
-    case DISCONNECTED:
-      uRosDestroyEntities();
-      state = WAITING;
-      break;
-    default:
-      break;
-  }
 }
 
 void uRosMotorsCmdCallback(const void* input_message) {
@@ -200,7 +212,7 @@ bool uRosCreateEntities(void) {
   MotorsJointStateInit(&motors_joint_state_msg);
   MotorsCmdMsgInit(&motors_cmd_msg);
 
-    /*===== INIT ROS2 =====*/
+  /*===== INIT ROS2 =====*/
   allocator = rcl_get_default_allocator();
   // init_options = rcl_get_zero_initialized_init_options();
   // RCCHECK(rcl_init_options_init(&init_options, allocator));
@@ -214,7 +226,7 @@ bool uRosCreateEntities(void) {
 
   /*===== TIMERS =====*/
   RCCHECK_RETURN(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
-                                  uRosTimerCallback));
+                                         uRosTimerCallback));
   ros_msgs_cnt++;
   /*===== SUBSCRIBERS ===== */
   RCCHECK_RETURN(rclc_subscription_init_best_effort(
@@ -223,12 +235,12 @@ bool uRosCreateEntities(void) {
       "_motors_cmd"));
   ros_msgs_cnt++;
   RCCHECK_RETURN(rclc_subscription_init_default(
-      &left_led_sub, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "led/left"));
+      &left_led_sub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+      "led/left"));
   ros_msgs_cnt++;
   RCCHECK_RETURN(rclc_subscription_init_default(
-      &right_led_sub, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "led/right"));
+      &right_led_sub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+      "led/right"));
   ros_msgs_cnt++;
   /*===== PUBLISHERS ===== */
   RCCHECK_RETURN(rclc_publisher_init_best_effort(
@@ -254,17 +266,16 @@ bool uRosCreateEntities(void) {
 
   /*===== EXECUTOR ===== */
   executor = rclc_executor_get_zero_initialized_executor();
-  RCCHECK_RETURN(rclc_executor_init(&executor, &support.context, ros_msgs_cnt, &allocator));
+  RCCHECK_RETURN(rclc_executor_init(&executor, &support.context, ros_msgs_cnt,
+                                    &allocator));
   RCCHECK_RETURN(rclc_executor_add_timer(&executor, &timer));
-  RCCHECK_RETURN(rclc_executor_add_subscription(&executor, &motors_cmd_sub,
-                                         &motors_cmd_msg,
-                                         &uRosMotorsCmdCallback, ON_NEW_DATA));
-  RCCHECK_RETURN(rclc_executor_add_subscription(&executor, &left_led_sub,
-                                         &led_msg, &uRosLeftLedCallback,
-                                         ON_NEW_DATA));
-  RCCHECK_RETURN(rclc_executor_add_subscription(&executor, &right_led_sub,
-                                         &led_msg, &uRosRightLedCallback,
-                                         ON_NEW_DATA));
+  RCCHECK_RETURN(rclc_executor_add_subscription(
+      &executor, &motors_cmd_sub, &motors_cmd_msg, &uRosMotorsCmdCallback,
+      ON_NEW_DATA));
+  RCCHECK_RETURN(rclc_executor_add_subscription(
+      &executor, &left_led_sub, &led_msg, &uRosLeftLedCallback, ON_NEW_DATA));
+  RCCHECK_RETURN(rclc_executor_add_subscription(
+      &executor, &right_led_sub, &led_msg, &uRosRightLedCallback, ON_NEW_DATA));
   RCCHECK_RETURN(rclc_executor_add_service(
       &executor, &get_cpu_id_service, &get_cpu_id_service_request,
       &get_cpu_id_service_response, uRosGetIdCallback));
@@ -414,8 +425,7 @@ void publishRanges() {
 }
 
 void publishWheelsJointState() {
-  RCSOFTCHECK(
-      rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
+  RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
   return;
 
   static motor_joint_state_t motor_joint_state;
@@ -427,8 +437,7 @@ void publishWheelsJointState() {
     }
     motors_joint_state_msg.velocity.data = motor_joint_state.velocity;
     motors_joint_state_msg.position.data = motor_joint_state.position;
-    RCSOFTCHECK(
-        rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
+    RCSOFTCHECK(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
   }
 }
 
@@ -471,3 +480,5 @@ void uRosLoop() {
       break;
   }
 }
+
+}  // namespace u_ros

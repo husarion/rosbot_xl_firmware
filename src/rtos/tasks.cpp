@@ -1,12 +1,26 @@
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "rtos/tasks.hpp"
 
 #include <STM32FreeRTOS.h>
 
 #include "hardware/imu.hpp"
 #include "log.hpp"
-#include "micro_ros_cfg.hpp"
 #include "motors.hpp"
 #include "rtos/queues.hpp"
+#include "u_ros.hpp"
 
 namespace rtos::tasks {
 
@@ -154,9 +168,8 @@ namespace uRosTask {
 TaskHandle_t handle = nullptr;
 
 void create() {
-  auto result =
-      xTaskCreate(task, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
-                  nullptr, 2, &handle);
+  auto result = xTaskCreate(task, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
+                            nullptr, 2, &handle);
   if (result != pdPASS) {
     LOG_ERROR("uRosTask creation failed!");
   } else {
@@ -176,7 +189,7 @@ void task(void* pvParameters) {
   UNUSED(pvParameters);
 
   while (1) {
-    uRosLoop();
+    u_ros::uRosLoop();
     // vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
   }
 }
