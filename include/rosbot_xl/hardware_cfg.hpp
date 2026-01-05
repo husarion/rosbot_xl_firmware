@@ -24,6 +24,7 @@
 /* REAR PANEL */
 #define GRN_LED PE3
 #define RD_LED PE4
+#define BUTTONS_COUNT 1
 #define PUSH_BUTTON1 PF11
 #define PUSH_BUTTON2 PF12
 

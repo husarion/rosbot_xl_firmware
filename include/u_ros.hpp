@@ -23,8 +23,8 @@
 /*===== ROS MSGS TYPES =====*/
 #include <sensor_msgs/msg/battery_state.h>
 #include <sensor_msgs/msg/imu.h>
-#include <sensor_msgs/msg/range.h>
 #include <sensor_msgs/msg/joint_state.h>
+#include <sensor_msgs/msg/range.h>
 #include <std_msgs/msg/float32_multi_array.h>
 
 /*===== REST =====*/
@@ -103,6 +103,7 @@ void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg);
 void initRangeMsg(sensor_msgs__msg__Range* msg);
 
 void publishBattery();
+void publishButtons();
 void publishImu();
 void publishRanges();
 void publishWheelsJointState();

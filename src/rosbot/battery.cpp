@@ -1,11 +1,24 @@
-#include <rosbot/battery.hpp>
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <Arduino.h>
 
+#include <rosbot/battery.hpp>
+
 #include "bsp.hpp"
 
-namespace battery
-{
+namespace battery {
 constexpr float BATTERY_LOW_VOLTAGE = 10.8;
 constexpr float BATTERY_LOW_HYST = 0.2;
 constexpr float V_REF = 3.3;
@@ -16,42 +29,33 @@ constexpr float V_MIN = 9.6;
 constexpr float V_MAX = 12.6;
 constexpr int LED_INTERVAL_MS = 500;
 
-
-battery_data_t loop()
-{
+battery_data_t loop() {
   static unsigned long last_toggle_time = 0;
   static bool low_battery = false;
 
   battery_data_t battery_data = readBattery();
 
-  if (battery_data.voltage < BATTERY_LOW_VOLTAGE)
-  {
+  if (battery_data.voltage < BATTERY_LOW_VOLTAGE) {
     low_battery = true;
-  }
-  else if (battery_data.voltage > BATTERY_LOW_VOLTAGE + BATTERY_LOW_HYST)
-  {
+  } else if (battery_data.voltage > BATTERY_LOW_VOLTAGE + BATTERY_LOW_HYST) {
     low_battery = false;
-    SetRedLed(On);
+    SetRedLed(Off);
   }
 
-  if (low_battery)
-  {
-    if (millis() - last_toggle_time > LED_INTERVAL_MS)
-    {
-      SetRedLed(Toggle);
-      last_toggle_time = millis();
-    }
+  if (low_battery && millis() - last_toggle_time > LED_INTERVAL_MS) {
+    SetRedLed(Toggle);
+    last_toggle_time = millis();
   }
 
   return battery_data;
 }
 
-
-battery_data_t readBattery()
-{
+battery_data_t readBattery() {
   battery_data_t battery_data;
   float raw = analogRead(BATTERY_ADC_PIN) / 1023.0f;
-  battery_data.voltage = V_REF * VIN_MEAS_CORRECTION * (UPPER_RESISTOR + LOWER_RESISTOR) / LOWER_RESISTOR  * raw;
+  battery_data.voltage = V_REF * VIN_MEAS_CORRECTION *
+                         (UPPER_RESISTOR + LOWER_RESISTOR) / LOWER_RESISTOR *
+                         raw;
   battery_data.current = NAN;
   battery_data.temperature = NAN;
   return battery_data;
@@ -60,9 +64,7 @@ battery_data_t readBattery()
 float percentage(float voltage) {
   if (voltage < V_MIN) voltage = V_MIN;
   if (voltage > V_MAX) voltage = V_MAX;
-  
-  float perc = (voltage - V_MIN) / (V_MAX - V_MIN); // linear scaling
-
+  float perc = (voltage - V_MIN) / (V_MAX - V_MIN);  // linear scaling
   return perc;
 }
 

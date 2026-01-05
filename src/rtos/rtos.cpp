@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rtos/tasks.hpp"
+#include "rtos.hpp"
 
 #include <STM32FreeRTOS.h>
 
@@ -20,10 +20,26 @@
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "motors.hpp"
-#include "rtos/queues.hpp"
+#include "ranges.hpp"
 #include "u_ros.hpp"
 
-namespace rtos::tasks {
+namespace rtos {
+
+QueueHandle_t BatteryQueue;
+QueueHandle_t ButtonsQueue;
+QueueHandle_t ImuQueue;
+QueueHandle_t MotorStateQueue;
+QueueHandle_t RangeQueue;
+QueueHandle_t SetpointQueue;
+
+void createQueues() {
+  BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
+  ButtonsQueue = xQueueCreate(1, sizeof(uint8_t));
+  ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
+  MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
+  RangeQueue = xQueueCreate(1, sizeof(ranges_queue_t));
+  SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
+}
 
 // ================= BATTERY TASK ======================
 namespace BatteryTask {
@@ -53,12 +69,52 @@ void task(void* pvParameters) {
 
   while (1) {
     battery_data = battery::loop();
-    xQueueOverwrite(rtos::queues::BatteryQueue, &battery_data);
+    xQueueOverwrite(rtos::BatteryQueue, &battery_data);
     vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(BATTERY_SAMPLE_FREQ));
   }
 }
 
 }  // namespace BatteryTask
+
+// ================= BUTTONS TASK ======================
+namespace ButtonsTask {
+TaskHandle_t handle = nullptr;
+void create() {
+  auto result = xTaskCreate(task, "ButtonsTask", configMINIMAL_STACK_SIZE + 200,
+                            nullptr, 1, &handle);
+  if (result != pdPASS) {
+    LOG_ERROR("Button task creation failed!");
+  } else {
+    LOG_INFO("Button task started");
+  }
+}
+
+void destroy() {
+  if (handle != nullptr) {
+    vTaskDelete(handle);
+    handle = nullptr;
+    LOG_INFO("Button task stopped");
+  }
+}
+
+void task(void* pvParameters) {
+  UNUSED(pvParameters);
+  TickType_t wake_time = xTaskGetTickCount();
+  static uint8_t last_state = 0;
+
+  while (1) {
+    uint8_t buttons = 0;
+    buttons |= (digitalRead(PUSH_BUTTON1) == LOW) << 0;
+    buttons |= (digitalRead(PUSH_BUTTON2) == LOW) << 1;
+    if (buttons != last_state) {
+      last_state = buttons;
+      xQueueOverwrite(rtos::ButtonsQueue, &buttons);
+      vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(BUTTON_SAMPLE_FREQ));
+    }
+  }
+}
+
+}  // namespace ButtonsTask
 
 // ================= IMU TASK ======================
 namespace ImuTask {
@@ -90,7 +146,7 @@ void task(void* pvParameters) {
 
   while (1) {
     imu_data = imuDriver.loopHandler();
-    xQueueOverwrite(rtos::queues::ImuQueue, &imu_data);
+    xQueueOverwrite(rtos::ImuQueue, &imu_data);
     vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(IMU_SAMPLE_FREQ));
   }
 }
@@ -124,13 +180,13 @@ void task(void* pvParameters) {
   UNUSED(pvParameters);
   TickType_t wake_time = xTaskGetTickCount();
   TickType_t last_update_time = xTaskGetTickCount();
-  double setpoint[4] = {0, 0, 0, 0};
+  float setpoint[4] = {0, 0, 0, 0};
   motor_joint_state_t motor_state;
   uint8_t freq_div_ptr = 0;
 
   while (1) {
     vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(PID_FREQ));
-    if (xQueueReceive(rtos::queues::SetpointQueue, &setpoint, 0)) {
+    if (xQueueReceive(rtos::SetpointQueue, &setpoint, 0)) {
       last_update_time = xTaskGetTickCount();
     }
 
@@ -149,7 +205,7 @@ void task(void* pvParameters) {
         motor_state.position[i] =
             wheel_motors[i].GetWheelAbsPosition() / 1000.0;
       }
-      xQueueOverwrite(rtos::queues::MotorStateQueue, &motor_state);
+      xQueueOverwrite(rtos::MotorStateQueue, &motor_state);
       freq_div_ptr = 0;
     }
     freq_div_ptr++;
@@ -232,12 +288,13 @@ void task(void* pvParameters) {
 
 }  // namespace uRosTask
 
-void createAll() {
+void createTasks() {
   BatteryTask::create();
+  ButtonsTask::create();
   ImuTask::create();
   // PidTask::create();
   RuntimeStatsTask::create();
   uRosTask::create();
 }
 
-}  // namespace rtos::tasks
+}  // namespace rtos

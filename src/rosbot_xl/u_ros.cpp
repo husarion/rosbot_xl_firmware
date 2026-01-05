@@ -17,7 +17,7 @@
 #include "battery.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
-#include "rtos/queues.hpp"
+#include "rtos.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <builtin_interfaces/msg/time.h>
@@ -143,15 +143,15 @@ void loop() {
 }
 
 void motorsCmdCallback(const void* arg_input_message) {
-  static double setpoint[] = {0, 0, 0, 0};
+  static float setpoint[] = {0, 0, 0, 0};
   static std_msgs__msg__Float32MultiArray* setpoint_msg;
   setpoint_msg = (std_msgs__msg__Float32MultiArray*)arg_input_message;
   if (setpoint_msg->data.size == 4) {
     for (uint8_t i = 0; i < setpoint_msg->data.size; i++) {
-      setpoint[i] = (double)setpoint_msg->data.data[i];
+      setpoint[i] = setpoint_msg->data.data[i];
     }
   }
-  xQueueOverwrite(rtos::queues::SetpointQueue, (void*)setpoint);
+  xQueueOverwrite(rtos::SetpointQueue, (void*)setpoint);
 }
 
 void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
@@ -161,7 +161,7 @@ void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
   static battery_data_t battery_state_queue;
   if (arg_timer != NULL) {
     // QOS default
-    if (xQueueReceive(rtos::queues::BatteryQueue, &battery_state_queue,
+    if (xQueueReceive(rtos::BatteryQueue, &battery_state_queue,
                       (TickType_t)0) == pdPASS) {
       if (rmw_uros_epoch_synchronized()) {
         battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
@@ -190,7 +190,7 @@ void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
       RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
     }
     // QOS best effort
-    if (xQueueReceive(rtos::queues::MotorStateQueue, &motor_state_queue,
+    if (xQueueReceive(rtos::MotorStateQueue, &motor_state_queue,
                       (TickType_t)0) == pdPASS) {
       if (rmw_uros_epoch_synchronized()) {
         motors_joint_state_msg.header.stamp.sec =
@@ -203,8 +203,7 @@ void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
           rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
     }
     // QOS best effort
-    if (xQueueReceive(rtos::queues::ImuQueue, &queue_imu, (TickType_t)0) ==
-        pdPASS) {
+    if (xQueueReceive(rtos::ImuQueue, &queue_imu, (TickType_t)0) == pdPASS) {
       if (rmw_uros_epoch_synchronized()) {
         imu_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
         imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();

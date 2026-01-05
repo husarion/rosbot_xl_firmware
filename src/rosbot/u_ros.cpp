@@ -22,27 +22,27 @@
 #include <sensor_msgs/msg/range.h>
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/string.h>
+#include <std_msgs/msg/u_int8.h>
 #include <std_srvs/srv/trigger.h>
 
 /*===== MICRO ROS =====*/
 #include <micro_ros_utilities/string_utilities.h>
-#include <rosidl_runtime_c/primitives_sequence_functions.h>
 #include <rcl/time.h>
 #include <rclc/executor.h>
+#include <rosidl_runtime_c/primitives_sequence_functions.h>
 
 #include "battery.hpp"
 #include "bsp.hpp"
-#include "buttons.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "ranges.hpp"
-#include "rtos/queues.hpp"
+#include "rtos.hpp"
 
 namespace u_ros {
 
 // PUBLISHERS
 rcl_publisher_t battery_pub;
-rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
+rcl_publisher_t buttons_pub;
 rcl_publisher_t imu_pub;
 rcl_publisher_t motor_state_pub;
 rcl_publisher_t range_pub;
@@ -53,6 +53,7 @@ rcl_subscription_t right_led_sub;
 // MESSAGES
 builtin_interfaces__msg__Time now;
 sensor_msgs__msg__BatteryState battery_msg;
+std_msgs__msg__UInt8 buttons_msg;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__Range range_msg;
 sensor_msgs__msg__JointState motors_joint_state_msg;
@@ -86,14 +87,14 @@ void errorLoop(const char* func) {
   delay(500);
 
   // 2 SOS signals: ... --- ...
-  for (int i = 0; i < 2; ++i) {
-    for (int i = 0; i < 3; ++i) {
+  for (uint8_t i = 0; i < 2; ++i) {
+    for (uint8_t i = 0; i < 3; ++i) {
       BlinkRedLed(200);
     }
-    for (int i = 0; i < 3; ++i) {
+    for (uint8_t i = 0; i < 3; ++i) {
       BlinkRedLed(600);
     }
-    for (int i = 0; i < 3; ++i) {
+    for (uint8_t i = 0; i < 3; ++i) {
       BlinkRedLed(200);
     }
     delay(1000);
@@ -149,7 +150,7 @@ void motorsCmdCallback(const void* input_message) {
       setpoint[i] = (double)setpoint_msg->data.data[i];
     }
   }
-  xQueueOverwrite(rtos::queues::SetpointQueue, (void*)setpoint);
+  xQueueOverwrite(rtos::SetpointQueue, (void*)setpoint);
 }
 
 void uRosLeftLedCallback(const void* msg) {
@@ -166,6 +167,7 @@ void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     publishBattery();
+    publishButtons();
     // publishImu();
     // publishRanges();
     // publishWheelsJointState();
@@ -207,6 +209,7 @@ bool createEntities(void) {
   uint8_t ros_msgs_cnt = 0;
   /*===== MSGS =====*/
   initBatteryMsg(&battery_msg);
+  buttons_msg.data = 0;
   initMotorsJointStateMsg(&motors_joint_state_msg);
   initMotorsCmdMsg(&motors_cmd_msg);
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
@@ -246,6 +249,9 @@ bool createEntities(void) {
   RCCHECK_RETURN(rclc_publisher_init_best_effort(
       &battery_pub, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState), "battery"));
+  RCCHECK_RETURN(rclc_publisher_init_default(
+      &buttons_pub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, UInt8),
+      "buttons"));
   RCCHECK_RETURN(rclc_publisher_init_best_effort(
       &imu_pub, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
       "_imu/data_raw"));
@@ -305,13 +311,14 @@ void destroyEntities(void) {
 }
 
 void initBatteryMsg(sensor_msgs__msg__BatteryState* msg) {
-  msg->header.frame_id = micro_ros_string_utilities_set(msg->header.frame_id, "base_link");
+  msg->header.frame_id =
+      micro_ros_string_utilities_set(msg->header.frame_id, "base_link");
 
   if (rmw_uros_epoch_synchronized()) {
     msg->header.stamp.sec = (int32_t)(rmw_uros_epoch_nanos() / 1000000000);
     msg->header.stamp.nanosec = (uint32_t)(rmw_uros_epoch_nanos() % 1000000000);
   }
-  
+
   msg->voltage = NAN;
   msg->temperature = NAN;
   msg->current = NAN;
@@ -319,9 +326,12 @@ void initBatteryMsg(sensor_msgs__msg__BatteryState* msg) {
   msg->capacity = NAN;
   msg->design_capacity = 3 * 2.6f;
   msg->percentage = NAN;
-  msg->power_supply_status = sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_UNKNOWN;
-  msg->power_supply_health = sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_UNKNOWN;
-  msg->power_supply_technology = sensor_msgs__msg__BatteryState__POWER_SUPPLY_TECHNOLOGY_LION;
+  msg->power_supply_status =
+      sensor_msgs__msg__BatteryState__POWER_SUPPLY_STATUS_UNKNOWN;
+  msg->power_supply_health =
+      sensor_msgs__msg__BatteryState__POWER_SUPPLY_HEALTH_UNKNOWN;
+  msg->power_supply_technology =
+      sensor_msgs__msg__BatteryState__POWER_SUPPLY_TECHNOLOGY_LION;
   msg->present = true;
   rosidl_runtime_c__float__Sequence__init(&msg->cell_voltage, 3);
   for (size_t i = 0; i < msg->cell_voltage.size; i++) {
@@ -371,8 +381,8 @@ void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg) {
 
 void publishBattery() {
   static battery_data_t battery_data;
-  if (xQueueReceive(rtos::queues::BatteryQueue, &battery_data,
-                    (TickType_t)0) == pdPASS) {
+  if (xQueueReceive(rtos::BatteryQueue, &battery_data, (TickType_t)0) ==
+      pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
       battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
       battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
@@ -386,10 +396,18 @@ void publishBattery() {
   }
 }
 
+void publishButtons() {
+  static uint8_t buttons;
+  if (xQueueReceive(rtos::ButtonsQueue, &buttons, (TickType_t)0) == pdPASS) {
+    buttons_msg.data = buttons;
+
+    RCCHECK_WARN(rcl_publish(&buttons_pub, &buttons_msg, NULL));
+  }
+}
+
 void publishImu() {
   static imu_data_t imu_data;
-  if (xQueueReceive(rtos::queues::ImuQueue, &imu_data, (TickType_t)0) ==
-      pdPASS) {
+  if (xQueueReceive(rtos::ImuQueue, &imu_data, (TickType_t)0) == pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
       imu_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
       imu_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
@@ -416,8 +434,7 @@ void publishRanges() {
   return;
 
   static motor_joint_state_t ranges_data;
-  if (xQueueReceive(rtos::queues::RangeQueue, &ranges_data, (TickType_t)0) ==
-      pdPASS) {
+  if (xQueueReceive(rtos::RangeQueue, &ranges_data, (TickType_t)0) == pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
       range_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
       range_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
@@ -440,8 +457,8 @@ void publishWheelsJointState() {
   return;
 
   static motor_joint_state_t motor_joint_state;
-  if (xQueueReceive(rtos::queues::MotorStateQueue, &motor_joint_state,
-                    (TickType_t)0) == pdPASS) {
+  if (xQueueReceive(rtos::MotorStateQueue, &motor_joint_state, (TickType_t)0) ==
+      pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
       motors_joint_state_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
       motors_joint_state_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
@@ -478,13 +495,14 @@ void loop() {
 
       rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
 
-      SetRedLed(Off);
+      SetGreenLed(On);
       vTaskDelay(pdMS_TO_TICKS(1));
       break;
 
     case DISCONNECTED:
       destroyEntities();
-      SetRedLed(On);
+      SetGreenLed(Off);
+      SetGreenLed2(Off);
       state = WAITING;
       break;
   }

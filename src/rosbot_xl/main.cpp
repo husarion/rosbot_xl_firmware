@@ -31,7 +31,7 @@
 #include <hal_conf_custom.h>
 
 #include "log.hpp"
-#include "rtos/queues.hpp"
+#include "rtos.hpp"
 #include "uart.hpp"
 
 /* VARIABLES */
@@ -86,7 +86,7 @@ void setup() {
   SetGreenLed(Off);
 
   /* RTOS QUEUES CREATION */
-  SetpointQueue = xQueueCreate(1, sizeof(double) * 4);
+  SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
@@ -140,7 +140,7 @@ static void ImuTask(void* p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     queue_imu = imuDriver.loopHandler();
-    xQueueOverwrite(rtos::queues::ImuQueue, (void*)&queue_imu);
+    xQueueOverwrite(rtos::ImuQueue, (void*)&queue_imu);
     vTaskDelayUntil(&xLastWakeTime, FREQ_TO_TIME(IMU_SAMPLE_FREQ));
   }
 }
@@ -149,13 +149,12 @@ static void PidHandlerTask(void* p) {
   TickType_t x_last_wake_time = xTaskGetTickCount();
   TickType_t actual_setpoint_update_time = xTaskGetTickCount();
   TickType_t last_setpoint_update_time = xTaskGetTickCount();
-  double setpoint[] = {0, 0, 0, 0};
+  float setpoint[] = {0, 0, 0, 0};
   static motor_joint_state_t motor_state;
   static uint8_t freq_div_ptr = 0;
   while (1) {
     vTaskDelayUntil(&x_last_wake_time, FREQ_TO_TIME(PID_FREQ));
-    if (xQueueReceive(rtos::queues::SetpointQueue, (void*)setpoint,
-                      (TickType_t)0)) {
+    if (xQueueReceive(rtos::SetpointQueue, (void*)setpoint, (TickType_t)0)) {
       last_setpoint_update_time = xTaskGetTickCount();
     }
     actual_setpoint_update_time = xTaskGetTickCount();
@@ -173,7 +172,7 @@ static void PidHandlerTask(void* p) {
         motor_state.position[i] =
             ((double)(wheel_motors[i].GetWheelAbsPosition()) / 1000);
       }
-      xQueueOverwrite(rtos::queues::MotorStateQueue, (void*)&motor_state);
+      xQueueOverwrite(rtos::MotorStateQueue, (void*)&motor_state);
       freq_div_ptr = 0;
     }
     freq_div_ptr++;

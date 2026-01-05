@@ -21,8 +21,7 @@
 #include "hardware_cfg.hpp"
 #include "u_ros.hpp"
 /*===== RTOS =====*/
-#include "rtos/queues.hpp"
-#include "rtos/tasks.hpp"
+#include "rtos.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
@@ -35,8 +34,8 @@ void setup() {
   u_ros::transportInit();
 
   // RTOS init
-  rtos::queues::createAll();
-  rtos::tasks::createAll();
+  rtos::createQueues();
+  rtos::createTasks();
 
   vTaskStartScheduler();
 }

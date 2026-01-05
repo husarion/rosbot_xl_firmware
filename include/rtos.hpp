@@ -20,7 +20,16 @@
 #define FREQ_TO_TIME(freq) \
   (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
 #define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
-namespace rtos::tasks {
+
+namespace rtos {
+
+extern QueueHandle_t BatteryQueue;
+extern QueueHandle_t ButtonsQueue;
+extern QueueHandle_t ImuQueue;
+extern QueueHandle_t MotorStateQueue;
+extern QueueHandle_t RangeQueue;
+extern QueueHandle_t SetpointQueue;
+extern QueueHandle_t uRosAgentConectionQueue;
 
 namespace BatteryTask {
 extern TaskHandle_t handle;
@@ -28,6 +37,13 @@ void create();
 void destroy();
 void task(void* pvParameters);
 }  // namespace BatteryTask
+
+namespace ButtonsTask {
+extern TaskHandle_t handle;
+void create();
+void destroy();
+void task(void* pvParameters);
+}  // namespace ButtonsTask
 
 namespace ImuTask {
 extern TaskHandle_t handle;
@@ -57,6 +73,7 @@ void destroy();
 void task(void* pvParameters);
 }  // namespace uRosTask
 
-void createAll();
+void createQueues();
+void createTasks();
 
-}  // namespace rtos::tasks
+}  // namespace rtos

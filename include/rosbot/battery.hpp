@@ -22,8 +22,7 @@ typedef struct {
   float current;
 } battery_data_t;
 
-namespace battery
-{
+namespace battery {
 
 battery_data_t loop();
 battery_data_t readBattery();

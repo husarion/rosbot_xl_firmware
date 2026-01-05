@@ -17,7 +17,7 @@
 #include <STM32FreeRTOS.h>
 #include <math.h>
 
-#include "rtos/queues.hpp"
+#include "rtos.hpp"
 
 extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;
@@ -177,7 +177,7 @@ void UartProtocolClass::ExecuteFrame() {
       battery_state.present = (bool)this->processed_frame.args[17];
       battery_state.cell_temperature[0] = NAN;
       battery_state.cell_voltage[0] = NAN;
-      xQueueOverwrite(rtos::queues::BatteryQueue, (void*)&battery_state);
+      xQueueOverwrite(rtos::BatteryQueue, (void*)&battery_state);
     } break;
     default:
       break;

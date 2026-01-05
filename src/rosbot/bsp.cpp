@@ -34,6 +34,8 @@ void BoardGpioInit(void) {
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(GRN_LED2, LOW);
   pinMode(GRN_LED2, OUTPUT);
+  pinMode(PUSH_BUTTON1, INPUT_PULLUP);
+  pinMode(PUSH_BUTTON2, INPUT_PULLUP);
 }
 
 void SetGreenLed(SwitchStateTypeDef State_) {
