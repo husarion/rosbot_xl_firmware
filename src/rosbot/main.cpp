@@ -14,14 +14,12 @@
 
 #include <Arduino.h>
 
-/*===== HARDEWARE =====*/
 #include "battery.hpp"
 #include "bsp.hpp"
 #include "hardware/imu.hpp"
 #include "hardware_cfg.hpp"
-#include "u_ros.hpp"
-/*===== RTOS =====*/
 #include "rtos.hpp"
+#include "u_ros.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
@@ -31,9 +29,9 @@ FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
-  u_ros::transportInit();
 
   // RTOS init
+  u_ros::transportInit();
   rtos::createQueues();
   rtos::createTasks();
 

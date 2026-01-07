@@ -17,9 +17,8 @@
 /* OTHERS */
 #define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
 
-// POWER OFF
-#define SBC_ETH_CONNECT_TIMEOUT 10  // ms
-#define POWEROFF_DELAY 5000         // ms
+/* POWER OFF */
+#define POWEROFF_DELAY 5000  // ms
 
 /* REAR PANEL */
 #define RD_LED PE2
@@ -28,16 +27,6 @@
 #define BUTTONS_COUNT 2
 #define PUSH_BUTTON1 PG12
 #define PUSH_BUTTON2 PG13
-#define BUTTON_SAMPLE_FREQ 5
-
-/* THERMISTOR NTC*/
-#define NTC_SENS_PIN PB1  // ADC2 IN9
-#define NTC_SENS_C1 0.001112613927
-#define NTC_SENS_C2 0.000237277392
-#define NTC_SENS_C3 0.000000071670
-#define NTC_PULLUP_RES 5230  // NTC pull up resisior
-#define NTC_OFFSET_VAL \
-  (273.15 + 3)  // Kelvin to Celsius offset + calibration offset
 
 /* SBC */
 #define SBC_SERIAL Serial1
@@ -60,9 +49,8 @@
 
 /* IMU */
 #define IMU_POWER_ON PG4
-#define IMU_SDA PC9         // I2C3
-#define IMU_SCL PA8         // I2C3
-#define IMU_SAMPLE_FREQ 50  // Hz
+#define IMU_I2C_SDA PC9
+#define IMU_I2C_SCL PA8
 #define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
@@ -113,16 +101,13 @@
 #define M4B_IN PE6
 #define M4_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
 
-/* ETHERNET */
-// #define CLIENT_IP "192.168.77.3"
-// #define SBC_AGENT_IP "192.168.77.2"  // SBC
-// // #define SBC_AGENT_IP 	"192.168.77.5"	//External device
-// #define AGENT_PORT 8888
-// #define SHUTDOWN_PORT 3000
-
-/* ETH LINK STATUS DEFINES */
-// #define ETH_LINK_STATUS_CONNECTED_BIT (1 << 0)  // if set - connected
-// #define ETH_LINK_STATUS_ERROR_BIT (1 << 1)
+/* Range Sensors */
+#define RANGE_FR_SHD_PIN PB1
+#define RANGE_FL_SHD_PIN PD8
+#define RANGE_RR_SHD_PIN PD9
+#define RANGE_RL_SHD_PIN PD10
+#define RANGE_I2C_SDA PB9
+#define RANGE_I2C_SCL PB8
 
 /* EXTERNAL PERIPHERALS */
 
@@ -169,11 +154,9 @@
 #define WATCHDOG_TIMEOUT 20000000  // microseconds
 
 /* BATTERY */
-
 #define BATTERY_ADC_PIN PA5
 #define BATTERY_CELLS_SERIES 3
 #define BATTERY_CELLS_PARALLEL 3
-#define BATTERY_SAMPLE_FREQ 10
 #define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE 1  // in unmeasured
 #define BATTERY_STATE_MSG_CELL_VOLTAGE_ARRAY_SIZE 1      // in unmeasured
 // #define BATTERY_STATE_MSG_CELL_TEMPERATURE_ARRAY_SIZE

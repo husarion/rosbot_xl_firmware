@@ -18,11 +18,17 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+#include "bsp.hpp"
+
+
+#if defined(ROSBOT)
+#define IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
+#elif defined(ROSBOT_XL)
+#define IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P1
+#endif
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
-extern TwoWire I2cBus;
-
-ImuDriver imuDriver(BNO055_ID, BNO055_ADDRESS_B, &I2cBus);
+ImuDriver imuDriver(BNO055_ID, BNO055_ADDRESS_B, &imu_i2c);
 
 ImuDriver::ImuDriver(uint8_t ImuId, uint8_t ImuAddr, TwoWire* ImuWire) {
   this->imuBno = new Adafruit_BNO055(ImuId, ImuAddr, ImuWire);
@@ -35,7 +41,7 @@ bool ImuDriver::init() {
     return false;
   }
 
-  imuBno->setAxisRemap(ROBOT_IMU_AXIS_CONFIG);
+  imuBno->setAxisRemap(IMU_AXIS_CONFIG);
   imuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
   imuBno->setExtCrystalUse(true);
 

@@ -22,8 +22,10 @@
 #include "uart.hpp"
 
 typedef enum { Off = 0, On = 1, Toggle = 2 } SwitchStateTypeDef;
-
 typedef enum { Idle = 0, Shutdown = 1 } PowerOffSignalTypeDef;
+
+extern TwoWire imu_i2c;
+extern TwoWire range_i2c;
 
 void BoardGpioInit(void);
 void SetLocalPower(SwitchStateTypeDef State_);

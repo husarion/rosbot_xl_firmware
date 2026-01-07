@@ -169,7 +169,7 @@ void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
     publishBattery();
     publishButtons();
     // publishImu();
-    // publishRanges();
+    publishRanges();
     // publishWheelsJointState();
     // UBaseType_t stack_free = uxTaskGetStackHighWaterMark(nullptr);
     // LOG_INFO("Free stack size: %lu", stack_free);
@@ -212,6 +212,7 @@ bool createEntities(void) {
   buttons_msg.data = 0;
   initMotorsJointStateMsg(&motors_joint_state_msg);
   initMotorsCmdMsg(&motors_cmd_msg);
+  initRangeMsg(&range_msg);
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
 
@@ -285,6 +286,7 @@ bool createEntities(void) {
       &get_cpu_id_service_response, uRosGetIdCallback));
 
   RCCHECK_RETURN(rmw_uros_sync_session(1000));
+  delay(50);
   LOG_INFO("uROS communication started");
 
   return true;
@@ -379,6 +381,14 @@ void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg) {
   msg->data.data = (float*)data;
 }
 
+void initRangeMsg(sensor_msgs__msg__Range* msg) {
+  msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
+  msg->field_of_view = 0.26;
+  msg->min_range = 0.01;
+  msg->max_range = 0.9;
+  msg->range = NAN;
+}
+
 void publishBattery() {
   static battery_data_t battery_data;
   if (xQueueReceive(rtos::BatteryQueue, &battery_data, (TickType_t)0) ==
@@ -430,23 +440,17 @@ void publishImu() {
 }
 
 void publishRanges() {
-  RCCHECK_WARN(rcl_publish(&range_pub, &range_msg, NULL));
-  return;
 
-  static motor_joint_state_t ranges_data;
+  static ranges_data_t ranges_data;
   if (xQueueReceive(rtos::RangeQueue, &ranges_data, (TickType_t)0) == pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
       range_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
       range_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
     }
 
-    range_msg.radiation_type = sensor_msgs__msg__Range__INFRARED;
-    range_msg.field_of_view = 0.26;
-    range_msg.min_range = 0.01;
-    range_msg.max_range = 0.90;
-    for (uint8_t i = 0; i < ranges_data.size; i++) {
+    for (uint8_t i = 0; i < RANGES_COUNT; i++) {
       range_msg.header.frame_id.data = (char*)range_frame_names[i];
-      range_msg.range = ranges_data.position[i];
+      range_msg.range = ranges_data.range[i];
       RCCHECK_WARN(rcl_publish(&range_pub, &range_msg, NULL));
     }
   }

@@ -23,6 +23,12 @@
 #include "ranges.hpp"
 #include "u_ros.hpp"
 
+#define BATTERY_TASK_FREQ 10
+#define BUTTON_TASK_FREQ 5
+#define IMU_TASK_FREQ 50
+#define RUNTIME_STATS_TASK_FREQ 1
+
+
 namespace rtos {
 
 QueueHandle_t BatteryQueue;
@@ -37,7 +43,7 @@ void createQueues() {
   ButtonsQueue = xQueueCreate(1, sizeof(uint8_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
-  RangeQueue = xQueueCreate(1, sizeof(ranges_queue_t));
+  RangeQueue = xQueueCreate(1, sizeof(ranges_data_t));
   SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
 }
 
@@ -70,7 +76,7 @@ void task(void* pvParameters) {
   while (1) {
     battery_data = battery::loop();
     xQueueOverwrite(rtos::BatteryQueue, &battery_data);
-    vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(BATTERY_SAMPLE_FREQ));
+    vTaskDelayUntil(&wake_time, TASK_FREQ(BATTERY_TASK_FREQ));
   }
 }
 
@@ -109,8 +115,8 @@ void task(void* pvParameters) {
     if (buttons != last_state) {
       last_state = buttons;
       xQueueOverwrite(rtos::ButtonsQueue, &buttons);
-      vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(BUTTON_SAMPLE_FREQ));
     }
+    vTaskDelayUntil(&wake_time, TASK_FREQ(BUTTON_TASK_FREQ));
   }
 }
 
@@ -147,7 +153,7 @@ void task(void* pvParameters) {
   while (1) {
     imu_data = imuDriver.loopHandler();
     xQueueOverwrite(rtos::ImuQueue, &imu_data);
-    vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(IMU_SAMPLE_FREQ));
+    vTaskDelayUntil(&wake_time, TASK_FREQ(IMU_TASK_FREQ));
   }
 }
 
@@ -185,7 +191,7 @@ void task(void* pvParameters) {
   uint8_t freq_div_ptr = 0;
 
   while (1) {
-    vTaskDelayUntil(&wake_time, FREQ_TO_TICKS(PID_FREQ));
+    vTaskDelayUntil(&wake_time, TASK_FREQ(PID_FREQ));
     if (xQueueReceive(rtos::SetpointQueue, &setpoint, 0)) {
       last_update_time = xTaskGetTickCount();
     }
@@ -213,6 +219,47 @@ void task(void* pvParameters) {
 }
 
 }  // namespace PidTask
+
+// ================= RANGE TASK ======================
+namespace RangeTask {
+
+TaskHandle_t handle = nullptr;
+
+void create() {
+  auto result = xTaskCreate(task, "RangeTask", configMINIMAL_STACK_SIZE + 700,
+                            nullptr, 1, &handle);
+  if (result != pdPASS) {
+    LOG_ERROR("Range task creation failed!");
+  } else {
+    LOG_INFO("Range task started");
+  }
+}
+
+void destroy() {
+  if (handle != nullptr) {
+    vTaskDelete(handle);
+    handle = nullptr;
+    LOG_INFO("Range task stopped");
+  }
+}
+
+void task(void* pvParameters) {
+  UNUSED(pvParameters);
+  TickType_t wake_time = xTaskGetTickCount();
+  ranges_data_t ranges_data;
+
+  while (1) {
+    rangeSensorsManager.readAll();
+    for (size_t i = 0; i < rangeSensorsManager.count(); i++) {
+        VL53L0XSensor& s = rangeSensorsManager.getSensor(i);
+        ranges_data.range[i] = s.timeout ? NAN : s.lastRange / 1000.0;
+    }
+
+    xQueueOverwrite(rtos::RangeQueue, &ranges_data);
+    vTaskDelayUntil(&wake_time, TASK_FREQ(10));
+  }
+}
+}  // namespace RangeTask
 
 // ================= RUNTIME STATS TASK ======================
 namespace RuntimeStatsTask {
@@ -245,10 +292,10 @@ void task(void* pvParameters) {
   while (1) {
     if (firmware_log_level <= LOG_LEVEL_INFO) {
       vTaskGetRunTimeStats(buf);
-      LOG_INFO("\r\n-------------\r\n%s", buf);
+      LOG_INFO("\r\n%s", buf);
     }
 
-    vTaskDelay(1000);
+    vTaskDelay(TASK_FREQ(RUNTIME_STATS_TASK_FREQ));
   }
 }
 
@@ -293,6 +340,7 @@ void createTasks() {
   ButtonsTask::create();
   ImuTask::create();
   // PidTask::create();
+  RangeTask::create();
   RuntimeStatsTask::create();
   uRosTask::create();
 }

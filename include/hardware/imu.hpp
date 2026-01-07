@@ -18,12 +18,6 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-#if defined(ROSBOT)
-#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
-#elif defined(ROSBOT_XL)
-#define ROBOT_IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P1
-#endif
-
 typedef struct {
   float orientation[4];       // quaternion: x y z w
   float angular_velocity[3];  // rad/s

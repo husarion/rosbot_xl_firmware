@@ -23,7 +23,8 @@ UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX,
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
-TwoWire I2cBus(IMU_SDA, IMU_SCL);
+TwoWire imu_i2c(IMU_SDA, IMU_SCL);
+TwoWire range_i2c(RANGE_SDA, RANGE_SCL);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
 
 void BoardGpioInit(void) {

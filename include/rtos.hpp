@@ -19,7 +19,7 @@
 #define RTOS_FREQUENCY 1000  // hz
 #define FREQ_TO_TIME(freq) \
   (TickType_t)(RTOS_FREQUENCY / freq * portTICK_PERIOD_MS)
-#define FREQ_TO_TICKS(freq) (TickType_t)(configTICK_RATE_HZ / freq)
+#define TASK_FREQ(freq) (TickType_t)(configTICK_RATE_HZ / freq)
 
 namespace rtos {
 
@@ -58,6 +58,13 @@ void create();
 void destroy();
 void task(void* pvParameters);
 }  // namespace PidTask
+
+namespace RangeTask {
+extern TaskHandle_t handle;
+void create();
+void destroy();
+void task(void* pvParameters);
+}  // namespace RangeTask
 
 namespace RuntimeStatsTask {
 extern TaskHandle_t handle;

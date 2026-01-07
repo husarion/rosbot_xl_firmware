@@ -14,32 +14,45 @@
 
 #pragma once
 
+#include <Wire.h>
+#include <VL53L0X.h>
 #include <Arduino.h>
-#include <sensor_msgs/msg/range.h>
-
-#include <MultiDistanceSensor.hpp>
-
-// Optional: if using Arduino ROS 2 client, include sensor_msgs/Range header
-// #include <sensor_msgs/msg/range.h>
+#include <vector>
 
 enum Ranges {
-  range_right_front,
-  range_left_front,
-  range_right_rear,
-  range_left_rear,
-  RANGES_COUNT
+  RF, FL, RR, RL, RANGES_COUNT
 };
-
-static const char* range_frame_names[RANGES_COUNT] = {"fr_range", "fl_range",
-                                                      "rr_range", "rl_range"};
+static const char *range_frame_names[] = {"fr_range", "fl_range", "rr_range", "rl_range"};
 
 typedef struct {
-  float range[4];
-} ranges_queue_t;
+  float range[RANGES_COUNT];
+} ranges_data_t;
 
-static sensor_msgs__msg__Range range_msgs[RANGES_COUNT];
+struct VL53L0XSensor {
+    VL53L0X sensor;
+    uint8_t xshutPin;
+    uint8_t address;
+    uint16_t lastRange;
+    bool timeout;
+};
 
-void init_ranges();
-void fill_range_msg(sensor_msgs__msg__Range* msg, uint8_t id);
-void fill_range_msg_with_measurements(sensor_msgs__msg__Range* msg,
-                                      float range);
+class VL53L0XManager {
+public:
+    VL53L0XManager(TwoWire* bus);
+
+    void addSensor(uint8_t xshutPin, uint8_t address = 0);
+    bool begin();
+    void readAll();
+
+    size_t count() const;
+    VL53L0XSensor& getSensor(size_t index);
+
+    // NOWA FUNKCJA – zwraca wskaźnik do tablicy ostatnich pomiarów
+    uint16_t* getAllRanges();
+
+private:
+    TwoWire* _bus;
+    std::vector<VL53L0XSensor> _sensors;
+};
+
+extern VL53L0XManager rangeSensorsManager;

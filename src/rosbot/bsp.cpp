@@ -15,6 +15,7 @@
 #include "bsp.hpp"
 
 #include "hardware/imu.hpp"
+#include "ranges.hpp"
 #include "log.hpp"
 
 #if EXT_SERIAL_EN_FLAG == 1
@@ -25,17 +26,25 @@ HardwareSerial SBC_SERIAL(SBC_SERIAL_TX, SBC_SERIAL_RX);
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
-TwoWire I2cBus(IMU_SDA, IMU_SCL);
+TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
+TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
+uint8_t ranges_shd_pins[RANGES_COUNT] = {
+    RANGE_FR_SHD_PIN,
+    RANGE_FL_SHD_PIN,
+    RANGE_RR_SHD_PIN,
+    RANGE_RL_SHD_PIN
+};
 
 void BoardGpioInit(void) {
-  digitalWrite(RD_LED, LOW);
   pinMode(RD_LED, OUTPUT);
-  digitalWrite(GRN_LED, LOW);
   pinMode(GRN_LED, OUTPUT);
-  digitalWrite(GRN_LED2, LOW);
   pinMode(GRN_LED2, OUTPUT);
   pinMode(PUSH_BUTTON1, INPUT_PULLUP);
   pinMode(PUSH_BUTTON2, INPUT_PULLUP);
+
+  digitalWrite(RD_LED, LOW);
+  digitalWrite(GRN_LED, LOW);
+  digitalWrite(GRN_LED2, LOW);
 }
 
 void SetGreenLed(SwitchStateTypeDef State_) {
@@ -72,12 +81,22 @@ void BoardPheripheralsInit(void) {
   FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
   FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
 
-  I2cBusInit();
+  imu_i2c.begin();
+  imu_i2c.setClock(200000);
+  range_i2c.begin();
+  range_i2c.setClock(200000);
   delay(250);
 
   if (!imuDriver.init()) {
     LOG_ERROR("imuDriver.Init() failed!");
   }
+  for(uint8_t i=0; i<RANGES_COUNT; i++) {
+    rangeSensorsManager.addSensor(ranges_shd_pins[i]);
+  }
+  if (!rangeSensorsManager.begin()) {
+    LOG_ERROR("Failed to init sensors!");
+  }
+  LOG_INFO("Range sensors initialized");
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) { return Idle; }
@@ -87,15 +106,3 @@ String GetBoardVersion(void) {
   return BoardVersion;
 }
 
-void I2cBusInit(void) { I2cBus.begin(); }
-
-int8_t GetInsideTemperature(void) {
-  float InsideTemp, logR2, SensorResistance, AdcValue;
-  AdcValue = (float)analogRead(NTC_SENS_PIN);
-  SensorResistance = (AdcValue * NTC_PULLUP_RES) / (1023 - AdcValue);
-  logR2 = log(SensorResistance);
-  InsideTemp = (1.0 / (NTC_SENS_C1 + NTC_SENS_C2 * logR2 +
-                       NTC_SENS_C3 * logR2 * logR2 * logR2)) -
-               NTC_OFFSET_VAL;
-  return (int8_t)InsideTemp;
-}
