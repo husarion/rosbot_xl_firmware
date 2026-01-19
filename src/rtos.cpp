@@ -22,12 +22,12 @@
 #include "motors.hpp"
 #include "ranges.hpp"
 #include "u_ros.hpp"
+#include "wheels.hpp"
 
 #define BATTERY_TASK_FREQ 10
 #define BUTTON_TASK_FREQ 5
 #define IMU_TASK_FREQ 50
 #define RUNTIME_STATS_TASK_FREQ 1
-
 
 namespace rtos {
 
@@ -52,7 +52,7 @@ namespace BatteryTask {
 TaskHandle_t handle = nullptr;
 void create() {
   auto result = xTaskCreate(task, "BatteryTask", configMINIMAL_STACK_SIZE + 500,
-                            nullptr, 1, &handle);
+                            nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("Battery task creation failed!");
   } else {
@@ -87,7 +87,7 @@ namespace ButtonsTask {
 TaskHandle_t handle = nullptr;
 void create() {
   auto result = xTaskCreate(task, "ButtonsTask", configMINIMAL_STACK_SIZE + 200,
-                            nullptr, 1, &handle);
+                            nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("Button task creation failed!");
   } else {
@@ -129,7 +129,7 @@ TaskHandle_t handle = nullptr;
 
 void create() {
   auto result = xTaskCreate(task, "ImuTask", configMINIMAL_STACK_SIZE + 750,
-                            nullptr, 1, &handle);
+                            nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("IMU task creation failed!");
   } else {
@@ -159,67 +159,6 @@ void task(void* pvParameters) {
 
 }  // namespace ImuTask
 
-// ================= PID TASK ======================
-namespace PidTask {
-
-TaskHandle_t handle = nullptr;
-
-void create() {
-  auto result = xTaskCreate(task, "PidTask", configMINIMAL_STACK_SIZE + 1000,
-                            nullptr, 3, &handle);
-  if (result != pdPASS) {
-    LOG_ERROR("PID task creation failed!");
-  } else {
-    LOG_INFO("PID task started");
-  }
-}
-
-void destroy() {
-  if (handle != nullptr) {
-    vTaskDelete(handle);
-    handle = nullptr;
-    LOG_INFO("PID task stopped");
-  }
-}
-
-void task(void* pvParameters) {
-  UNUSED(pvParameters);
-  TickType_t wake_time = xTaskGetTickCount();
-  TickType_t last_update_time = xTaskGetTickCount();
-  float setpoint[4] = {0, 0, 0, 0};
-  motor_joint_state_t motor_state;
-  uint8_t freq_div_ptr = 0;
-
-  while (1) {
-    vTaskDelayUntil(&wake_time, TASK_FREQ(PID_FREQ));
-    if (xQueueReceive(rtos::SetpointQueue, &setpoint, 0)) {
-      last_update_time = xTaskGetTickCount();
-    }
-
-    // timeout check
-    if (xTaskGetTickCount() - last_update_time > MOTORS_SETPOINT_TIMEOUT) {
-      for (int i = 0; i < 4; i++) setpoint[i] = 0;
-    }
-
-    for (int i = 0; i < 4; i++) {
-      wheel_motors[i].PidLoopHandler((float)setpoint[i]);
-    }
-
-    if (freq_div_ptr > (PID_FREQ / MOTORS_RESPONSE_FREQ)) {
-      for (int i = 0; i < 4; i++) {
-        motor_state.velocity[i] = wheel_motors[i].GetVelocity() / 1000.0;
-        motor_state.position[i] =
-            wheel_motors[i].GetWheelAbsPosition() / 1000.0;
-      }
-      xQueueOverwrite(rtos::MotorStateQueue, &motor_state);
-      freq_div_ptr = 0;
-    }
-    freq_div_ptr++;
-  }
-}
-
-}  // namespace PidTask
-
 // ================= RANGE TASK ======================
 namespace RangeTask {
 
@@ -227,7 +166,7 @@ TaskHandle_t handle = nullptr;
 
 void create() {
   auto result = xTaskCreate(task, "RangeTask", configMINIMAL_STACK_SIZE + 700,
-                            nullptr, 1, &handle);
+                            nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("Range task creation failed!");
   } else {
@@ -251,8 +190,8 @@ void task(void* pvParameters) {
   while (1) {
     rangeSensorsManager.readAll();
     for (size_t i = 0; i < rangeSensorsManager.count(); i++) {
-        VL53L0XSensor& s = rangeSensorsManager.getSensor(i);
-        ranges_data.range[i] = s.timeout ? NAN : s.lastRange / 1000.0;
+      VL53L0XSensor& s = rangeSensorsManager.getSensor(i);
+      ranges_data.range[i] = s.timeout ? NAN : s.lastRange / 1000.0;
     }
 
     xQueueOverwrite(rtos::RangeQueue, &ranges_data);
@@ -269,7 +208,7 @@ TaskHandle_t handle = nullptr;
 void create() {
   auto result =
       xTaskCreate(task, "RuntimeStatsTask", configMINIMAL_STACK_SIZE + 500,
-                  nullptr, 1, &handle);
+                  nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("RuntimeStatsTask creation failed!");
   } else {
@@ -308,7 +247,7 @@ TaskHandle_t handle = nullptr;
 
 void create() {
   auto result = xTaskCreate(task, "uRosTask", configMINIMAL_STACK_SIZE + 2500,
-                            nullptr, 2, &handle);
+                            nullptr, PRIORITY, &handle);
   if (result != pdPASS) {
     LOG_ERROR("uRosTask creation failed!");
   } else {
@@ -336,12 +275,11 @@ void task(void* pvParameters) {
 }  // namespace uRosTask
 
 void createTasks() {
-  BatteryTask::create();
-  ButtonsTask::create();
-  ImuTask::create();
-  // PidTask::create();
-  RangeTask::create();
-  RuntimeStatsTask::create();
+  // BatteryTask::create();
+  // ButtonsTask::create();
+  // ImuTask::create();
+  // RangeTask::create();
+  // RuntimeStatsTask::create();
   uRosTask::create();
 }
 

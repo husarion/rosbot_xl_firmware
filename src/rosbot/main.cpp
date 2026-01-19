@@ -20,6 +20,7 @@
 #include "hardware_cfg.hpp"
 #include "rtos.hpp"
 #include "u_ros.hpp"
+#include "wheels.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
@@ -29,6 +30,9 @@ FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
+
+  Wheels.init();
+  Wheels.enable();
 
   // RTOS init
   u_ros::transportInit();

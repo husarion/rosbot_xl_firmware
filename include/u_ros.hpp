@@ -37,7 +37,7 @@ namespace u_ros {
 
 /* DEFINES */
 #define uROS_PING_TIMEOUT_MS 50
-#define uROS_PING_ATTEMPTS 2
+#define uROS_PING_ATTEMPTS 10
 #define uROS_PING_FREQUENCY 5.0
 #define uROS_SPIN_DELAY_MS 1
 // Motors msgs defines
@@ -82,18 +82,54 @@ typedef enum {
   DISCONNECTED
 } u_ros_state_t;
 
+// ============================================================================
+// TRANSPORT CONFIGURATION STRUCTURE
+// ============================================================================
+struct TransportConfig {
+    HardwareSerial* serial;
+    uint8_t rx_pin;
+    uint8_t tx_pin;
+    uint32_t baudrate;
+    uint32_t timeout_ms;
+};
+
+// ============================================================================
+// PREDEFINED CONFIGURATIONS
+// ============================================================================
+namespace TransportConfigs {
+
+// SBC Communication (Raspberry Pi / Jetson)
+inline constexpr TransportConfig SBC = {
+    .serial = &Serial1,
+    .rx_pin = PA10,
+    .tx_pin = PA9,
+    .baudrate = 921600,
+    .timeout_ms = 10
+};
+
+// FTDI Interface
+inline constexpr TransportConfig FTDI = {
+    .serial = &Serial3,
+    .rx_pin = PA3,
+    .tx_pin = PA2,
+    .baudrate = 921600,
+    .timeout_ms = 10
+};
+
+}  // namespace TransportConfigs
+
 /* EXTERN */
 extern "C" int clock_gettime(clockid_t unused, struct timespec* tp);
 
 /* FUNCTIONS */
 void errorLoop(const char* func);
-void transportInit(void);
-bool pingAgent(void);
+void transportInit();
+bool pingAgent();
 void loop();
-bool createEntities(void);
-void destroyEntities(void);
+bool createEntities();
+void destroyEntities();
 
-void motorsCmdCallback(const void* input_message);
+void motorsCmdCallback(const void* msg_in);
 void timerCallback(rcl_timer_t* timer, int64_t last_call_time);
 
 void initBatteryMsg(sensor_msgs__msg__BatteryState* msg);

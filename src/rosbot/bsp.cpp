@@ -15,8 +15,8 @@
 #include "bsp.hpp"
 
 #include "hardware/imu.hpp"
-#include "ranges.hpp"
 #include "log.hpp"
+#include "ranges.hpp"
 
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
@@ -28,12 +28,8 @@ String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
 TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
 TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
-uint8_t ranges_shd_pins[RANGES_COUNT] = {
-    RANGE_FR_SHD_PIN,
-    RANGE_FL_SHD_PIN,
-    RANGE_RR_SHD_PIN,
-    RANGE_RL_SHD_PIN
-};
+uint8_t ranges_shd_pins[RANGES_COUNT] = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
+                                         RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
 void BoardGpioInit(void) {
   pinMode(RD_LED, OUTPUT);
@@ -76,10 +72,10 @@ void BoardPheripheralsInit(void) {
   digitalWrite(IMU_POWER_ON, HIGH);
 
   // FTDI UART-USB init
-  FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
-  FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
-  FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
-  FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
+  // FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
+  // FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
+  // FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
+  // FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
 
   imu_i2c.begin();
   imu_i2c.setClock(200000);
@@ -90,7 +86,7 @@ void BoardPheripheralsInit(void) {
   if (!imuDriver.init()) {
     LOG_ERROR("imuDriver.Init() failed!");
   }
-  for(uint8_t i=0; i<RANGES_COUNT; i++) {
+  for (uint8_t i = 0; i < RANGES_COUNT; i++) {
     rangeSensorsManager.addSensor(ranges_shd_pins[i]);
   }
   if (!rangeSensorsManager.begin()) {
@@ -105,4 +101,3 @@ String GetBoardVersion(void) {
   static String BoardVersion = (String) "core2";
   return BoardVersion;
 }
-

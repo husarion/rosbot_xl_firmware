@@ -36,6 +36,7 @@ extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 2;
 }  // namespace BatteryTask
 
 namespace ButtonsTask {
@@ -43,6 +44,7 @@ extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 3;
 }  // namespace ButtonsTask
 
 namespace ImuTask {
@@ -50,20 +52,15 @@ extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 2;
 }  // namespace ImuTask
-
-namespace PidTask {
-extern TaskHandle_t handle;
-void create();
-void destroy();
-void task(void* pvParameters);
-}  // namespace PidTask
 
 namespace RangeTask {
 extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 2;
 }  // namespace RangeTask
 
 namespace RuntimeStatsTask {
@@ -71,6 +68,7 @@ extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 1;
 }  // namespace RuntimeStatsTask
 
 namespace uRosTask {
@@ -78,6 +76,7 @@ extern TaskHandle_t handle;
 void create();
 void destroy();
 void task(void* pvParameters);
+constexpr UBaseType_t PRIORITY = 4;
 }  // namespace uRosTask
 
 void createQueues();

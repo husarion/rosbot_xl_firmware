@@ -101,6 +101,40 @@
 #define M4B_IN PE6
 #define M4_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
 
+// #define MOT12_SLEEP PC13
+// #define MOT12_FAULT PE0
+// #define MOT1_PWM PF6
+// #define MOT1A_IN PG10
+// #define MOT1B_IN PG11
+// #define MOT1A_ENC PA0
+// #define MOT1A_ENC_ALT0 PA0_ALT0
+// #define MOT1A_ENC_ALT1 PA0_ALT1
+// #define MOT1B_ENC PA1
+// #define MOT2_PWM PF7
+// #define MOT2A_IN PD3
+// #define MOT2B_IN PD4
+// #define MOT2A_ENC PC6
+// #define MOT2A_ENC_ALT0 PC6_ALT0
+// #define MOT2B_ENC PC7
+// #define MOT2B_ENC_ALT0 PC7_ALT0
+// #define MOT34_SLEEP PC14
+// #define MOT34_FAULT PE1
+// #define MOT3_PWM PF8
+// #define MOT3A_IN PC15
+// #define MOT3B_IN PF2
+// #define MOT3A_ENC PB4
+// #define MOT3A_ENC_ALT0 PB4_ALT0
+// #define MOT3A_ENC_ALT1 PB4_ALT1
+// #define MOT3B_ENC PA7
+// #define MOT3B_ENC_ALT0 PA7_ALT0
+// #define MOT3B_ENC_ALT1 PA7_ALT1
+// #define MOT3B_ENC_ALT2 PA7_ALT2
+// #define MOT4_PWM PF9
+// #define MOT4A_IN PE5
+// #define MOT4B_IN PE6
+// #define MOT4A_ENC PB6
+// #define MOT4B_ENC PB7
+
 /* Range Sensors */
 #define RANGE_FR_SHD_PIN PB1
 #define RANGE_FL_SHD_PIN PD8

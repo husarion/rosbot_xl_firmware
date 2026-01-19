@@ -20,7 +20,6 @@
 
 #include "bsp.hpp"
 
-
 #if defined(ROSBOT)
 #define IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
 #elif defined(ROSBOT_XL)

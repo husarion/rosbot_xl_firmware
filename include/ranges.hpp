@@ -14,45 +14,45 @@
 
 #pragma once
 
-#include <Wire.h>
-#include <VL53L0X.h>
 #include <Arduino.h>
+#include <VL53L0X.h>
+#include <Wire.h>
+
 #include <vector>
 
-enum Ranges {
-  RF, FL, RR, RL, RANGES_COUNT
-};
-static const char *range_frame_names[] = {"fr_range", "fl_range", "rr_range", "rl_range"};
+enum Ranges { RF, FL, RR, RL, RANGES_COUNT };
+static const char* range_frame_names[] = {"fr_range", "fl_range", "rr_range",
+                                          "rl_range"};
 
 typedef struct {
   float range[RANGES_COUNT];
 } ranges_data_t;
 
 struct VL53L0XSensor {
-    VL53L0X sensor;
-    uint8_t xshutPin;
-    uint8_t address;
-    uint16_t lastRange;
-    bool timeout;
+  VL53L0X sensor;
+  uint8_t xshutPin;
+  uint8_t address;
+  uint16_t lastRange;
+  bool timeout;
 };
 
 class VL53L0XManager {
-public:
-    VL53L0XManager(TwoWire* bus);
+ public:
+  VL53L0XManager(TwoWire* bus);
 
-    void addSensor(uint8_t xshutPin, uint8_t address = 0);
-    bool begin();
-    void readAll();
+  void addSensor(uint8_t xshutPin, uint8_t address = 0);
+  bool begin();
+  void readAll();
 
-    size_t count() const;
-    VL53L0XSensor& getSensor(size_t index);
+  size_t count() const;
+  VL53L0XSensor& getSensor(size_t index);
 
-    // NOWA FUNKCJA – zwraca wskaźnik do tablicy ostatnich pomiarów
-    uint16_t* getAllRanges();
+  // NOWA FUNKCJA – zwraca wskaźnik do tablicy ostatnich pomiarów
+  uint16_t* getAllRanges();
 
-private:
-    TwoWire* _bus;
-    std::vector<VL53L0XSensor> _sensors;
+ private:
+  TwoWire* _bus;
+  std::vector<VL53L0XSensor> _sensors;
 };
 
 extern VL53L0XManager rangeSensorsManager;
