@@ -4,8 +4,9 @@
 static TIM_HandleTypeDef htim_encoders[4];
 static uint8_t encoder_count = 0;
 
-void Encoder::init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir) {
+void Encoder::init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir, float rad_per_tick) {
     timer_handle_ = &htim_encoders[encoder_count++];
+    rad_per_tick_ = rad_per_tick;
 
     // Enable timer clock
     if (timer == TIM1) __HAL_RCC_TIM1_CLK_ENABLE();
@@ -86,7 +87,7 @@ void Encoder::update() {
         if (delta > CNT_HALF) delta -= (CNT_MAX + 1);
         else if (delta < -CNT_HALF) delta += (CNT_MAX + 1);
         
-        float delta_position = static_cast<float>(delta) * RobotParams::RAD_PER_TICK;
+        float delta_position = static_cast<float>(delta) * rad_per_tick_;
         position_ += delta_position;
         velocity_ = (delta_position * 1000000.0f) / static_cast<float>(dt);
         // velocity_ = lowPass(last_velocity_, velocity_, 0.5f);

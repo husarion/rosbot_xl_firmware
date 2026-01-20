@@ -7,7 +7,7 @@
 
 #include <Arduino.h>
 
-#include "motor_config.hpp"
+#include "config_types.hpp"
 #include "motor_driver.hpp"
 
 // micro-ROS includes

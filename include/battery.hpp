@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "hardware_cfg.hpp"
+#include "robot_config.hpp"
 
 /* CHOOSE HARDWARE CONFIG */
 #if defined(ROSBOT_XL)

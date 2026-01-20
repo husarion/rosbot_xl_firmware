@@ -2,8 +2,7 @@
 #pragma once
 
 #include <Arduino.h>
-
-#include "motor_config.hpp"
+#include "config_types.hpp"
 
 // ============================================================================
 // HARDWARE ENCODER CLASS - Using STM32 Timer Encoder Mode
@@ -19,7 +18,7 @@ public:
      * @param timer Timer instance (TIM1, TIM2, TIM3, TIM4, TIM5, TIM8)
      * @param dir Direction inversion
      */
-    void init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir);
+    void init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir, float rad_per_tick);
 
     /**
      * @brief Reset encoder counter to zero
@@ -59,6 +58,7 @@ public:
 private:
     TIM_HandleTypeDef* timer_handle_ = nullptr;
     TIM_Encoder_InitTypeDef encoder_config_;
+    float rad_per_tick_ = 0.0f;
 
     uint32_t last_cnt_ = 0;
     uint32_t last_time_us_ = 0;

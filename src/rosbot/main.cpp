@@ -16,8 +16,9 @@
 
 #include "battery.hpp"
 #include "bsp.hpp"
+#include "encoder.hpp"
 #include "hardware/imu.hpp"
-#include "hardware_cfg.hpp"
+#include "robot_config.hpp"
 #include "rtos.hpp"
 #include "u_ros.hpp"
 #include "wheels.hpp"

@@ -21,7 +21,7 @@
 #include <SPI.h>
 #include <STM32FreeRTOS.h>
 
-#include "hardware_cfg.hpp"
+#include "robot_config.hpp"
 
 /* VARIABLES */
 

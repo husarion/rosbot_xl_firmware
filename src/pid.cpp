@@ -3,9 +3,14 @@
 // ============================================================================
 
 #include "pid.hpp"
+#include <Arduino.h>
 
 PIDController::PIDController(float kp, float ki, float kd)
     : kp_(kp), ki_(ki), kd_(kd) {}
+
+void PIDController::setMaxAccel(float max_accel) {
+    max_accel_ = max_accel;
+}
 
 void PIDController::setGains(float kp, float ki, float kd) {
     kp_ = kp;

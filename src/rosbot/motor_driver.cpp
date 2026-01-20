@@ -8,8 +8,12 @@
 #include <HardwareTimer.h>
 #include <semphr.h>
 
+#include "robot_config.hpp"
+
 // Global instance
 MotorDriver& Motors = MotorDriver::getInstance();
+
+using namespace motors;
 
 // ============================================================================
 // SINGLE MOTOR IMPLEMENTATION - Hi-Z Control
@@ -37,7 +41,7 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);                     
 
   // Initialize encoder
-  encoder_.init(enc_a_pin, enc_b_pin, enc_timer, dir);
+  encoder_.init(enc_a_pin, enc_b_pin, enc_timer, dir, RobotParams::RAD_PER_TICK);
 
   // Initialize PID
   pid_.setLimits(-1.0f, 1.0f);
@@ -169,55 +173,60 @@ void MotorDriver::init() {
   configASSERT(mutex_ != nullptr);
 
   // Setup driver control pins
-  pinMode(MotorPins::MOT12_SLEEP, OUTPUT);
-  pinMode(MotorPins::MOT34_SLEEP, OUTPUT);
-  pinMode(MotorPins::MOT12_FAULT, INPUT_PULLUP);
-  pinMode(MotorPins::MOT34_FAULT, INPUT_PULLUP);
+  pinMode(RIGHT_WHEELS_SLEEP, OUTPUT);
+  pinMode(LEFT_WHEELS_SLEEP, OUTPUT);
+  pinMode(RIGHT_WHEELS_FAULT, INPUT_PULLUP);
+  pinMode(LEFT_WHEELS_FAULT, INPUT_PULLUP);
 
   // Initially disable drivers
   disableDrivers();
 
   // Initialize each motor with polarity from config
-  motors_[0].init(MotorPins::MOT1_PWM, MotorPins::MOT1A_IN, MotorPins::MOT1B_IN,
-                  MotorPins::MOT1A_ENC, MotorPins::MOT1B_ENC,
-                  MotorUtils::getEncoderTimer(MotorID::FRONT_RIGHT),
-                  MotorUtils::getDirection(MotorID::FRONT_RIGHT));
+  MotorID m;
+  m = MotorID::FR;
+  motors_[0].init(getPwmPin(m), getInAPin(m), getInBPin(m),
+                  getEncAPin(m), getEncBPin(m),
+                  getEncoderTimer(m),
+                  getDirection(m));
 
-  motors_[1].init(MotorPins::MOT2_PWM, MotorPins::MOT2A_IN, MotorPins::MOT2B_IN,
-                  MotorPins::MOT2A_ENC, MotorPins::MOT2B_ENC,
-                  MotorUtils::getEncoderTimer(MotorID::REAR_RIGHT),
-                  MotorUtils::getDirection(MotorID::REAR_RIGHT));
+  m = MotorID::RR;
+  motors_[1].init(getPwmPin(m), getInAPin(m), getInBPin(m),
+                  getEncAPin(m), getEncBPin(m),
+                  getEncoderTimer(m),
+                  getDirection(m));
 
-  motors_[2].init(MotorPins::MOT3_PWM, MotorPins::MOT3A_IN, MotorPins::MOT3B_IN,
-                  MotorPins::MOT3A_ENC, MotorPins::MOT3B_ENC,
-                  MotorUtils::getEncoderTimer(MotorID::REAR_LEFT),
-                  MotorUtils::getDirection(MotorID::REAR_LEFT));
+  m = MotorID::RL;
+  motors_[2].init(getPwmPin(m), getInAPin(m), getInBPin(m),
+                  getEncAPin(m), getEncBPin(m),
+                  getEncoderTimer(m),
+                  getDirection(m));
 
-  motors_[3].init(MotorPins::MOT4_PWM, MotorPins::MOT4A_IN, MotorPins::MOT4B_IN,
-                  MotorPins::MOT4A_ENC, MotorPins::MOT4B_ENC,
-                  MotorUtils::getEncoderTimer(MotorID::FRONT_LEFT),
-                  MotorUtils::getDirection(MotorID::FRONT_LEFT));
+  m = MotorID::FL;
+  motors_[3].init(getPwmPin(m), getInAPin(m), getInBPin(m),
+                  getEncAPin(m), getEncBPin(m),
+                  getEncoderTimer(m),
+                  getDirection(m));
 
   last_update_time_ = millis();
 }
 
 void MotorDriver::enableDrivers() {
-  digitalWrite(MotorPins::MOT12_SLEEP, HIGH);
-  digitalWrite(MotorPins::MOT34_SLEEP, HIGH);
+  digitalWrite(RIGHT_WHEELS_SLEEP, HIGH);
+  digitalWrite(LEFT_WHEELS_SLEEP, HIGH);
   drivers_enabled_.store(true, std::memory_order_relaxed);
   delayMicroseconds(100);  // DRV8848 wake-up time
 }
 
 void MotorDriver::disableDrivers() {
-  digitalWrite(MotorPins::MOT12_SLEEP, LOW);
-  digitalWrite(MotorPins::MOT34_SLEEP, LOW);
+  digitalWrite(RIGHT_WHEELS_SLEEP, LOW);
+  digitalWrite(LEFT_WHEELS_SLEEP, LOW);
   drivers_enabled_.store(false, std::memory_order_relaxed);
 }
 
 bool MotorDriver::checkFaults() {
   // FAULT pins are active LOW
-  const bool fault1 = !digitalRead(MotorPins::MOT12_FAULT);
-  const bool fault2 = !digitalRead(MotorPins::MOT34_FAULT);
+  const bool fault1 = !digitalRead(RIGHT_WHEELS_FAULT);
+  const bool fault2 = !digitalRead(LEFT_WHEELS_FAULT);
   return fault1 || fault2;
 }
 

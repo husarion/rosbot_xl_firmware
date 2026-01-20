@@ -18,6 +18,7 @@
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "rtos.hpp"
+#include "config_types.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <builtin_interfaces/msg/time.h>
@@ -363,10 +364,10 @@ void initMotorsJointStateMsg(sensor_msgs__msg__JointState* arg_message) {
   arg_message->header.frame_id.capacity = arg_message->header.frame_id.size =
       strlen((const char*)frame_id);
   msg_name_tab->capacity = msg_name_tab->size = MOT_RESP_MSG_LEN;
-  msg_name_tab[0].data = const_cast<char*>(REAR_RIGHT_MOTOR_NAME);
-  msg_name_tab[1].data = const_cast<char*>(REAR_LEFT_MOTOR_NAME);
-  msg_name_tab[2].data = const_cast<char*>(FRONT_RIGHT_MOTOR_NAME);
-  msg_name_tab[3].data = const_cast<char*>(FRONT_LEFT_MOTOR_NAME);
+  msg_name_tab[0].data = motors::getJointName(MotorID::RR);
+  msg_name_tab[1].data = motors::getJointName(MotorID::RL);
+  msg_name_tab[2].data = motors::getJointName(MotorID::FR);
+  msg_name_tab[3].data = motors::getJointName(MotorID::FL);
   for (uint8_t i = 0; i < MOT_RESP_MSG_LEN; i++) {
     msg_name_tab[i].capacity = msg_name_tab[i].size =
         strlen(msg_name_tab[i].data);

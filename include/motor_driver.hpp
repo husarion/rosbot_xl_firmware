@@ -12,7 +12,6 @@
 
 #include "STM32FreeRTOS.h"
 #include "encoder.hpp"
-#include "motor_config.hpp"
 #include "pid.hpp"
 
 // Forward declarations

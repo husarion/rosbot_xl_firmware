@@ -56,33 +56,33 @@ void WheelsController::fillJointStateMsg(sensor_msgs__msg__JointState* msg) {
 
     // Fill position data (order: FL, FR, RL, RR)
     msg->position.data[0] =
-        cached_state_.position[static_cast<uint8_t>(MotorID::FRONT_LEFT)];
+        cached_state_.position[static_cast<uint8_t>(MotorID::FL)];
     msg->position.data[1] =
-        cached_state_.position[static_cast<uint8_t>(MotorID::FRONT_RIGHT)];
+        cached_state_.position[static_cast<uint8_t>(MotorID::FR)];
     msg->position.data[2] =
-        cached_state_.position[static_cast<uint8_t>(MotorID::REAR_LEFT)];
+        cached_state_.position[static_cast<uint8_t>(MotorID::RL)];
     msg->position.data[3] =
-        cached_state_.position[static_cast<uint8_t>(MotorID::REAR_RIGHT)];
+        cached_state_.position[static_cast<uint8_t>(MotorID::RR)];
 
     // Fill velocity data
     msg->velocity.data[0] =
-        cached_state_.velocity[static_cast<uint8_t>(MotorID::FRONT_LEFT)];
+        cached_state_.velocity[static_cast<uint8_t>(MotorID::FL)];
     msg->velocity.data[1] =
-        cached_state_.velocity[static_cast<uint8_t>(MotorID::FRONT_RIGHT)];
+        cached_state_.velocity[static_cast<uint8_t>(MotorID::FR)];
     msg->velocity.data[2] =
-        cached_state_.velocity[static_cast<uint8_t>(MotorID::REAR_LEFT)];
+        cached_state_.velocity[static_cast<uint8_t>(MotorID::RL)];
     msg->velocity.data[3] =
-        cached_state_.velocity[static_cast<uint8_t>(MotorID::REAR_RIGHT)];
+        cached_state_.velocity[static_cast<uint8_t>(MotorID::RR)];
 
     // Fill effort data
     // msg->effort.data[0] =
-    // cached_state_.effort[static_cast<uint8_t>(MotorID::FRONT_LEFT)];
+    // cached_state_.effort[static_cast<uint8_t>(MotorID::FL)];
     // msg->effort.data[1] =
-    // cached_state_.effort[static_cast<uint8_t>(MotorID::FRONT_RIGHT)];
+    // cached_state_.effort[static_cast<uint8_t>(MotorID::FR)];
     // msg->effort.data[2] =
-    // cached_state_.effort[static_cast<uint8_t>(MotorID::REAR_LEFT)];
+    // cached_state_.effort[static_cast<uint8_t>(MotorID::RL)];
     // msg->effort.data[3] =
-    // cached_state_.effort[static_cast<uint8_t>(MotorID::REAR_RIGHT)];
+    // cached_state_.effort[static_cast<uint8_t>(MotorID::RR)];
 
     xSemaphoreGive(state_mutex_);
   }

@@ -28,7 +28,7 @@
 #include <std_msgs/msg/float32_multi_array.h>
 
 /*===== REST =====*/
-#include "hardware_cfg.hpp"
+#include "robot_config.hpp"
 #include "log.hpp"
 
 namespace u_ros {
@@ -43,10 +43,6 @@ namespace u_ros {
 // Motors msgs defines
 #define MOT_CMD_MSG_LEN 4
 #define MOT_RESP_MSG_LEN 4
-#define FRONT_LEFT_MOTOR_NAME "fl_wheel_joint"
-#define FRONT_RIGHT_MOTOR_NAME "fr_wheel_joint"
-#define REAR_LEFT_MOTOR_NAME "rl_wheel_joint"
-#define REAR_RIGHT_MOTOR_NAME "rr_wheel_joint"
 #define MOTORS_RESPONSE_FREQ 50
 // uRos topics
 #define NODE_NAME "rosbot_hw"

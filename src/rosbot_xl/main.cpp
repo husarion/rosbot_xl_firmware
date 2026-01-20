@@ -18,7 +18,7 @@
 #include "u_ros.hpp"
 /*===== HARDEWARE =====*/
 #include "bsp.hpp"
-#include "hardware_cfg.hpp"
+#include "robot_config.hpp"
 // MOTORS
 #include "motors.hpp"
 // IMU

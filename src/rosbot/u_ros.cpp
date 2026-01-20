@@ -152,10 +152,10 @@ void motorsCmdCallback(const void* msg_in) {
       
       // Map ROS message order to motor order
       // ROS order: [FL, FR, RL, RR] -> Motor order: [FR, RR, RL, FL]
-      velocities[static_cast<uint8_t>(MotorID::FRONT_RIGHT)] = msg->data.data[1];
-      velocities[static_cast<uint8_t>(MotorID::REAR_RIGHT)]  = msg->data.data[3];
-      velocities[static_cast<uint8_t>(MotorID::REAR_LEFT)]   = msg->data.data[2];
-      velocities[static_cast<uint8_t>(MotorID::FRONT_LEFT)]  = msg->data.data[0];
+      velocities[static_cast<uint8_t>(MotorID::FR)] = msg->data.data[1];
+      velocities[static_cast<uint8_t>(MotorID::RR)] = msg->data.data[3];
+      velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
+      velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
       
       Wheels.handleCommand(velocities);
   }
@@ -371,10 +371,10 @@ void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg) {
       4 * sizeof(rosidl_runtime_c__String), allocator.state);
   
   // Set joint names
-  msg->name.data[0] = micro_ros_string_utilities_init(MotorUtils::getJointName(MotorID::FRONT_LEFT));
-  msg->name.data[1] = micro_ros_string_utilities_init(MotorUtils::getJointName(MotorID::FRONT_RIGHT));
-  msg->name.data[2] = micro_ros_string_utilities_init(MotorUtils::getJointName(MotorID::REAR_LEFT));
-  msg->name.data[3] = micro_ros_string_utilities_init(MotorUtils::getJointName(MotorID::REAR_RIGHT));
+  msg->name.data[0] = micro_ros_string_utilities_init(motors::getJointName(MotorID::FL));
+  msg->name.data[1] = micro_ros_string_utilities_init(motors::getJointName(MotorID::FR));
+  msg->name.data[2] = micro_ros_string_utilities_init(motors::getJointName(MotorID::RL));
+  msg->name.data[3] = micro_ros_string_utilities_init(motors::getJointName(MotorID::RR));
   
   // Allocate position array
   msg->position.capacity = 4;
