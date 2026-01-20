@@ -1,6 +1,16 @@
-// ============================================================================
-// MOTOR DRIVER IMPLEMENTATION - Hi-Z Control Scheme for DRV8848
-// ============================================================================
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "motor_driver.hpp"
 
@@ -37,11 +47,13 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_channel_ = STM_PIN_CHANNEL(pinmap_function(pwm_pin_name, PinMap_PWM));
 
   pwm_timer_ = new HardwareTimer(timer_instance);
-  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, ControlParams::MOTOR_PWM_FREQ, 0);
-  pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);                     
+  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, ControlParams::MOTOR_PWM_FREQ,
+                     0);
+  pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);
 
   // Initialize encoder
-  encoder_.init(enc_a_pin, enc_b_pin, enc_timer, dir, RobotParams::RAD_PER_TICK);
+  encoder_.init(enc_a_pin, enc_b_pin, enc_timer, dir,
+                RobotParams::RAD_PER_TICK);
 
   // Initialize PID
   pid_.setLimits(-1.0f, 1.0f);
@@ -184,28 +196,20 @@ void MotorDriver::init() {
   // Initialize each motor with polarity from config
   MotorID m;
   m = MotorID::FR;
-  motors_[0].init(getPwmPin(m), getInAPin(m), getInBPin(m),
-                  getEncAPin(m), getEncBPin(m),
-                  getEncoderTimer(m),
-                  getDirection(m));
+  motors_[0].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
+                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
 
   m = MotorID::RR;
-  motors_[1].init(getPwmPin(m), getInAPin(m), getInBPin(m),
-                  getEncAPin(m), getEncBPin(m),
-                  getEncoderTimer(m),
-                  getDirection(m));
+  motors_[1].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
+                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
 
   m = MotorID::RL;
-  motors_[2].init(getPwmPin(m), getInAPin(m), getInBPin(m),
-                  getEncAPin(m), getEncBPin(m),
-                  getEncoderTimer(m),
-                  getDirection(m));
+  motors_[2].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
+                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
 
   m = MotorID::FL;
-  motors_[3].init(getPwmPin(m), getInAPin(m), getInBPin(m),
-                  getEncAPin(m), getEncBPin(m),
-                  getEncoderTimer(m),
-                  getDirection(m));
+  motors_[3].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
+                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
 
   last_update_time_ = millis();
 }
@@ -323,4 +327,3 @@ bool MotorDriver::isWatchdogExpired() const {
   const uint32_t last = last_command_time_.load(std::memory_order_relaxed);
   return (now - last) > WATCHDOG_TIMEOUT_MS;
 }
-

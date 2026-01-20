@@ -28,8 +28,8 @@
 #include <std_msgs/msg/float32_multi_array.h>
 
 /*===== REST =====*/
-#include "robot_config.hpp"
 #include "log.hpp"
+#include "robot_config.hpp"
 
 namespace u_ros {
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
@@ -82,11 +82,11 @@ typedef enum {
 // TRANSPORT CONFIGURATION STRUCTURE
 // ============================================================================
 struct TransportConfig {
-    HardwareSerial* serial;
-    uint8_t rx_pin;
-    uint8_t tx_pin;
-    uint32_t baudrate;
-    uint32_t timeout_ms;
+  HardwareSerial* serial;
+  uint8_t rx_pin;
+  uint8_t tx_pin;
+  uint32_t baudrate;
+  uint32_t timeout_ms;
 };
 
 // ============================================================================
@@ -95,22 +95,18 @@ struct TransportConfig {
 namespace TransportConfigs {
 
 // SBC Communication (Raspberry Pi / Jetson)
-inline constexpr TransportConfig SBC = {
-    .serial = &Serial1,
-    .rx_pin = PA10,
-    .tx_pin = PA9,
-    .baudrate = 921600,
-    .timeout_ms = 10
-};
+inline constexpr TransportConfig SBC = {.serial = &Serial1,
+                                        .rx_pin = PA10,
+                                        .tx_pin = PA9,
+                                        .baudrate = 921600,
+                                        .timeout_ms = 10};
 
 // FTDI Interface
-inline constexpr TransportConfig FTDI = {
-    .serial = &Serial3,
-    .rx_pin = PA3,
-    .tx_pin = PA2,
-    .baudrate = 921600,
-    .timeout_ms = 10
-};
+inline constexpr TransportConfig FTDI = {.serial = &Serial3,
+                                         .rx_pin = PA3,
+                                         .tx_pin = PA2,
+                                         .baudrate = 921600,
+                                         .timeout_ms = 10};
 
 }  // namespace TransportConfigs
 

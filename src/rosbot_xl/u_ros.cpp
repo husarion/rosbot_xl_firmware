@@ -15,10 +15,10 @@
 #include "u_ros.hpp"
 
 #include "battery.hpp"
+#include "config_types.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "rtos.hpp"
-#include "config_types.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <builtin_interfaces/msg/time.h>

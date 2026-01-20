@@ -17,8 +17,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "robot_config.hpp"
 #include "motors.hpp"
+#include "robot_config.hpp"
 #include "uart.hpp"
 
 typedef enum { Off = 0, On = 1, Toggle = 2 } SwitchStateTypeDef;

@@ -20,13 +20,11 @@ typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 #if defined(ROSBOT_XL)
 #include "rosbot_xl/hardware_cfg.hpp"
 #elif defined(ROSBOT)
-#include "rosbot/hardware_cfg.hpp"
 #include "rosbot/config.hpp"
+#include "rosbot/hardware_cfg.hpp"
 #else
 #error "No board version defined! Did you set correct flag in platformio.ini?"
 #endif
 
-static_assert(
-  motors::CONFIG.size() == static_cast<size_t>(MotorID::COUNT),
-  "Motor config does not match MotorID count"
-);
+static_assert(motors::CONFIG.size() == static_cast<size_t>(MotorID::COUNT),
+              "Motor config does not match MotorID count");

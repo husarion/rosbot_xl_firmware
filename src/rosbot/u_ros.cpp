@@ -143,21 +143,21 @@ bool pingAgent(void) {
 }
 
 void motorsCmdCallback(const void* msg_in) {
-  const std_msgs__msg__Float32MultiArray* msg = 
-    static_cast<const std_msgs__msg__Float32MultiArray*>(msg_in);
+  const std_msgs__msg__Float32MultiArray* msg =
+      static_cast<const std_msgs__msg__Float32MultiArray*>(msg_in);
   if (msg == nullptr) return;
-    
+
   if (msg->data.size >= 4) {
-      float velocities[4];
-      
-      // Map ROS message order to motor order
-      // ROS order: [FL, FR, RL, RR] -> Motor order: [FR, RR, RL, FL]
-      velocities[static_cast<uint8_t>(MotorID::FR)] = msg->data.data[1];
-      velocities[static_cast<uint8_t>(MotorID::RR)] = msg->data.data[3];
-      velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
-      velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
-      
-      Wheels.handleCommand(velocities);
+    float velocities[4];
+
+    // Map ROS message order to motor order
+    // ROS order: [FL, FR, RL, RR] -> Motor order: [FR, RR, RL, FL]
+    velocities[static_cast<uint8_t>(MotorID::FR)] = msg->data.data[1];
+    velocities[static_cast<uint8_t>(MotorID::RR)] = msg->data.data[3];
+    velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
+    velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
+
+    Wheels.handleCommand(velocities);
   }
 }
 
@@ -219,7 +219,8 @@ bool createEntities(void) {
   // RCCHECK_RETURN(rcl_init_options_init(&init_options, allocator));
   // RCCHECK_RETURN(rcl_init_options_set_domain_id(
   //     &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
-  // RCCHECK_RETURN(rclc_support_init_with_options(&support, 0, NULL, &init_options,
+  // RCCHECK_RETURN(rclc_support_init_with_options(&support, 0, NULL,
+  // &init_options,
   //                                        &allocator));
   RCCHECK_RETURN(rclc_support_init(&support, 0, NULL, &allocator));
   RCCHECK_RETURN(rclc_node_init_default(&node, NODE_NAME, "", &support));
@@ -232,7 +233,6 @@ bool createEntities(void) {
   initRangeMsg(&range_msg);
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
-
 
   /*===== TIMERS =====*/
   RCCHECK_RETURN(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10),
@@ -357,40 +357,47 @@ void initBatteryMsg(sensor_msgs__msg__BatteryState* msg) {
 
 void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg) {
   if (msg == nullptr) return;
-  
+
   // Initialize message
   sensor_msgs__msg__JointState__init(msg);
-  
+
   // Allocate frame_id
   msg->header.frame_id = micro_ros_string_utilities_init("base_link");
-  
+
   // Allocate name array
   msg->name.capacity = 4;
   msg->name.size = 4;
   msg->name.data = (rosidl_runtime_c__String*)allocator.allocate(
       4 * sizeof(rosidl_runtime_c__String), allocator.state);
-  
+
   // Set joint names
-  msg->name.data[0] = micro_ros_string_utilities_init(motors::getJointName(MotorID::FL));
-  msg->name.data[1] = micro_ros_string_utilities_init(motors::getJointName(MotorID::FR));
-  msg->name.data[2] = micro_ros_string_utilities_init(motors::getJointName(MotorID::RL));
-  msg->name.data[3] = micro_ros_string_utilities_init(motors::getJointName(MotorID::RR));
-  
+  msg->name.data[0] =
+      micro_ros_string_utilities_init(motors::getJointName(MotorID::FL));
+  msg->name.data[1] =
+      micro_ros_string_utilities_init(motors::getJointName(MotorID::FR));
+  msg->name.data[2] =
+      micro_ros_string_utilities_init(motors::getJointName(MotorID::RL));
+  msg->name.data[3] =
+      micro_ros_string_utilities_init(motors::getJointName(MotorID::RR));
+
   // Allocate position array
   msg->position.capacity = 4;
   msg->position.size = 4;
-  msg->position.data = (double*)allocator.allocate(4 * sizeof(double), allocator.state);
-  
+  msg->position.data =
+      (double*)allocator.allocate(4 * sizeof(double), allocator.state);
+
   // Allocate velocity array
   msg->velocity.capacity = 4;
   msg->velocity.size = 4;
-  msg->velocity.data = (double*)allocator.allocate(4 * sizeof(double), allocator.state);
-  
+  msg->velocity.data =
+      (double*)allocator.allocate(4 * sizeof(double), allocator.state);
+
   // Allocate effort array
   // msg->effort.capacity = 4;
   // msg->effort.size = 4;
-  // msg->effort.data = (double*)allocator.allocate(4 * sizeof(double), allocator.state);
-  
+  // msg->effort.data = (double*)allocator.allocate(4 * sizeof(double),
+  // allocator.state);
+
   // Zero initialize
   memset(msg->position.data, 0, 4 * sizeof(double));
   memset(msg->velocity.data, 0, 4 * sizeof(double));
@@ -463,7 +470,6 @@ void publishImu() {
 }
 
 void publishRanges() {
-
   static ranges_data_t ranges_data;
   if (xQueueReceive(rtos::RangeQueue, &ranges_data, (TickType_t)0) == pdPASS) {
     if (rmw_uros_epoch_synchronized()) {
