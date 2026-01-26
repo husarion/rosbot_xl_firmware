@@ -134,6 +134,6 @@ void publishBattery();
 void publishButtons();
 void publishImu();
 void publishRanges();
-void publishWheelsJointState();
+void publishJointState();
 
 }  // namespace u_ros

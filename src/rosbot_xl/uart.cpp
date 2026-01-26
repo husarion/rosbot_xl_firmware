@@ -17,7 +17,7 @@
 #include <STM32FreeRTOS.h>
 #include <math.h>
 
-#include "rtos.hpp"
+#include "tasks.hpp"
 
 extern String PowerBoardFirmwareVersion;
 extern String PowerBoardVersion;

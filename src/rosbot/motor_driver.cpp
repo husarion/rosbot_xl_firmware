@@ -30,8 +30,7 @@ using namespace motors;
 // ============================================================================
 
 void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
-                       uint8_t enc_a_pin, uint8_t enc_b_pin,
-                       TIM_TypeDef* enc_timer, Direction dir) {
+                        Direction dir, Encoder& enc) {
   pwm_pin_ = pwm_pin;
   in_a_pin_ = in_a_pin;
   in_b_pin_ = in_b_pin;
@@ -52,8 +51,7 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);
 
   // Initialize encoder
-  encoder_.init(enc_a_pin, enc_b_pin, enc_timer, dir,
-                RobotParams::RAD_PER_TICK);
+  encoder_ = &enc;
 
   // Initialize PID
   pid_.setLimits(-1.0f, 1.0f);
@@ -156,7 +154,6 @@ void SingleMotor::brake() {
 }
 
 void SingleMotor::update(float dt, bool move) {
-  encoder_.update();
 
   if (!move) {
     brake();
@@ -164,7 +161,7 @@ void SingleMotor::update(float dt, bool move) {
   }
 
   const float target = target_velocity_.load(std::memory_order_relaxed);
-  const float current = encoder_.getVelocity();
+  const float current = getVelocity();
   const float output = pid_.compute(target, current, dt);
 
   applyPWM(output);
@@ -195,21 +192,23 @@ void MotorDriver::init() {
 
   // Initialize each motor with polarity from config
   MotorID m;
+  uint8_t m_idx;
+
   m = MotorID::FR;
-  motors_[0].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
-                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
+  m_idx = static_cast<uint8_t>(m);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoderManager[m]);
 
   m = MotorID::RR;
-  motors_[1].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
-                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
+  m_idx = static_cast<uint8_t>(m);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoderManager[m]);
 
   m = MotorID::RL;
-  motors_[2].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
-                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
+  m_idx = static_cast<uint8_t>(m);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoderManager[m]);
 
   m = MotorID::FL;
-  motors_[3].init(getPwmPin(m), getInAPin(m), getInBPin(m), getEncAPin(m),
-                  getEncBPin(m), getEncoderTimer(m), getDirection(m));
+  m_idx = static_cast<uint8_t>(m);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoderManager[m]);
 
   last_update_time_ = millis();
 }
@@ -238,9 +237,9 @@ SingleMotor& MotorDriver::getMotor(MotorID id) {
   return motors_[static_cast<uint8_t>(id)];
 }
 
-void MotorDriver::setVelocities(const float velocities[4]) {
+void MotorDriver::setVelocities(const float velocities[NUM_MOTORS]) {
   if (xSemaphoreTake(mutex_, pdMS_TO_TICKS(10)) == pdTRUE) {
-    for (uint8_t i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < NUM_MOTORS; i++) {
       motors_[i].setVelocity(velocities[i]);
     }
     feedWatchdog();
@@ -249,7 +248,7 @@ void MotorDriver::setVelocities(const float velocities[4]) {
 }
 
 void MotorDriver::setVelocities(float fr, float rr, float rl, float fl) {
-  const float vel[4] = {fr, rr, rl, fl};
+  const float vel[NUM_MOTORS] = {fr, rr, rl, fl};
   setVelocities(vel);
 }
 
@@ -271,36 +270,29 @@ void MotorDriver::brakeAll() {
   }
 }
 
-void MotorDriver::getPositions(float positions[4]) {
-  for (uint8_t i = 0; i < 4; i++) {
+void MotorDriver::getPositions(float positions[NUM_MOTORS]) {
+  for (uint8_t i = 0; i < NUM_MOTORS; i++) {
     positions[i] = motors_[i].getPosition();
   }
 }
 
-void MotorDriver::getVelocities(float velocities[4]) {
-  for (uint8_t i = 0; i < 4; i++) {
+void MotorDriver::getVelocities(float velocities[NUM_MOTORS]) {
+  for (uint8_t i = 0; i < NUM_MOTORS; i++) {
     velocities[i] = motors_[i].getVelocity();
   }
 }
 
-void MotorDriver::getEfforts(float efforts[4]) {
-  for (uint8_t i = 0; i < 4; i++) {
+void MotorDriver::getEfforts(float efforts[NUM_MOTORS]) {
+  for (uint8_t i = 0; i < NUM_MOTORS; i++) {
     efforts[i] = motors_[i].getEffort();
   }
 }
 
-void MotorDriver::getState(MotorState states[4]) {
-  const uint32_t now = millis();
-  for (uint8_t i = 0; i < 4; i++) {
-    states[i].position_rad = motors_[i].getPosition();
-    states[i].velocity_rad_s = motors_[i].getVelocity();
-    states[i].effort = motors_[i].getEffort();
-    states[i].target_velocity = motors_[i].getTargetVelocity();
-    states[i].last_update_ms = now;
-  }
-}
-
 void MotorDriver::update() {
+  if (!isDriversEnabled()) {
+    return;
+  }
+
   const uint32_t now = millis();
   const float dt = (now - last_update_time_) / 1000.0f;
   last_update_time_ = now;

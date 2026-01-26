@@ -18,10 +18,10 @@
 #include "bsp.hpp"
 #include "encoder.hpp"
 #include "hardware/imu.hpp"
+#include "motor_driver.hpp"
 #include "robot_config.hpp"
-#include "rtos.hpp"
+#include "rosbot/tasks.hpp"
 #include "u_ros.hpp"
-#include "wheels.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
@@ -32,8 +32,9 @@ void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
 
-  Wheels.init();
-  Wheels.enable();
+  encoderManager.init();
+  Motors.init();
+  Motors.enableDrivers();
 
   // RTOS init
   u_ros::transportInit();

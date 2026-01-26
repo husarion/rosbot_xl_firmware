@@ -35,9 +35,9 @@
 #include "bsp.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
+#include "motor_driver.hpp"
 #include "ranges.hpp"
-#include "rtos.hpp"
-#include "wheels.hpp"
+#include "rosbot/tasks.hpp"
 
 namespace u_ros {
 
@@ -57,7 +57,7 @@ sensor_msgs__msg__BatteryState battery_msg;
 std_msgs__msg__UInt8 buttons_msg;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__Range range_msg;
-sensor_msgs__msg__JointState motors_joint_state_msg;
+sensor_msgs__msg__JointState joint_state_msg;
 std_msgs__msg__Bool led_msg;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
 // SERVICES
@@ -157,7 +157,7 @@ void motorsCmdCallback(const void* msg_in) {
     velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
     velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
 
-    Wheels.handleCommand(velocities);
+    Motors.setVelocities(velocities);
   }
 }
 
@@ -178,7 +178,7 @@ void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
     // publishButtons();
     // publishImu();
     // publishRanges();
-    publishWheelsJointState();
+    publishJointState();
   }
 }
 
@@ -228,7 +228,7 @@ bool createEntities(void) {
   /*===== MSGS =====*/
   initBatteryMsg(&battery_msg);
   buttons_msg.data = 0;
-  initMotorsJointStateMsg(&motors_joint_state_msg);
+  initMotorsJointStateMsg(&joint_state_msg);
   initMotorsCmdMsg(&motors_cmd_msg);
   initRangeMsg(&range_msg);
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
@@ -302,7 +302,7 @@ void destroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-  sensor_msgs__msg__JointState__fini(&motors_joint_state_msg);
+  sensor_msgs__msg__JointState__fini(&joint_state_msg);
 
   RCCHECK_WARN(rcl_timer_fini(&timer));
   RCCHECK_WARN(rcl_publisher_fini(&battery_pub, &node));
@@ -485,9 +485,41 @@ void publishRanges() {
   }
 }
 
-void publishWheelsJointState() {
-  Wheels.fillJointStateMsg(&motors_joint_state_msg);
-  RCCHECK_WARN(rcl_publish(&motor_state_pub, &motors_joint_state_msg, NULL));
+void publishJointState() {
+
+  Encoder &fl = encoderManager[MotorID::FL];
+  Encoder &fr = encoderManager[MotorID::FR];
+  Encoder &rl = encoderManager[MotorID::RL];
+  Encoder &rr = encoderManager[MotorID::RR];
+
+  // Set timestamp
+  int64_t time_ns = rmw_uros_epoch_nanos();
+  joint_state_msg.header.stamp.sec = time_ns / 1000000000;
+  joint_state_msg.header.stamp.nanosec = time_ns % 1000000000;
+
+  // Fill position data (order: FL, FR, RL, RR)
+  joint_state_msg.position.data[0] = fl.getPosition();
+  joint_state_msg.position.data[1] = fr.getPosition();
+  joint_state_msg.position.data[2] = rl.getPosition();
+  joint_state_msg.position.data[3] = rr.getPosition();
+
+  // Fill velocity data
+  joint_state_msg.velocity.data[0] = fl.getVelocity();
+  joint_state_msg.velocity.data[1] = fr.getVelocity();
+  joint_state_msg.velocity.data[2] = rl.getVelocity();
+  joint_state_msg.velocity.data[3] = rr.getVelocity();
+
+  // Fill effort data
+  // joint_state_msg.effort.data[0] =
+  // effort[static_cast<uint8_t>(MotorID::FL)];
+  // joint_state_msg.effort.data[1] =
+  // effort[static_cast<uint8_t>(MotorID::FR)];
+  // joint_state_msg.effort.data[2] =
+  // effort[static_cast<uint8_t>(MotorID::RL)];
+  // joint_state_msg.effort.data[3] =
+  // effort[static_cast<uint8_t>(MotorID::RR)];
+
+  RCCHECK_WARN(rcl_publish(&motor_state_pub, &joint_state_msg, NULL));
 }
 
 void loop() {

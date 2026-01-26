@@ -31,7 +31,7 @@
 #include <hal_conf_custom.h>
 
 #include "log.hpp"
-#include "rtos.hpp"
+#include "tasks.hpp"
 #include "uart.hpp"
 
 /* VARIABLES */

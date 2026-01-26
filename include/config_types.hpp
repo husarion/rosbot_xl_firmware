@@ -73,20 +73,3 @@ constexpr const char* getJointName(MotorID id) {
 
 }  // namespace motors
 
-struct MotorState {
-  float position_rad;
-  float velocity_rad_s;
-  float effort;
-  float target_velocity;
-  uint32_t last_update_ms;
-};
-
-struct WheelsCommand {
-  float velocity[4];
-};
-
-struct WheelsState {
-  float position[4];
-  float velocity[4];
-  float effort[4];
-};

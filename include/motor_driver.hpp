@@ -44,8 +44,7 @@ class SingleMotor {
   SingleMotor() = default;
 
   void init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
-            uint8_t enc_a_pin, uint8_t enc_b_pin, TIM_TypeDef* enc_timer,
-            Direction dir);
+            Direction dir, Encoder& enc);
 
   // Control methods
   void setVelocity(const float vel);
@@ -53,8 +52,8 @@ class SingleMotor {
   void brake();  // Active braking
 
   // State getters - thread-safe
-  float getPosition() const { return encoder_.getPosition(); }
-  float getVelocity() { return encoder_.getVelocity(); }
+  float getPosition() const { return encoder_->getPosition(); }
+  float getVelocity() { return encoder_->getVelocity(); }
   float getEffort() const {
     return current_effort_.load(std::memory_order_relaxed);
   }
@@ -71,9 +70,6 @@ class SingleMotor {
   // Configuration
   void resetPID() { pid_.reset(); }
 
-  // Encoder access for ISR registration
-  Encoder& getEncoder() { return encoder_; }
-
  private:
   void setMovement(MotorMovement dir);
   void applyPWM(float duty);
@@ -86,7 +82,7 @@ class SingleMotor {
   Direction dir_ = Direction::CW;
 
   // Hardware
-  Encoder encoder_;
+  Encoder* encoder_;
   PIDController pid_;
   HardwareTimer* pwm_timer_ = nullptr;
   uint32_t pwm_channel_ = 0;
@@ -105,6 +101,8 @@ class SingleMotor {
 class MotorDriver {
  public:
   static MotorDriver& getInstance();
+  static constexpr uint32_t WATCHDOG_TIMEOUT_MS = 500;
+  static constexpr uint8_t NUM_MOTORS = static_cast<uint8_t>(MotorID::COUNT);
 
   // Initialization
   void init();
@@ -118,16 +116,15 @@ class MotorDriver {
   SingleMotor& operator[](MotorID id) { return getMotor(id); }
 
   // Bulk operations (thread-safe)
-  void setVelocities(const float velocities[4]);
+  void setVelocities(const float velocities[NUM_MOTORS]);
   void setVelocities(float fr, float rr, float rl, float fl);
   void stopAll();
   void brakeAll();
 
   // State retrieval
-  void getPositions(float positions[4]);
-  void getVelocities(float velocities[4]);
-  void getEfforts(float efforts[4]);
-  void getState(MotorState states[4]);
+  void getPositions(float positions[NUM_MOTORS]);
+  void getVelocities(float velocities[NUM_MOTORS]);
+  void getEfforts(float efforts[NUM_MOTORS]);
 
   // Control loop
   void update();
@@ -143,7 +140,7 @@ class MotorDriver {
   MotorDriver(const MotorDriver&) = delete;
   MotorDriver& operator=(const MotorDriver&) = delete;
 
-  SingleMotor motors_[static_cast<uint8_t>(MotorID::COUNT)];
+  SingleMotor motors_[NUM_MOTORS];
 
   // Watchdog state
   std::atomic<uint32_t> last_command_time_{0};
@@ -154,8 +151,6 @@ class MotorDriver {
 
   // FreeRTOS synchronization
   SemaphoreHandle_t mutex_ = nullptr;
-
-  static constexpr uint32_t WATCHDOG_TIMEOUT_MS = 500;
 };
 
 // Global accessor

@@ -24,6 +24,8 @@
 class Encoder {
  public:
   Encoder() = default;
+  Encoder(const Encoder&) = delete;
+  Encoder& operator=(const Encoder&) = delete;
 
   /**
    * @brief Initialize encoder with hardware timer
@@ -31,41 +33,21 @@ class Encoder {
    * @param pin_b Channel B pin (must be TIMx_CH2)
    * @param timer Timer instance (TIM1, TIM2, TIM3, TIM4, TIM5, TIM8)
    * @param dir Direction inversion
+   * @param rad_per_tick Radians per encoder tick
    */
   void init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir,
             float rad_per_tick);
 
-  /**
-   * @brief Reset encoder counter to zero
-   */
   void reset();
-
-  /**
-   * @brief Update position and velocity calculations
-   */
   void update();
 
-  /**
-   * @brief Get raw timer ticks
-   * @return Timer ticks
-   */
   const uint32_t getTicks() const { return timer_handle_->Instance->CNT; }
-
-  /**
-   * @brief Get position in radians
-   * @return Position in radians
-   */
   float getPosition() const { return position_; }
-
-  /**
-   * @brief Get velocity in rad/s
-   * @return Velocity in rad/s
-   */
   float getVelocity() const { return velocity_; }
 
   float lowPass(float prev, float input, float alpha) {
     float filtered = alpha * input + (1.0f - alpha) * prev;
-    return filtered > MIN_VELOCITY ? filtered : 0.0f;
+    return fabs(filtered) > MIN_VELOCITY ? filtered : 0.0f;
   }
 
  private:
@@ -86,3 +68,26 @@ class Encoder {
   static constexpr uint32_t MIN_DT_US = 100;
   static constexpr float MIN_VELOCITY = 0.01f;  // rad/s
 };
+
+class EncoderManager {
+public:
+    static constexpr uint8_t NUM_MOTORS = static_cast<uint8_t>(MotorID::COUNT);
+    EncoderManager() = default;
+
+    void init();
+
+    Encoder& operator[](MotorID id) {
+        return encoders_[static_cast<uint8_t>(id)];
+    }
+
+    const Encoder& operator[](MotorID id) const {
+        return encoders_[static_cast<uint8_t>(id)];
+    }
+
+    void updateAll();
+
+private:
+    Encoder encoders_[NUM_MOTORS];
+};
+
+extern EncoderManager encoderManager;
