@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "control/motors_manager.hpp"
-#include "control/encoders_manager.hpp"
-
 #include <semphr.h>
 
+#include "control/encoders_manager.hpp"
+#include "control/motors_manager.hpp"
 #include "robot_config.hpp"
 
 // Global instance
@@ -49,19 +48,23 @@ void MotorDriver::init() {
 
   m = MotorID::FR;
   m_idx = static_cast<uint8_t>(m);
-  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoders[m]);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
+                      encoders[m]);
 
   m = MotorID::RR;
   m_idx = static_cast<uint8_t>(m);
-  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoders[m]);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
+                      encoders[m]);
 
   m = MotorID::RL;
   m_idx = static_cast<uint8_t>(m);
-  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoders[m]);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
+                      encoders[m]);
 
   m = MotorID::FL;
   m_idx = static_cast<uint8_t>(m);
-  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m), encoders[m]);
+  motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
+                      encoders[m]);
 
   last_update_time_ = millis();
 }

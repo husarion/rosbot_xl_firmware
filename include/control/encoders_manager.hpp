@@ -16,28 +16,28 @@
 
 #include <Arduino.h>
 
-#include "control/types.hpp"
 #include "control/encoder.hpp"
+#include "control/types.hpp"
 
 class EncoderManager {
-public:
-    static constexpr uint8_t NUM_ENCODERS = static_cast<uint8_t>(MotorID::COUNT);
-    EncoderManager() = default;
+ public:
+  static constexpr uint8_t NUM_ENCODERS = static_cast<uint8_t>(MotorID::COUNT);
+  EncoderManager() = default;
 
-    void init();
+  void init();
 
-    Encoder& operator[](MotorID id) {
-        return encoders_[static_cast<uint8_t>(id)];
-    }
+  Encoder& operator[](MotorID id) {
+    return encoders_[static_cast<uint8_t>(id)];
+  }
 
-    const Encoder& operator[](MotorID id) const {
-        return encoders_[static_cast<uint8_t>(id)];
-    }
+  const Encoder& operator[](MotorID id) const {
+    return encoders_[static_cast<uint8_t>(id)];
+  }
 
-    void updateAll();
+  void updateAll();
 
-private:
-    Encoder encoders_[NUM_ENCODERS];
+ private:
+  Encoder encoders_[NUM_ENCODERS];
 };
 
 extern EncoderManager encoders;

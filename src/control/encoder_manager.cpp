@@ -19,26 +19,29 @@ using namespace control;
 
 EncoderManager encoders;
 
-void EncoderManager::init() 
-{
+void EncoderManager::init() {
   MotorID m;
   uint8_t m_idx;
 
   m = MotorID::FR;
   m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
+  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m),
+                        getDirection(m), RobotParams::RAD_PER_TICK);
 
   m = MotorID::FL;
   m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
+  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m),
+                        getDirection(m), RobotParams::RAD_PER_TICK);
 
   m = MotorID::RR;
   m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
+  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m),
+                        getDirection(m), RobotParams::RAD_PER_TICK);
 
   m = MotorID::RL;
   m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
+  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m),
+                        getDirection(m), RobotParams::RAD_PER_TICK);
 }
 
 void EncoderManager::updateAll() {

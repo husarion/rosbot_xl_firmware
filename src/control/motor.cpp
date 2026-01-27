@@ -23,7 +23,7 @@
 // ============================================================================
 
 void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
-                        Direction dir, Encoder& enc) {
+                       Direction dir, Encoder& enc) {
   pwm_pin_ = pwm_pin;
   in_a_pin_ = in_a_pin;
   in_b_pin_ = in_b_pin;
@@ -147,7 +147,6 @@ void SingleMotor::brake() {
 }
 
 void SingleMotor::update(float dt, bool move) {
-
   if (!move) {
     brake();
     return;

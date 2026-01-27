@@ -33,9 +33,9 @@
 
 #include "battery.hpp"
 #include "bsp.hpp"
-#include "log.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "log.hpp"
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
 #include "tasks.hpp"
@@ -487,11 +487,10 @@ void publishRanges() {
 }
 
 void publishJointState() {
-
-  Encoder &fl = encoders[MotorID::FL];
-  Encoder &fr = encoders[MotorID::FR];
-  Encoder &rl = encoders[MotorID::RL];
-  Encoder &rr = encoders[MotorID::RR];
+  Encoder& fl = encoders[MotorID::FL];
+  Encoder& fr = encoders[MotorID::FR];
+  Encoder& rl = encoders[MotorID::RL];
+  Encoder& rr = encoders[MotorID::RR];
 
   // Set timestamp
   int64_t time_ns = rmw_uros_epoch_nanos();

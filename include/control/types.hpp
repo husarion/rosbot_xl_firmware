@@ -70,5 +70,4 @@ constexpr const char* getJointName(MotorID id) {
   return getConfig(id).joint_name;
 }
 
-}  // namespace motors
-
+}  // namespace control

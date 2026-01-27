@@ -34,8 +34,8 @@ class SingleMotor {
  public:
   SingleMotor() = default;
 
-  void init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
-            Direction dir, Encoder& enc);
+  void init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin, Direction dir,
+            Encoder& enc);
 
   // Control methods
   void setVelocity(const float vel);

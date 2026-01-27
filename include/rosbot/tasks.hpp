@@ -15,6 +15,7 @@
 #pragma once
 
 #include <STM32FreeRTOS.h>
+
 #include "log.hpp"
 
 namespace rtos {
@@ -35,11 +36,11 @@ void destroyTasks();
 // 7 - Highest (configMAX_PRIORITIES)
 // 0 - Idle (tskIDLE_PRIORITY)
 enum Priority : UBaseType_t {
-    STATS = 1,
-    COMMUNICATION = 2,
-    SENSORS = 3,
-    CONTROL = 4,
-    SAFETY = 5
+  STATS = 1,
+  COMMUNICATION = 2,
+  SENSORS = 3,
+  CONTROL = 4,
+  SAFETY = 5
 };
 
 enum Stack : uint16_t {
@@ -52,37 +53,38 @@ enum Stack : uint16_t {
 };
 
 struct TaskConfig {
-    const char* name;
-    Priority priority;
-    Stack stack;
-    float frequency;
-    void (*function)(void*);
+  const char* name;
+  Priority priority;
+  Stack stack;
+  float frequency;
+  void (*function)(void*);
 };
 
 struct TaskHandleWrapper {
-    TaskHandle_t handle = nullptr;
+  TaskHandle_t handle = nullptr;
 
-    void create(const TaskConfig& cfg) {
-        auto result = xTaskCreate(cfg.function, cfg.name, configMINIMAL_STACK_SIZE + cfg.stack,
-                                  nullptr, cfg.priority, &handle);
-        if (result != pdPASS) {
-            LOG_ERROR("%s creation failed!", cfg.name);
-        } else {
-            LOG_INFO("%s started", cfg.name);
-        }
+  void create(const TaskConfig& cfg) {
+    auto result = xTaskCreate(cfg.function, cfg.name,
+                              configMINIMAL_STACK_SIZE + cfg.stack, nullptr,
+                              cfg.priority, &handle);
+    if (result != pdPASS) {
+      LOG_ERROR("%s creation failed!", cfg.name);
+    } else {
+      LOG_INFO("%s started", cfg.name);
     }
+  }
 
-    void destroy(const char* name) {
-        if (handle != nullptr) {
-            vTaskDelete(handle);
-            handle = nullptr;
-            LOG_INFO("%s stopped", name);
-        }
+  void destroy(const char* name) {
+    if (handle != nullptr) {
+      vTaskDelete(handle);
+      handle = nullptr;
+      LOG_INFO("%s stopped", name);
     }
+  }
 };
 
 inline TickType_t frequencyToTicks(float freq) {
-    return freq == 0 ? 0 : (TickType_t)(configTICK_RATE_HZ / freq);
+  return freq == 0 ? 0 : (TickType_t)(configTICK_RATE_HZ / freq);
 }
 
 void batteryTask(void* pvParameters);

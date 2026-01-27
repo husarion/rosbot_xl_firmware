@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "control/encoder.hpp"
+
 #include "robot_config.hpp"
 
 static TIM_HandleTypeDef htim_encoders[4];
@@ -116,7 +117,8 @@ void Encoder::update() {
     float delta_position = static_cast<float>(delta) * rad_per_tick_;
     position_ += delta_position;
     velocity_ = (delta_position * 1000000.0f) / static_cast<float>(dt);
-    velocity_ = lowPass(last_velocity_, velocity_, 0.1f); // Filtration related with update freq
+    velocity_ = lowPass(last_velocity_, velocity_,
+                        0.1f);  // Filtration related with update freq
     last_velocity_ = velocity_;
 
     last_cnt_ = cnt;

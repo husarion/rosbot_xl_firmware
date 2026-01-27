@@ -18,9 +18,9 @@
 #include "bsp.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
-#include "sensors/imu.hpp"
 #include "robot_config.hpp"
 #include "rosbot/tasks.hpp"
+#include "sensors/imu.hpp"
 #include "u_ros.hpp"
 
 /* EXTERN VARIABLES */

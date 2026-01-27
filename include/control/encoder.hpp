@@ -15,8 +15,8 @@
 #pragma once
 
 #include <Arduino.h>
-#include "control/types.hpp"
 
+#include "control/types.hpp"
 
 class Encoder {
  public:
