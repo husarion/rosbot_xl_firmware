@@ -15,7 +15,7 @@
 #include "u_ros.hpp"
 
 #include "battery.hpp"
-#include "config_types.hpp"
+#include "control/types.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
 #include "tasks.hpp"

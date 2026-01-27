@@ -17,7 +17,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "motors.hpp"
 #include "robot_config.hpp"
 #include "uart.hpp"
 

@@ -28,17 +28,8 @@
 #include "encoder.hpp"
 #include "pid.hpp"
 
-// Forward declarations
-class MotorDriver;
-
-// ============================================================================
-// MOTOR DIRECTION ENUM
-// ============================================================================
 enum class MotorMovement : uint8_t { FORWARD, REVERSE, BRAKE, COAST };
 
-// ============================================================================
-// SINGLE MOTOR CONTROLLER - Hi-Z Control Scheme
-// ============================================================================
 class SingleMotor {
  public:
   SingleMotor() = default;
@@ -94,64 +85,3 @@ class SingleMotor {
   // Current direction
   MotorMovement current_movement_ = MotorMovement::COAST;
 };
-
-// ============================================================================
-// MOTOR DRIVER MANAGER - Singleton
-// ============================================================================
-class MotorDriver {
- public:
-  static MotorDriver& getInstance();
-  static constexpr uint32_t WATCHDOG_TIMEOUT_MS = 500;
-  static constexpr uint8_t NUM_MOTORS = static_cast<uint8_t>(MotorID::COUNT);
-
-  // Initialization
-  void init();
-  void enableDrivers();
-  void disableDrivers();
-  bool checkFaults();
-  bool isDriversEnabled() const { return drivers_enabled_.load(); }
-
-  // Motor access
-  SingleMotor& getMotor(MotorID id);
-  SingleMotor& operator[](MotorID id) { return getMotor(id); }
-
-  // Bulk operations (thread-safe)
-  void setVelocities(const float velocities[NUM_MOTORS]);
-  void setVelocities(float fr, float rr, float rl, float fl);
-  void stopAll();
-  void brakeAll();
-
-  // State retrieval
-  void getPositions(float positions[NUM_MOTORS]);
-  void getVelocities(float velocities[NUM_MOTORS]);
-  void getEfforts(float efforts[NUM_MOTORS]);
-
-  // Control loop
-  void update();
-
-  // Watchdog
-  void feedWatchdog();
-  bool isWatchdogExpired() const;
-  void disableWatchdog() { watchdog_enabled_.store(false); }
-  void enableWatchdog() { watchdog_enabled_.store(true); }
-
- private:
-  MotorDriver() = default;
-  MotorDriver(const MotorDriver&) = delete;
-  MotorDriver& operator=(const MotorDriver&) = delete;
-
-  SingleMotor motors_[NUM_MOTORS];
-
-  // Watchdog state
-  std::atomic<uint32_t> last_command_time_{0};
-  std::atomic<bool> watchdog_enabled_{false};
-  std::atomic<bool> drivers_enabled_{false};
-
-  uint32_t last_update_time_ = 0;
-
-  // FreeRTOS synchronization
-  SemaphoreHandle_t mutex_ = nullptr;
-};
-
-// Global accessor
-extern MotorDriver& Motors;

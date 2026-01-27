@@ -18,9 +18,9 @@
 
 #include <array>
 
-#include "config_types.hpp"
+#include "control/types.hpp"
 
-namespace motors {
+namespace control {
 
 constexpr uint8_t RIGHT_WHEELS_SLEEP = PC13;
 constexpr uint8_t RIGHT_WHEELS_FAULT = PE0;
@@ -51,7 +51,8 @@ inline const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
                 TIM8,
                 Direction::CW,
                 "rr_wheel_joint"}}};
-}  // namespace motors
+
+}  // namespace control
 
 // ============================================================================
 // ROBOT PHYSICAL PARAMETERS

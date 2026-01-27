@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "encoder.hpp"
+#include "control/encoder.hpp"
 #include "robot_config.hpp"
-
-using namespace motors;
-
-EncoderManager encoderManager;
 
 static TIM_HandleTypeDef htim_encoders[4];
 static uint8_t encoder_count = 0;
@@ -120,39 +116,10 @@ void Encoder::update() {
     float delta_position = static_cast<float>(delta) * rad_per_tick_;
     position_ += delta_position;
     velocity_ = (delta_position * 1000000.0f) / static_cast<float>(dt);
-    velocity_ = lowPass(last_velocity_, velocity_, 0.2f);
+    velocity_ = lowPass(last_velocity_, velocity_, 0.1f); // Filtration related with update freq
     last_velocity_ = velocity_;
 
     last_cnt_ = cnt;
     last_time_us_ = now;
-  }
-}
-
-
-void EncoderManager::init() 
-{
-  MotorID m;
-  uint8_t m_idx;
-
-  m = MotorID::FR;
-  m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
-
-  m = MotorID::FL;
-  m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
-
-  m = MotorID::RR;
-  m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
-
-  m = MotorID::RL;
-  m_idx = static_cast<uint8_t>(m);
-  encoders_[m_idx].init(getEncAPin(m), getEncBPin(m), getEncoderTimer(m), getDirection(m), RobotParams::RAD_PER_TICK);
-}
-
-void EncoderManager::updateAll() {
-  for (uint8_t i = 0; i < NUM_MOTORS; ++i) {
-    encoders_[i].update();
   }
 }

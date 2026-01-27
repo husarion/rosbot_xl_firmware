@@ -17,21 +17,21 @@
 #include <STM32FreeRTOS.h>
 
 #include "battery.hpp"
-#include "encoder.hpp"
-#include "hardware/imu.hpp"
+#include "control/encoders_manager.hpp"
+#include "control/motors_manager.hpp"
 #include "log.hpp"
 #include "motors.hpp"
-#include "ranges.hpp"
+#include "sensors/imu.hpp"
+#include "sensors/ranges.hpp"
 #include "u_ros.hpp"
-#include "motor_driver.hpp"
 
 
 #define BATTERY_TASK_FREQ 10
 #define BUTTON_TASK_FREQ 5
-#define ENCODER_TASK_FREQ 250
+#define ENCODER_TASK_FREQ 500
 #define IMU_TASK_FREQ 50
 #define MONITOR_TASK_FREQ 1
-#define MOTOR_CONTROL_TASK_FREQ 100
+#define MOTOR_CONTROL_TASK_FREQ 200
 #define RANGE_TASK_FREQ 10
 #define UROS_TASK_FREQ 0  // Run as fast as possible
 
@@ -55,13 +55,13 @@ void createQueues() {
 
 // ===== Config for all tasks =====
 inline TaskConfig tasks[] = {
-    {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ, batteryTask},
-    {"Buttons", Priority::SENSORS, Stack::XSMALL, BUTTON_TASK_FREQ, buttonsTask},
+    // {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ, batteryTask},
+    // {"Buttons", Priority::SENSORS, Stack::XSMALL, BUTTON_TASK_FREQ, buttonsTask},
     {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ, encoderTask},
-    {"Imu",     Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
+    // {"Imu",     Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
     {"Monitor", Priority::STATS,   Stack::XLARGE, MONITOR_TASK_FREQ, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ, motorControlTask},
-    {"Range",   Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
+    // {"Range",   Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
     {"uRos",  Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
@@ -115,7 +115,7 @@ void encoderTask(void* pvParameters) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    encoderManager.updateAll();
+    encoders.updateAll();
     vTaskDelayUntil(&wake_time, frequencyToTicks(ENCODER_TASK_FREQ));
   }
 }
@@ -151,7 +151,7 @@ void motorControlTask(void* pvParameters) {
     TickType_t wake_time = xTaskGetTickCount();
 
     while (true) {
-        Motors.update();
+        motors.update();
 
         vTaskDelayUntil(&wake_time, frequencyToTicks(MOTOR_CONTROL_TASK_FREQ));
     }

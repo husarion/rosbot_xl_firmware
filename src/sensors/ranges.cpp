@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ranges.hpp"
+#include "sensors/ranges.hpp"
 
 #include <Arduino.h>
 

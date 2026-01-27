@@ -14,9 +14,9 @@
 
 #include "bsp.hpp"
 
-#include "hardware/imu.hpp"
 #include "log.hpp"
-#include "ranges.hpp"
+#include "sensors/imu.hpp"
+#include "sensors/ranges.hpp"
 
 #if EXT_SERIAL_EN_FLAG == 1
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);

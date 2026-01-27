@@ -33,11 +33,12 @@
 
 #include "battery.hpp"
 #include "bsp.hpp"
-#include "hardware/imu.hpp"
 #include "log.hpp"
-#include "motor_driver.hpp"
-#include "ranges.hpp"
-#include "rosbot/tasks.hpp"
+#include "control/encoders_manager.hpp"
+#include "control/motors_manager.hpp"
+#include "sensors/imu.hpp"
+#include "sensors/ranges.hpp"
+#include "tasks.hpp"
 
 namespace u_ros {
 
@@ -157,7 +158,7 @@ void motorsCmdCallback(const void* msg_in) {
     velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
     velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
 
-    Motors.setVelocities(velocities);
+    motors.setVelocities(velocities);
   }
 }
 
@@ -372,13 +373,13 @@ void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg) {
 
   // Set joint names
   msg->name.data[0] =
-      micro_ros_string_utilities_init(motors::getJointName(MotorID::FL));
+      micro_ros_string_utilities_init(control::getJointName(MotorID::FL));
   msg->name.data[1] =
-      micro_ros_string_utilities_init(motors::getJointName(MotorID::FR));
+      micro_ros_string_utilities_init(control::getJointName(MotorID::FR));
   msg->name.data[2] =
-      micro_ros_string_utilities_init(motors::getJointName(MotorID::RL));
+      micro_ros_string_utilities_init(control::getJointName(MotorID::RL));
   msg->name.data[3] =
-      micro_ros_string_utilities_init(motors::getJointName(MotorID::RR));
+      micro_ros_string_utilities_init(control::getJointName(MotorID::RR));
 
   // Allocate position array
   msg->position.capacity = 4;
@@ -487,10 +488,10 @@ void publishRanges() {
 
 void publishJointState() {
 
-  Encoder &fl = encoderManager[MotorID::FL];
-  Encoder &fr = encoderManager[MotorID::FR];
-  Encoder &rl = encoderManager[MotorID::RL];
-  Encoder &rr = encoderManager[MotorID::RR];
+  Encoder &fl = encoders[MotorID::FL];
+  Encoder &fr = encoders[MotorID::FR];
+  Encoder &rl = encoders[MotorID::RL];
+  Encoder &rr = encoders[MotorID::RR];
 
   // Set timestamp
   int64_t time_ns = rmw_uros_epoch_nanos();

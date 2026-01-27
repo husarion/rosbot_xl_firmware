@@ -16,9 +16,9 @@
 
 #include "battery.hpp"
 #include "bsp.hpp"
-#include "encoder.hpp"
-#include "hardware/imu.hpp"
-#include "motor_driver.hpp"
+#include "control/encoders_manager.hpp"
+#include "control/motors_manager.hpp"
+#include "sensors/imu.hpp"
 #include "robot_config.hpp"
 #include "rosbot/tasks.hpp"
 #include "u_ros.hpp"
@@ -32,9 +32,9 @@ void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
 
-  encoderManager.init();
-  Motors.init();
-  Motors.enableDrivers();
+  encoders.init();
+  motors.init();
+  motors.enableDrivers();
 
   // RTOS init
   u_ros::transportInit();

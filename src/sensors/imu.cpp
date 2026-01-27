@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "hardware/imu.hpp"
+#include "sensors/imu.hpp"
 
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>

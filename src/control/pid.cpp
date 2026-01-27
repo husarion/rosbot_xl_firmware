@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "pid.hpp"
+#include "control/pid.hpp"
 
 #include <Arduino.h>
 
@@ -38,7 +38,7 @@ void PIDController::setMaxIntegral(float max_integral) {
 
 void PIDController::reset() {
   integral_ = 0.0f;
-  prev_measurement_ = 0.0f;
+  prev_error_ = 0.0f;
   ramped_setpoint_ = 0.0f;
 }
 
@@ -73,10 +73,9 @@ float PIDController::compute(float setpoint, float measurement, float dt) {
   const float i_term = ki_ * integral_;
 
   // Derivative
-  const float derivative = (measurement - prev_measurement_) /
-                           dt;  // Note: measurement-based derivative
+  const float derivative = (error - prev_error_) / dt;
   const float d_term = kd_ * derivative;
-  prev_measurement_ = measurement;
+  prev_error_ = error;
 
   return constrain(p_term + i_term + d_term, min_output_, max_output_);
 }

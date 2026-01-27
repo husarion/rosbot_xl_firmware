@@ -14,17 +14,30 @@
 
 #pragma once
 
-typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
+#include <Arduino.h>
 
-/* CHOOSE HARDWARE CONFIG */
-#if defined(ROSBOT_XL)
-#include "rosbot_xl/hardware_cfg.hpp"
-#elif defined(ROSBOT)
-#include "rosbot/config.hpp"
-#include "rosbot/hardware_cfg.hpp"
-#else
-#error "No board version defined! Did you set correct flag in platformio.ini?"
-#endif
+#include "control/types.hpp"
+#include "control/encoder.hpp"
 
-static_assert(control::CONFIG.size() == static_cast<size_t>(MotorID::COUNT),
-              "Motor config does not match MotorID count");
+class EncoderManager {
+public:
+    static constexpr uint8_t NUM_ENCODERS = static_cast<uint8_t>(MotorID::COUNT);
+    EncoderManager() = default;
+
+    void init();
+
+    Encoder& operator[](MotorID id) {
+        return encoders_[static_cast<uint8_t>(id)];
+    }
+
+    const Encoder& operator[](MotorID id) const {
+        return encoders_[static_cast<uint8_t>(id)];
+    }
+
+    void updateAll();
+
+private:
+    Encoder encoders_[NUM_ENCODERS];
+};
+
+extern EncoderManager encoders;

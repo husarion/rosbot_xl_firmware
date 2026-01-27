@@ -47,6 +47,6 @@ class PIDController {
   float max_accel_ = 0.0f;  // 0 = disabled
 
   float integral_ = 0.0f;
-  float prev_measurement_ = 0.0f;
+  float prev_error_ = 0.0f;
   float ramped_setpoint_ = 0.0f;
 };

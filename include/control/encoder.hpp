@@ -15,12 +15,9 @@
 #pragma once
 
 #include <Arduino.h>
+#include "control/types.hpp"
 
-#include "config_types.hpp"
 
-// ============================================================================
-// HARDWARE ENCODER CLASS - Using STM32 Timer Encoder Mode
-// ============================================================================
 class Encoder {
  public:
   Encoder() = default;
@@ -68,26 +65,3 @@ class Encoder {
   static constexpr uint32_t MIN_DT_US = 100;
   static constexpr float MIN_VELOCITY = 0.01f;  // rad/s
 };
-
-class EncoderManager {
-public:
-    static constexpr uint8_t NUM_MOTORS = static_cast<uint8_t>(MotorID::COUNT);
-    EncoderManager() = default;
-
-    void init();
-
-    Encoder& operator[](MotorID id) {
-        return encoders_[static_cast<uint8_t>(id)];
-    }
-
-    const Encoder& operator[](MotorID id) const {
-        return encoders_[static_cast<uint8_t>(id)];
-    }
-
-    void updateAll();
-
-private:
-    Encoder encoders_[NUM_MOTORS];
-};
-
-extern EncoderManager encoderManager;

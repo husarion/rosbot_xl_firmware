@@ -18,10 +18,8 @@
 
 #include <array>
 
-// ================= MOTOR IDENTIFICATION =================
-
+// ================= IDENTIFICATION =================
 enum class MotorID : uint8_t { FR = 0, RR = 1, RL = 2, FL = 3, COUNT = 4 };
-
 enum class Direction : bool { CW = false, CCW = true };
 
 // ================= STRUCTURES =================
@@ -41,7 +39,8 @@ struct MotorConfig {
   const char* joint_name;
 };
 
-namespace motors {
+namespace control {
+
 // ================= CONFIG DECLARATION =================
 extern const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
     CONFIG;
