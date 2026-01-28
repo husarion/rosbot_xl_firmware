@@ -20,13 +20,12 @@
 
 namespace rtos {
 
-extern QueueHandle_t BatteryQueue;
-extern QueueHandle_t ButtonsQueue;
-extern QueueHandle_t ImuQueue;
-extern QueueHandle_t MotorStateQueue;
-extern QueueHandle_t RangeQueue;
-extern QueueHandle_t SetpointQueue;
-extern QueueHandle_t uRosAgentConectionQueue;
+inline QueueHandle_t ButtonsQueue;
+inline QueueHandle_t ImuQueue;
+inline QueueHandle_t MotorStateQueue;
+inline QueueHandle_t RangeQueue;
+inline QueueHandle_t SetpointQueue;
+inline QueueHandle_t uRosAgentConectionQueue;
 
 void createQueues();
 void createTasks();

@@ -36,15 +36,7 @@
 
 namespace rtos {
 
-QueueHandle_t BatteryQueue;
-QueueHandle_t ButtonsQueue;
-QueueHandle_t ImuQueue;
-QueueHandle_t MotorStateQueue;
-QueueHandle_t RangeQueue;
-QueueHandle_t SetpointQueue;
-
 void createQueues() {
-  BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
   ButtonsQueue = xQueueCreate(1, sizeof(uint8_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
@@ -87,11 +79,9 @@ void destroyTasks() {
 void batteryTask(void* pvParameters) {
   UNUSED(pvParameters);
   TickType_t wake_time = xTaskGetTickCount();
-  battery_data_t data;
 
   while (true) {
-    data = battery::loop();
-    xQueueOverwrite(BatteryQueue, &data);
+    battery.update();
     vTaskDelayUntil(&wake_time, frequencyToTicks(BATTERY_TASK_FREQ));
   }
 }

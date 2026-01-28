@@ -29,8 +29,8 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   in_b_pin_ = in_b_pin;
   dir_ = dir;
 
-  // Initialize direction pins to COAST (both Hi-Z)
-  setMovement(MotorMovement::COAST);
+  // Initialize direction pins to NEUTRAL (both Hi-Z)
+  setMode(MotorMode::NEUTRAL);
 
   // Initialize PWM timer
   PinName pwm_pin_name = digitalPinToPinName(pwm_pin);
@@ -50,11 +50,11 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pid_.setLimits(-1.0f, 1.0f);
 }
 
-void SingleMotor::setMovement(MotorMovement movement) {
+void SingleMotor::setMode(MotorMode movement) {
   // Skip if direction unchanged
-  if (movement == current_movement_) return;
+  if (movement == current_mode_) return;
 
-  current_movement_ = movement;
+  current_mode_ = movement;
 
   uint8_t pin_a, pin_b;
   if (dir_ == Direction::CCW) {
@@ -66,21 +66,21 @@ void SingleMotor::setMovement(MotorMovement movement) {
   }
 
   switch (movement) {
-    case MotorMovement::FORWARD:
+    case MotorMode::FORWARD:
       // IN_A = Hi-Z (receives PWM), IN_B = GND
       pinMode(pin_a, INPUT);
       pinMode(pin_b, OUTPUT);
       digitalWrite(pin_b, LOW);
       break;
 
-    case MotorMovement::REVERSE:
+    case MotorMode::REVERSE:
       // IN_A = GND, IN_B = Hi-Z (receives PWM)
       pinMode(pin_a, OUTPUT);
       digitalWrite(pin_a, LOW);
       pinMode(pin_b, INPUT);
       break;
 
-    case MotorMovement::BRAKE:
+    case MotorMode::BRAKE:
       // Both pins HIGH - active braking
       pinMode(in_a_pin_, OUTPUT);
       pinMode(in_b_pin_, OUTPUT);
@@ -89,9 +89,9 @@ void SingleMotor::setMovement(MotorMovement movement) {
       pwm_timer_->setCaptureCompare(pwm_channel_, pwm_arr_);
       break;
 
-    case MotorMovement::COAST:
+    case MotorMode::NEUTRAL:
     default:
-      // Both pins LOW - motor coasts
+      // Both pins LOW - motor coast
       pinMode(in_a_pin_, OUTPUT);
       pinMode(in_b_pin_, OUTPUT);
       digitalWrite(in_a_pin_, LOW);
@@ -108,15 +108,15 @@ void SingleMotor::applyPWM(float duty) {
   // Apply deadband
   const float abs_duty = fabs(duty);
   if (abs_duty < 0.01f) {
-    setMovement(MotorMovement::BRAKE);
+    setMode(MotorMode::BRAKE);
     return;
   }
 
   // Set direction based on sign
   if (duty > 0) {
-    setMovement(MotorMovement::FORWARD);
+    setMode(MotorMode::FORWARD);
   } else {
-    setMovement(MotorMovement::REVERSE);
+    setMode(MotorMode::REVERSE);
   }
 
   // Apply PWM value
@@ -125,14 +125,13 @@ void SingleMotor::applyPWM(float duty) {
 }
 
 void SingleMotor::setVelocity(const float vel) {
-  // Apply inversion
   target_velocity_.store(vel, std::memory_order_relaxed);
 }
 
-void SingleMotor::stop() {
+void SingleMotor::setNeutral() {
   target_velocity_.store(0.0f, std::memory_order_relaxed);
 
-  setMovement(MotorMovement::COAST);
+  setMode(MotorMode::NEUTRAL);
 
   pid_.reset();
 }
@@ -141,7 +140,7 @@ void SingleMotor::brake() {
   target_velocity_.store(0.0f, std::memory_order_relaxed);
   current_effort_.store(0.0f, std::memory_order_relaxed);
 
-  setMovement(MotorMovement::BRAKE);
+  setMode(MotorMode::BRAKE);
 
   pid_.reset();
 }
@@ -157,4 +156,12 @@ void SingleMotor::update(float dt, bool move) {
   const float output = pid_.compute(target, current, dt);
 
   applyPWM(output);
+}
+
+void SingleMotor::reset() {
+  brake();
+  target_velocity_.store(0.0f, std::memory_order_relaxed);
+  current_effort_.store(0.0f, std::memory_order_relaxed);
+  pid_.reset(); 
+  encoder_->reset();
 }

@@ -14,11 +14,6 @@
 
 #pragma once
 
-// ============================================================================
-// MOTOR DRIVER CLASS - DRV8848PWPR Controller (Hi-Z Control Scheme)
-// Thread-safe motor control with encoder feedback for FreeRTOS + micro-ROS
-// ============================================================================
-
 #include <Arduino.h>
 #include <HardwareTimer.h>
 
@@ -28,8 +23,11 @@
 #include "encoder.hpp"
 #include "pid.hpp"
 
-enum class MotorMovement : uint8_t { FORWARD, REVERSE, BRAKE, COAST };
+enum MotorMode : uint8_t { FORWARD, REVERSE, BRAKE, NEUTRAL };
 
+// ============================================================================
+// MOTOR DRIVER CLASS for DRV8848PWPR Controller (Hi-Z Control Scheme)
+// ============================================================================
 class SingleMotor {
  public:
   SingleMotor() = default;
@@ -38,34 +36,29 @@ class SingleMotor {
             Encoder& enc);
 
   // Control methods
+  void brake();
+  void setEnabled(const bool en) { enabled_ = en; }
+  void setNeutral();
   void setVelocity(const float vel);
-  void stop();   // Coast stop (PWM = 0)
-  void brake();  // Active braking
 
-  // State getters - thread-safe
+  // Getters
   float getPosition() const { return encoder_->getPosition(); }
-  float getVelocity() { return encoder_->getVelocity(); }
+  float getVelocity() const { return encoder_->getVelocity(); }
   float getEffort() const {
     return current_effort_.load(std::memory_order_relaxed);
   }
   float getTargetVelocity() const {
     return target_velocity_.load(std::memory_order_relaxed);
   }
-  void setTargetVelocity(float vel) {
-    target_velocity_.store(vel, std::memory_order_relaxed);
-  }
 
-  // Control loop - call from RTOS task
   void update(float dt, bool move = true);
-
-  // Configuration
-  void resetPID() { pid_.reset(); }
+  void reset();
 
  private:
-  void setMovement(MotorMovement dir);
+  void setMode(MotorMode dir);
   void applyPWM(float duty);
 
-  // Pin configuration
+  // Pin mode configuration
   uint8_t pwm_pin_ = 0;
   uint16_t pwm_arr_ = 0;
   uint8_t in_a_pin_ = 0;
@@ -78,10 +71,9 @@ class SingleMotor {
   HardwareTimer* pwm_timer_ = nullptr;
   uint32_t pwm_channel_ = 0;
 
-  // State (atomic for thread safety)
+  // State
   std::atomic<float> target_velocity_{0.0f};
   std::atomic<float> current_effort_{0.0f};
-
-  // Current direction
-  MotorMovement current_movement_ = MotorMovement::COAST;
+  MotorMode current_mode_ = MotorMode::NEUTRAL;
+  bool enabled_ = false;
 };

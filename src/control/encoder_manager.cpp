@@ -17,8 +17,6 @@
 
 using namespace control;
 
-EncoderManager encoders;
-
 void EncoderManager::init() {
   MotorID m;
   uint8_t m_idx;

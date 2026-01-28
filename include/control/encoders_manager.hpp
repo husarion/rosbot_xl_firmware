@@ -40,4 +40,4 @@ class EncoderManager {
   Encoder encoders_[NUM_ENCODERS];
 };
 
-extern EncoderManager encoders;
+inline EncoderManager encoders;

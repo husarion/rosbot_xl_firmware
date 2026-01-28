@@ -16,16 +16,38 @@
 
 #include <Arduino.h>
 
-typedef struct {
-  float voltage;
-  float temperature;
-  float current;
-} battery_data_t;
+class Battery {
+public:
+    struct Config {
+        uint8_t adcPin;
+        float vRef = 3.3f;
+        float correction = 0.986f;
+        float upperResistor = 5.6e4;
+        float lowerResistor = 1.0e4;
+        float vMin = 9.6f;
+        float vMax = 12.6f;
+        float lowThreshold = 10.8f;
+        float hysteresis = 0.2f;
+    };
 
-namespace battery {
+    void init(const Config& cfg);
+    void init(uint8_t adcPin);
+    void update();
 
-battery_data_t loop();
-battery_data_t readBattery();
-float percentage(float voltage);
+    float current() const { return current_; }
+    float temperature() const { return temperature_; }
+    float voltage() const { return voltage_; }
+    float percentage() const;
+    bool isLow() const { return isLow_; }
+    bool isCritical() const { return voltage_ < cfg_.vMin; }
 
-}  // namespace battery
+private:
+    Config cfg_;
+    float dividerRatio_ = 1.0f;
+    float current_ = NAN; // Not implemented
+    float temperature_ = NAN; // Not implemented
+    float voltage_ = 0.0f;
+    bool isLow_ = false;
+};
+
+inline Battery battery;

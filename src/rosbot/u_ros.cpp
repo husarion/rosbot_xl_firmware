@@ -175,7 +175,7 @@ void uRosRightLedCallback(const void* msg) {
 void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
-    // publishBattery();
+    publishBattery();
     // publishButtons();
     // publishImu();
     // publishRanges();
@@ -421,20 +421,17 @@ void initRangeMsg(sensor_msgs__msg__Range* msg) {
 }
 
 void publishBattery() {
-  static battery_data_t battery_data;
-  if (xQueueReceive(rtos::BatteryQueue, &battery_data, (TickType_t)0) ==
-      pdPASS) {
-    if (rmw_uros_epoch_synchronized()) {
-      battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-      battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
-    }
-    battery_msg.voltage = battery_data.voltage;
-    battery_msg.temperature = battery_data.temperature;
-    battery_msg.current = battery_data.current;
-    battery_msg.percentage = battery::percentage(battery_data.voltage);
 
-    RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
+  if (rmw_uros_epoch_synchronized()) {
+    battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+    battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
   }
+  battery_msg.voltage = battery.voltage();
+  battery_msg.temperature = battery.temperature();
+  battery_msg.current = battery.current();
+  battery_msg.percentage = battery.percentage();
+
+  RCCHECK_WARN(rcl_publish(&battery_pub, &battery_msg, NULL));
 }
 
 void publishButtons() {

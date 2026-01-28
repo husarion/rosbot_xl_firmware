@@ -63,8 +63,6 @@ namespace RobotParams {
 constexpr float GEAR_RATIO = 34.014f;
 constexpr uint16_t ENCODER_CPR = 48;
 constexpr float TICKS_PER_REVOLUTION = ENCODER_CPR * GEAR_RATIO;
-
-// Computed constants
 constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
 
 }  // namespace RobotParams
@@ -73,9 +71,6 @@ constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
 // CONTROL PARAMETERS
 // ============================================================================
 namespace ControlParams {
-
-// Timing
-constexpr uint32_t CONTROL_LOOP_PERIOD_MS = 10;
 
 // Target PWM frequency (ultrasonic - inaudible)
 constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz

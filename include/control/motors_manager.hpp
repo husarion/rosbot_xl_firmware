@@ -84,4 +84,4 @@ class MotorDriver {
 };
 
 // Global accessor
-extern MotorDriver& motors;
+inline MotorDriver& motors = MotorDriver::getInstance();

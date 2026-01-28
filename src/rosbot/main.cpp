@@ -32,6 +32,7 @@ void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
 
+  battery.init(BATTERY_ADC_PIN);
   encoders.init();
   motors.init();
   motors.enableDrivers();

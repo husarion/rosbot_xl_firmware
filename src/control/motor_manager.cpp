@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "FreeRTOS.h"
 #include <semphr.h>
 
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "robot_config.hpp"
-
-// Global instance
-MotorDriver& motors = MotorDriver::getInstance();
 
 using namespace control;
 
@@ -111,7 +109,7 @@ void MotorDriver::setVelocities(float fr, float rr, float rl, float fl) {
 void MotorDriver::stopAll() {
   if (xSemaphoreTake(mutex_, pdMS_TO_TICKS(10)) == pdTRUE) {
     for (auto& motor : motors_) {
-      motor.stop();
+      motor.setNeutral();
     }
     xSemaphoreGive(mutex_);
   }

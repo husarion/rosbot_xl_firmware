@@ -42,7 +42,7 @@ class Encoder {
   float getPosition() const { return position_; }
   float getVelocity() const { return velocity_; }
 
-  float lowPass(float prev, float input, float alpha) {
+  float lowPass(float prev, float input, float alpha) const {
     float filtered = alpha * input + (1.0f - alpha) * prev;
     return fabs(filtered) > MIN_VELOCITY ? filtered : 0.0f;
   }
