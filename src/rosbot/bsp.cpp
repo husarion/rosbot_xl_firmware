@@ -22,7 +22,6 @@
 HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
 #endif
 
-HardwareSerial SBC_SERIAL(SBC_SERIAL_TX, SBC_SERIAL_RX);
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
@@ -32,33 +31,8 @@ uint8_t ranges_shd_pins[RANGES_COUNT] = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
                                          RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
 void BoardGpioInit(void) {
-  pinMode(RD_LED, OUTPUT);
-  pinMode(GRN_LED, OUTPUT);
-  pinMode(GRN_LED2, OUTPUT);
   pinMode(PUSH_BUTTON1, INPUT_PULLUP);
   pinMode(PUSH_BUTTON2, INPUT_PULLUP);
-
-  digitalWrite(RD_LED, LOW);
-  digitalWrite(GRN_LED, LOW);
-  digitalWrite(GRN_LED2, LOW);
-}
-
-void SetGreenLed(SwitchStateTypeDef State_) {
-  if (State_ == Off) digitalWrite(GRN_LED, LOW);
-  if (State_ == On) digitalWrite(GRN_LED, HIGH);
-  if (State_ == Toggle) digitalToggle(GRN_LED);
-}
-
-void SetGreenLed2(SwitchStateTypeDef State_) {
-  if (State_ == Off) digitalWrite(GRN_LED2, LOW);
-  if (State_ == On) digitalWrite(GRN_LED2, HIGH);
-  if (State_ == Toggle) digitalToggle(GRN_LED2);
-}
-
-void SetRedLed(SwitchStateTypeDef State_) {
-  if (State_ == Off) digitalWrite(RD_LED, LOW);
-  if (State_ == On) digitalWrite(RD_LED, HIGH);
-  if (State_ == Toggle) digitalToggle(RD_LED);
 }
 
 void BoardPheripheralsInit(void) {

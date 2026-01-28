@@ -18,6 +18,7 @@
 #include "bsp.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "led_indicator.hpp"
 #include "robot_config.hpp"
 #include "rosbot/tasks.hpp"
 #include "sensors/imu.hpp"
@@ -27,6 +28,12 @@
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 
+LedConfig batteryLed = {GRN_LED, false};
+LedConfig urosLed   = {GRN_LED2, false};
+LedConfig errorLed  = {RD_LED, true};
+const SerialConfig* g_serialConfig = nullptr;
+// char g_robotNamespace[NS_MAX_LENGTH] = {0};
+
 /*==================== SETUP ========================*/
 void setup() {
   // Hardware configuration
@@ -34,11 +41,16 @@ void setup() {
 
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
+  ledIndicator.init(batteryLed, urosLed, errorLed);
   motors.init();
   motors.enableDrivers();
 
+  g_serialConfig = &serial_selector::selectSerialConfig();
+      
+  // ns_config::configure(*g_serialConfig, g_robotNamespace, NS_MAX_LENGTH);
+  
   // RTOS init
-  u_ros::transportInit();
+  u_ros::transportInit(*g_serialConfig);
   rtos::createQueues();
   rtos::createTasks();
 

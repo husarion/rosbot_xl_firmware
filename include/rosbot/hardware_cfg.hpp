@@ -21,31 +21,15 @@
 #define POWEROFF_DELAY 5000  // ms
 
 /* REAR PANEL */
-#define RD_LED PE2
-#define GRN_LED PE3
-#define GRN_LED2 PE4
 #define BUTTONS_COUNT 2
-#define PUSH_BUTTON1 PG12
-#define PUSH_BUTTON2 PG13
 
 /* SBC */
-#define SBC_SERIAL Serial1
-#define SBC_SERIAL_BAUDRATE 921600
-#define SBC_SERIAL_TX PA9
-#define SBC_SERIAL_RX PA10
 #define SBC_SERIAL_TIMEOUT 1  // ms
 #define SBC_STATUS \
   PG6  // According to "Rosbot v1.3 schematics", this should be connected to
        // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
 #define RPI_CONSOLE PG5
 #define RPI_BTN PG7
-
-/* FTDI SERIAL */
-#define FTDI_SERIAL Serial3
-#define FTDI_SERIAL_BAUDRATE 115200
-#define FTDI_SERIAL_TX PB10
-#define FTDI_SERIAL_RX PB11
-#define FTDI_SERIAL_TIMEOUT 1  // ms
 
 /* IMU */
 #define IMU_POWER_ON PG4
@@ -54,86 +38,6 @@
 #define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
-
-/* MOTORS */
-#define M14_SLEEP PC14
-#define M14_FAULT PE1
-#define M23_SLEEP PC13
-#define M23_FAULT PE0
-
-#define M1_ENC_TIM TIM8
-#define M1_ENC_A PC6  // TIM8_CH1
-#define M1_ENC_B PC7  // TIM8_CH2
-#define M1_PWM_TIM TIM11
-#define M1_PWM_TIM_CH 1
-#define M1_PWM_PIN PF7
-#define M1A_IN PD3
-#define M1B_IN PD4
-#define M1_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
-
-#define M2_ENC_TIM TIM3
-#define M2_ENC_A PB4  // TIM3_CH1
-#define M2_ENC_B PA7  // TIM3_CH2
-#define M2_PWM_TIM TIM13
-#define M2_PWM_TIM_CH 1
-#define M2_PWM_PIN PF8
-#define M2A_IN PC15
-#define M2B_IN PF2
-#define M2_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
-
-#define M3_ENC_TIM TIM2
-#define M3_ENC_A PA0  // TIM2_CH1_ETR
-#define M3_ENC_B PA1  // TIM2_CH2
-#define M3_PWM_TIM TIM10
-#define M3_PWM_TIM_CH 1
-#define M3_PWM_PIN PF6
-#define M3A_IN PG10
-#define M3B_IN PG11
-#define M3_DEFAULT_DIR 1  // 1 (CW) or -1 (CCW)
-
-#define M4_ENC_TIM TIM4
-#define M4_ENC_A PB6  // TIM4_CH1
-#define M4_ENC_B PB7  // TIM4_CH2
-#define M4_PWM_TIM TIM14
-#define M4_PWM_TIM_CH 1
-#define M4_PWM_PIN PF9
-#define M4A_IN PE5
-#define M4B_IN PE6
-#define M4_DEFAULT_DIR -1  // 1 (CW) or -1 (CCW)
-
-// #define MOT12_SLEEP PC13
-// #define MOT12_FAULT PE0
-// #define MOT1_PWM PF6
-// #define MOT1A_IN PG10
-// #define MOT1B_IN PG11
-// #define MOT1A_ENC PA0
-// #define MOT1A_ENC_ALT0 PA0_ALT0
-// #define MOT1A_ENC_ALT1 PA0_ALT1
-// #define MOT1B_ENC PA1
-// #define MOT2_PWM PF7
-// #define MOT2A_IN PD3
-// #define MOT2B_IN PD4
-// #define MOT2A_ENC PC6
-// #define MOT2A_ENC_ALT0 PC6_ALT0
-// #define MOT2B_ENC PC7
-// #define MOT2B_ENC_ALT0 PC7_ALT0
-// #define MOT34_SLEEP PC14
-// #define MOT34_FAULT PE1
-// #define MOT3_PWM PF8
-// #define MOT3A_IN PC15
-// #define MOT3B_IN PF2
-// #define MOT3A_ENC PB4
-// #define MOT3A_ENC_ALT0 PB4_ALT0
-// #define MOT3A_ENC_ALT1 PB4_ALT1
-// #define MOT3B_ENC PA7
-// #define MOT3B_ENC_ALT0 PA7_ALT0
-// #define MOT3B_ENC_ALT1 PA7_ALT1
-// #define MOT3B_ENC_ALT2 PA7_ALT2
-// #define MOT4_PWM PF9
-// #define MOT4A_IN PE5
-// #define MOT4B_IN PE6
-// #define MOT4A_ENC PB6
-// #define MOT4B_ENC PB7
 
 /* Range Sensors */
 #define RANGE_FR_SHD_PIN PB1

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <HardwareSerial.h>
 
 #include <array>
 
@@ -26,6 +27,10 @@ constexpr uint8_t RIGHT_WHEELS_SLEEP = PC13;
 constexpr uint8_t RIGHT_WHEELS_FAULT = PE0;
 constexpr uint8_t LEFT_WHEELS_SLEEP = PC14;
 constexpr uint8_t LEFT_WHEELS_FAULT = PE1;
+constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
+constexpr float MAX_VELOCITY = 30.0f;
+constexpr float MIN_VELOCITY = 1.0f;
+constexpr float MIN_FRICTION_OUTPUT = 0.4f;
 
 inline const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
     CONFIG = {{{MotorID::FL,
@@ -67,16 +72,44 @@ constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
 
 }  // namespace RobotParams
 
-// ============================================================================
-// CONTROL PARAMETERS
-// ============================================================================
-namespace ControlParams {
+struct SerialConfig {
+    HardwareSerial* serial;
+    uint32_t        baudrate;
+    uint8_t         rxPin;
+    uint8_t         txPin;
+    uint32_t        timeout;
+    const char*     name;  // for debug
+};
 
-// Target PWM frequency (ultrasonic - inaudible)
-constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
+// Primary: SBC Serial (Serial1 - SBC connection)
+inline constexpr SerialConfig SBC_SERIAL_CONFIG = {
+    .serial   = &Serial1,
+    .baudrate = 921600,
+    .rxPin    = PA10,
+    .txPin    = PA9,
+    .timeout  = 1,
+    .name     = "SBC_SERIAL"
+};
 
-// Velocity limits (rad/s)
-constexpr float MAX_VELOCITY = 30.0f;
-constexpr float MIN_VELOCITY = 0.1f;
+// Secondary: FTDI Serial (Serial3 - USB (rear panel) connection)
+inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {
+    .serial   = &Serial3,
+    .baudrate = 921600,
+    .rxPin    = PB11,
+    .txPin    = PB10,
+    .timeout  = 1,
+    .name     = "FTDI_SERIAL"
+};
 
-}  // namespace ControlParams
+// ============== Default Selection ==============
+#define DEFAULT_SERIAL_CONFIG  SBC_SERIAL_CONFIG
+#define ALT_SERIAL_CONFIG      FTDI_SERIAL_CONFIG
+
+// ============== Buttons ==============
+#define PUSH_BUTTON1  PG12
+#define PUSH_BUTTON2  PG13
+
+// ============== LEDs ==============
+#define RD_LED PE2
+#define GRN_LED PE3
+#define GRN_LED2 PE4

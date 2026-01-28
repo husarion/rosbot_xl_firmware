@@ -20,9 +20,7 @@
 
 namespace rtos {
 
-inline QueueHandle_t ButtonsQueue;
 inline QueueHandle_t ImuQueue;
-inline QueueHandle_t MotorStateQueue;
 inline QueueHandle_t RangeQueue;
 inline QueueHandle_t SetpointQueue;
 inline QueueHandle_t uRosAgentConectionQueue;
@@ -31,7 +29,7 @@ void createQueues();
 void createTasks();
 void destroyTasks();
 
-// PRIORITY LEVELS
+// Priority levels
 // 7 - Highest (configMAX_PRIORITIES)
 // 0 - Idle (tskIDLE_PRIORITY)
 enum Priority : UBaseType_t {
@@ -90,6 +88,7 @@ void batteryTask(void* pvParameters);
 void buttonsTask(void* pvParameters);
 void encoderTask(void* pvParameters);
 void imuTask(void* pvParameters);
+void ledIndicatorTask(void* pvParameters);
 void monitorTask(void* pvParameters);
 void motorControlTask(void* pvParameters);
 void rangeTask(void* pvParameters);

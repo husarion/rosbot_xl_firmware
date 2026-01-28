@@ -39,7 +39,7 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_channel_ = STM_PIN_CHANNEL(pinmap_function(pwm_pin_name, PinMap_PWM));
 
   pwm_timer_ = new HardwareTimer(timer_instance);
-  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, ControlParams::MOTOR_PWM_FREQ,
+  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, control::MOTOR_PWM_FREQ,
                      0);
   pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);
 
@@ -125,7 +125,12 @@ void SingleMotor::applyPWM(float duty) {
 }
 
 void SingleMotor::setVelocity(const float vel) {
-  target_velocity_.store(vel, std::memory_order_relaxed);
+  float constrained_vel =
+      constrain(vel, -control::MAX_VELOCITY, control::MAX_VELOCITY);
+  if (fabs(constrained_vel) < control::MIN_VELOCITY) {
+    constrained_vel = 0.0f;
+  }
+  target_velocity_.store(constrained_vel, std::memory_order_relaxed);
 }
 
 void SingleMotor::setNeutral() {
@@ -153,7 +158,7 @@ void SingleMotor::update(float dt, bool move) {
 
   const float target = target_velocity_.load(std::memory_order_relaxed);
   const float current = getVelocity();
-  const float output = pid_.compute(target, current, dt);
+  const float output = pid_.compute(target, current, dt, control::MIN_FRICTION_OUTPUT);
 
   applyPWM(output);
 }

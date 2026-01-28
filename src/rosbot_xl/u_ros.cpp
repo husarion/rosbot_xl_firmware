@@ -34,8 +34,6 @@
 #include <rcl/time.h>
 #include <rclc/executor.h>
 
-#include "bsp.hpp"
-
 namespace u_ros {
 
 // PUBLISHERS
@@ -69,36 +67,6 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
 
-void BlinkRedLed(int duration_ms) {
-  SetRedLed(On);
-  delay(duration_ms);
-  SetRedLed(Off);
-  delay(200);
-}
-
-void errorLoop(const char* func) {
-  LOG_ERROR("In error loop from function %s", func);
-  SetRedLed(Off);
-  SetGreenLed(Off);
-  delay(500);
-
-  // 2 SOS signals: ... --- ...
-  for (int i = 0; i < 2; ++i) {
-    for (int i = 0; i < 3; ++i) {
-      BlinkRedLed(200);
-    }
-    for (int i = 0; i < 3; ++i) {
-      BlinkRedLed(600);
-    }
-    for (int i = 0; i < 3; ++i) {
-      BlinkRedLed(200);
-    }
-    delay(1000);
-  }
-
-  LOG_ERROR("System resetting...");
-  NVIC_SystemReset();
-}
 
 bool pingAgent(void) {
   return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==

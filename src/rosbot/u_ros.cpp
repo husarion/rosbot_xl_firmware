@@ -32,7 +32,6 @@
 #include <rosidl_runtime_c/primitives_sequence_functions.h>
 
 #include "battery.hpp"
-#include "bsp.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "log.hpp"
@@ -74,70 +73,6 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
 
-void BlinkRedLed(int duration_ms) {
-  SetRedLed(On);
-  delay(duration_ms);
-  SetRedLed(Off);
-  delay(200);
-}
-
-void errorLoop(const char* func) {
-  LOG_ERROR("In error loop from function %s", func);
-  SetRedLed(Off);
-  SetGreenLed(Off);
-  SetGreenLed2(Off);
-  delay(500);
-
-  // 2 SOS signals: ... --- ...
-  for (uint8_t i = 0; i < 2; ++i) {
-    for (uint8_t i = 0; i < 3; ++i) {
-      BlinkRedLed(200);
-    }
-    for (uint8_t i = 0; i < 3; ++i) {
-      BlinkRedLed(600);
-    }
-    for (uint8_t i = 0; i < 3; ++i) {
-      BlinkRedLed(200);
-    }
-    delay(1000);
-  }
-
-  LOG_ERROR("System resetting...");
-  NVIC_SystemReset();
-}
-
-void transportInit(void) {
-  rmw_uros_set_custom_transport(
-      /* Enable XRCE framing */
-      true,
-      /* Arguments for open function */
-      NULL,
-      /* Open transport callback */
-      [](struct uxrCustomTransport* transport) -> bool {
-        FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
-        FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
-        FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
-        FTDI_SERIAL.begin(SBC_SERIAL_BAUDRATE);
-        return FTDI_SERIAL ? true : false;
-      },
-      /* Close transport callback */
-      [](struct uxrCustomTransport* transport) -> bool {
-        FTDI_SERIAL.end();
-        return true;
-      },
-      /* Write transport callback */
-      [](struct uxrCustomTransport* transport, const uint8_t* buf, size_t len,
-         uint8_t* errcode) -> unsigned int {
-        return FTDI_SERIAL.write(buf, len);
-      },
-      /* Read transport callback */
-      [](struct uxrCustomTransport* transport, uint8_t* buf, size_t len,
-         int timeout, uint8_t* errcode) -> unsigned int {
-        FTDI_SERIAL.setTimeout(timeout);
-        return FTDI_SERIAL.readBytes((char*)buf, len);
-      });
-}
-
 bool pingAgent(void) {
   return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
          RMW_RET_OK;
@@ -164,19 +99,19 @@ void motorsCmdCallback(const void* msg_in) {
 
 void uRosLeftLedCallback(const void* msg) {
   auto led_msg = (std_msgs__msg__Bool*)msg;
-  SetGreenLed(led_msg->data ? On : Off);
+  // SetGreenLed(led_msg->data ? On : Off);
 }
 
 void uRosRightLedCallback(const void* msg) {
   auto led_msg = (std_msgs__msg__Bool*)msg;
-  SetGreenLed2(led_msg->data ? On : Off);
+  // SetGreenLed2(led_msg->data ? On : Off);
 }
 
 void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     publishBattery();
-    // publishButtons();
+    publishButtons();
     // publishImu();
     // publishRanges();
     publishJointState();
@@ -435,10 +370,16 @@ void publishBattery() {
 }
 
 void publishButtons() {
-  static uint8_t buttons;
-  if (xQueueReceive(rtos::ButtonsQueue, &buttons, (TickType_t)0) == pdPASS) {
-    buttons_msg.data = buttons;
+  static u_int8_t last_buttons = 0;
 
+  uint8_t buttons = 0;
+  buttons |= (digitalRead(PUSH_BUTTON1) == LOW) << 0;
+  buttons |= (digitalRead(PUSH_BUTTON2) == LOW) << 1;
+
+  if(buttons != last_buttons) {
+    last_buttons = buttons;
+
+    buttons_msg.data = buttons;
     RCCHECK_WARN(rcl_publish(&buttons_pub, &buttons_msg, NULL));
   }
 }
@@ -545,14 +486,11 @@ void loop() {
 
       rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
 
-      SetGreenLed(On);
       vTaskDelay(pdMS_TO_TICKS(1));
       break;
 
     case DISCONNECTED:
       destroyEntities();
-      SetGreenLed(Off);
-      SetGreenLed2(Off);
       state = WAITING;
       break;
   }

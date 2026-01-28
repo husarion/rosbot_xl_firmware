@@ -22,11 +22,10 @@ class PIDController {
  public:
   static constexpr float DEFAULT_KP = 0.07f;
   static constexpr float DEFAULT_KI = 0.4f;
-  static constexpr float DEFAULT_KD = 0.0f;
-  static constexpr float DEFAULT_MAX_ACCEL = 20.0f;  // rad/s²
+  static constexpr float DEFAULT_KD = 0.002f;
+  static constexpr float DEFAULT_MAX_ACCEL = 0.0f;  // rad/s² 0 = disabled
   static constexpr float DEFAULT_MIN_OUTPUT = -1.0f;
   static constexpr float DEFAULT_MAX_OUTPUT = 1.0f;
-  static constexpr float DEFAULT_MAX_INTEGRAL = 7.0f;
 
   PIDController(float kp = DEFAULT_KP, float ki = DEFAULT_KI,
                 float kd = DEFAULT_KD);
@@ -37,14 +36,14 @@ class PIDController {
   void setMaxIntegral(float max_integral);
   void reset();
 
-  float compute(float setpoint, float measurement, float dt);
+  float compute(float setpoint, float measurement, float dt, float min_output = 0.0f);
 
  private:
   float kp_, ki_, kd_;
   float min_output_ = DEFAULT_MIN_OUTPUT;
   float max_output_ = DEFAULT_MAX_OUTPUT;
-  float max_integral_ = DEFAULT_MAX_INTEGRAL;
-  float max_accel_ = 0.0f;  // 0 = disabled
+  float max_integral_ = 1.0f / DEFAULT_KI;
+  float max_accel_ = DEFAULT_MAX_ACCEL;
 
   float integral_ = 0.0f;
   float prev_error_ = 0.0f;

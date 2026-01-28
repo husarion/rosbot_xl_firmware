@@ -17,7 +17,10 @@
 #include <Arduino.h>
 
 PIDController::PIDController(float kp, float ki, float kd)
-    : kp_(kp), ki_(ki), kd_(kd) {}
+    : kp_(kp), ki_(ki), kd_(kd)
+    {
+      max_integral_ = 1.0f / ki_;
+    }
 
 void PIDController::setMaxAccel(float max_accel) { max_accel_ = max_accel; }
 
@@ -42,7 +45,7 @@ void PIDController::reset() {
   ramped_setpoint_ = 0.0f;
 }
 
-float PIDController::compute(float setpoint, float measurement, float dt) {
+float PIDController::compute(float setpoint, float measurement, float dt, float min_drive) {
   if (dt <= 0.0f) return 0.0f;
 
   // ========== ACCELERATION LIMITING ==========
@@ -65,17 +68,28 @@ float PIDController::compute(float setpoint, float measurement, float dt) {
   const float error = target - measurement;
 
   // Proportional
-  const float p_term = kp_ * error;
+  const float p = kp_ * error;
 
   // Integral with anti-windup
   integral_ += error * dt;
   integral_ = constrain(integral_, -max_integral_, max_integral_);
-  const float i_term = ki_ * integral_;
+  const float i = ki_ * integral_;
 
   // Derivative
   const float derivative = (error - prev_error_) / dt;
-  const float d_term = kd_ * derivative;
+  const float d = kd_ * derivative;
   prev_error_ = error;
 
-  return constrain(p_term + i_term + d_term, min_output_, max_output_);
+  float output = p + i + d;
+
+  // =========== MIN DRIVE ==========
+  float drive_scale = 1.0f - fabs(measurement) / 2.0f;
+  if (drive_scale < 0.0f) drive_scale = 0.0f;
+
+  if (fabs(setpoint) > 0.01f && fabs(output) < min_drive) {
+      output += ((output > 0) ? 1 : -1) * min_drive * drive_scale;
+  }
+
+
+  return constrain(output, min_output_, max_output_);
 }

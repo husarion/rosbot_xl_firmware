@@ -44,7 +44,7 @@ class Encoder {
 
   float lowPass(float prev, float input, float alpha) const {
     float filtered = alpha * input + (1.0f - alpha) * prev;
-    return fabs(filtered) > MIN_VELOCITY ? filtered : 0.0f;
+    return fabs(filtered) > ZERO_THRESHOLD ? filtered : 0.0f;
   }
 
  private:
@@ -63,5 +63,5 @@ class Encoder {
   static constexpr uint32_t CNT_MAX = 0xFFFF;
   static constexpr int32_t CNT_HALF = 0x7FFF;
   static constexpr uint32_t MIN_DT_US = 100;
-  static constexpr float MIN_VELOCITY = 0.01f;  // rad/s
+  static constexpr float ZERO_THRESHOLD = 0.01f;  // rad/s
 };

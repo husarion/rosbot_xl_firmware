@@ -19,6 +19,7 @@
 #include "battery.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "led_indicator.hpp"
 #include "log.hpp"
 #include "motors.hpp"
 #include "sensors/imu.hpp"
@@ -29,6 +30,7 @@
 #define BUTTON_TASK_FREQ 5
 #define ENCODER_TASK_FREQ 500
 #define IMU_TASK_FREQ 50
+#define LED_INDICATOR_TASK_FREQ 5
 #define MONITOR_TASK_FREQ 1
 #define MOTOR_CONTROL_TASK_FREQ 200
 #define RANGE_TASK_FREQ 10
@@ -37,9 +39,7 @@
 namespace rtos {
 
 void createQueues() {
-  ButtonsQueue = xQueueCreate(1, sizeof(uint8_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
-  MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   RangeQueue = xQueueCreate(1, sizeof(ranges_data_t));
   SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
 }
@@ -48,16 +48,15 @@ void createQueues() {
 inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ,
      batteryTask},
-    {"Buttons", Priority::SENSORS, Stack::XSMALL, BUTTON_TASK_FREQ,
-     buttonsTask},
     {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
      encoderTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
-    {"Monitor", Priority::STATS, Stack::XLARGE, MONITOR_TASK_FREQ, monitorTask},
+    {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ, ledIndicatorTask},
+    // {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
      motorControlTask},
     {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
-    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
+    {"uRos", Priority::COMMUNICATION, Stack::LARGE, UROS_TASK_FREQ, uRosTask},
 };
 
 // ===== Handles =====
@@ -86,23 +85,6 @@ void batteryTask(void* pvParameters) {
   }
 }
 
-void buttonsTask(void* pvParameters) {
-  UNUSED(pvParameters);
-  TickType_t wake_time = xTaskGetTickCount();
-  uint8_t last_state = 0;
-
-  while (true) {
-    uint8_t buttons = 0;
-    buttons |= (digitalRead(PUSH_BUTTON1) == LOW) << 0;
-    buttons |= (digitalRead(PUSH_BUTTON2) == LOW) << 1;
-    if (buttons != last_state) {
-      last_state = buttons;
-      xQueueOverwrite(ButtonsQueue, &buttons);
-    }
-    vTaskDelayUntil(&wake_time, frequencyToTicks(BUTTON_TASK_FREQ));
-  }
-}
-
 void encoderTask(void* pvParameters) {
   UNUSED(pvParameters);
   TickType_t wake_time = xTaskGetTickCount();
@@ -122,6 +104,20 @@ void imuTask(void* pvParameters) {
     imu_data = imuDriver.loopHandler();
     xQueueOverwrite(rtos::ImuQueue, &imu_data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(IMU_TASK_FREQ));
+  }
+}
+
+void ledIndicatorTask(void* pvParameters) {
+  UNUSED(pvParameters);
+  TickType_t wake_time = xTaskGetTickCount();
+
+  while (true) {
+    bool battery_low = battery.isLow();
+    bool uros_connected = (u_ros::state == u_ros::CONNECTED);
+    bool error_state = false;
+
+    ledIndicator.update(battery_low, uros_connected, error_state);
+    vTaskDelayUntil(&wake_time, frequencyToTicks(LED_INDICATOR_TASK_FREQ));
   }
 }
 

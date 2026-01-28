@@ -83,7 +83,6 @@ void setup() {
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
-  MotorStateQueue = xQueueCreate(1, sizeof(motor_joint_state_t));
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
   LOG_DEBUG("Queues created");
