@@ -41,7 +41,7 @@ void setup() {
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
   imuDriver.init();
-  ledIndicator.init(RD_LED);
+  ledIndicator.init(RED_LED);
   motors.init();
   rangeSensorsManager.init();
 

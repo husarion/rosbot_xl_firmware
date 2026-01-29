@@ -32,8 +32,8 @@ void BoardGpioInit(void) {
   pinMode(GRN_LED, OUTPUT);
   digitalWrite(EN_LOC_5V, LOW);
   pinMode(EN_LOC_5V, OUTPUT);
-  digitalWrite(RD_LED, LOW);
-  pinMode(RD_LED, OUTPUT);
+  digitalWrite(RED_LED, LOW);
+  pinMode(RED_LED, OUTPUT);
   digitalWrite(PWR_BRD_GPIO_OUTPUT, LOW);
   pinMode(PWR_BRD_GPIO_OUTPUT, OUTPUT);
   pinMode(PWR_BRD_GPIO_INPUT, INPUT_PULLUP);
@@ -54,9 +54,9 @@ void SetGreenLed(SwitchStateTypeDef State_) {
 }
 
 void SetRedLed(SwitchStateTypeDef State_) {
-  if (State_ == Off) digitalWrite(RD_LED, LOW);
-  if (State_ == On) digitalWrite(RD_LED, HIGH);
-  if (State_ == Toggle) digitalToggle(RD_LED);
+  if (State_ == Off) digitalWrite(RED_LED, LOW);
+  if (State_ == On) digitalWrite(RED_LED, HIGH);
+  if (State_ == Toggle) digitalToggle(RED_LED);
 }
 
 void BoardPheripheralsInit(void) {

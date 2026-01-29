@@ -102,7 +102,7 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define PUSH_BUTTON2 PG13
 
 // ============== LEDs ==============
-#define RD_LED PE2
+#define RED_LED PE2
 #define GRN_LED PE3
 #define GRN_LED2 PE4
 

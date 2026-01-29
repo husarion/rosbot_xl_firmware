@@ -37,6 +37,10 @@ void buttonInit(void) {
 
 void BoardPheripheralsInit(void) {
   buttonInit();
+  pinMode(RED_LED, OUTPUT);
+  pinMode(GRN_LED, OUTPUT);
+  pinMode(GRN_LED2, OUTPUT);
+  digitalWrite(RED_LED, HIGH);
   if (firmware_mode == fw_debug) {
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
   }
@@ -46,10 +50,10 @@ void BoardPheripheralsInit(void) {
   digitalWrite(IMU_POWER_ON, HIGH);
 
   // FTDI UART-USB init
-  // FTDI_SERIAL.setRx(FTDI_SERIAL_RX);
-  // FTDI_SERIAL.setTx(FTDI_SERIAL_TX);
-  // FTDI_SERIAL.setTimeout(FTDI_SERIAL_TIMEOUT);
-  // FTDI_SERIAL.begin(FTDI_SERIAL_BAUDRATE);
+  // Serial3.setRx(FTDI_SERIAL_CONFIG.rxPin);
+  // Serial3.setTx(FTDI_SERIAL_CONFIG.txPin);
+  // Serial3.setTimeout(FTDI_SERIAL_CONFIG.timeout);
+  // Serial3.begin(FTDI_SERIAL_CONFIG.baudrate);
 
   imu_i2c.begin();
   imu_i2c.setClock(200000);

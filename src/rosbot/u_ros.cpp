@@ -113,8 +113,8 @@ void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
   if (timer != NULL) {
     publishBattery();
     publishButtons();
-    // publishImu();
-    // publishRanges();
+    publishImu();
+    publishRanges();
     publishJointState();
   }
 }

@@ -30,7 +30,7 @@
 #define BUTTON_TASK_FREQ 5
 #define ENCODER_TASK_FREQ 500
 #define IMU_TASK_FREQ 50
-#define LED_INDICATOR_TASK_FREQ 5
+#define LED_INDICATOR_TASK_FREQ 20
 #define MONITOR_TASK_FREQ 1
 #define MOTOR_CONTROL_TASK_FREQ 200
 #define RANGE_TASK_FREQ 10
@@ -56,7 +56,7 @@ inline TaskConfig tasks[] = {
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
      motorControlTask},
     {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
-    {"uRos", Priority::COMMUNICATION, Stack::LARGE, UROS_TASK_FREQ, uRosTask},
+    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
 // ===== Handles =====

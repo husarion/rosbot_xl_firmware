@@ -50,6 +50,8 @@ inline const SerialConfig& selectSerialConfig() {
   uint32_t startTime = millis();
   while ((millis() - startTime) < SERIAL_SELECT_HOLD_TIME) {
     if (digitalRead(PUSH_BUTTON1) == LOW || digitalRead(PUSH_BUTTON2) == LOW) {
+      digitalWrite(GRN_LED, HIGH);
+      digitalWrite(GRN_LED2, HIGH);
       return FTDI_SERIAL_CONFIG;
     }
     delay(BUTTON_CHECK_INTERVAL);
