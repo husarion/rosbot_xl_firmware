@@ -15,94 +15,72 @@
 #pragma once
 
 #include <Arduino.h>
+
 #include "battery.hpp"
 
-struct LedConfig {
-    uint8_t pin;
-    bool blink = false;
+class LedStatusIndicator {
+ public:
+  void init(uint8_t pin) {
+    pin_ = pin;
+    pinMode(pin_, OUTPUT);
+    digitalWrite(pin_, LOW);
+  }
+
+  void update(bool battery_low, bool uros_connected, bool error) {
+    uint32_t now = millis();
+    if (error) {
+      handleSOS(now);
+      return;
+    }
+    resetSOS();
+
+    if (battery_low) {
+      handleBlink(now);
+      return;
+    }
+
+    if (!uros_connected) {
+      digitalWrite(pin_, HIGH);
+      return;
+    }
+
+    digitalWrite(pin_, LOW);
+  }
+
+ private:
+  uint8_t pin_{0};
+  uint32_t lastToggle_{0};
+  uint8_t sosStep_{0};
+
+  void handleBlink(uint32_t now) {
+    const uint16_t blinkPeriod = 500;
+
+    if (now - lastToggle_ >= blinkPeriod) {
+      digitalToggle(pin_);
+      lastToggle_ = now;
+    }
+  }
+
+  void handleSOS(uint32_t now) {
+    static const uint16_t sosPattern[] = {
+        200, 200, 200,  // S
+        600, 200, 600,  // O
+        200, 200, 200,  // S
+        1000            // Pause
+    };
+
+    if (now - lastToggle_ >= sosPattern[sosStep_]) {
+      digitalToggle(pin_);
+      lastToggle_ = now;
+      sosStep_++;
+
+      if (sosStep_ >= sizeof(sosPattern) / sizeof(sosPattern[0])) {
+        sosStep_ = 0;
+      }
+    }
+  }
+
+  void resetSOS() { sosStep_ = 0; }
 };
 
-class LedIndicator {
-public:
-    void init(const LedConfig& battery, const LedConfig& uros, const LedConfig& error)
-    {
-        battery_ = battery;
-        uros_ = uros;
-        error_ = error;
-
-        initLed(battery_);
-        initLed(uros_);
-        initLed(error_);
-    }
-
-    void update(bool batteryLow, bool urosConnected, bool errorState) {
-        updateLed(battery_, battery_last_toggle_, batteryLow);
-        updateLed(uros_, uros_last_toggle_, urosConnected);
-        updateLed(error_, error_last_toggle_, errorState);
-    }
-
-private:
-    static constexpr uint32_t BLINK_INTERVAL_MS = 500;
-
-    LedConfig battery_;
-    LedConfig uros_;
-    LedConfig error_;
-
-    uint32_t battery_last_toggle_;
-    uint32_t uros_last_toggle_;
-    uint32_t error_last_toggle_;
-
-    void initLed(const LedConfig& led) {
-        pinMode(led.pin, OUTPUT);
-        digitalWrite(led.pin, LOW);
-    }
-
-    void updateLed(const LedConfig& config, uint32_t& last_toggle, bool condition) {
-        if (config.blink) {
-            if (condition) {
-                uint32_t now = millis();
-                if (now - last_toggle >= BLINK_INTERVAL_MS) {
-                    digitalToggle(config.pin);
-                    last_toggle = now;
-                }
-            } else {
-                digitalWrite(config.pin, LOW);
-            }
-        } else {
-            digitalWrite(config.pin, condition);
-        }
-    }
-
-    // void blink(uint8_t pin, uint16_t duration_ms) {
-    //     digitalWrite(pin, HIGH);
-    //     delay(duration_ms);
-    //     digitalWrite(pin, LOW);
-    //     delay(200);
-    // }
-
-    // void errorLoop(const char* func) {
-    //     digitalWrite(battery_.pin, LOW);
-    //     digitalWrite(error_.pin, LOW);
-    //     digitalWrite(uros_.pin, LOW);
-
-    //     delay(500);
-
-    //     // 2 SOS signals: ... --- ...
-    //     for (uint8_t i = 0; i < 2; ++i) {
-    //         for (uint8_t i = 0; i < 3; ++i) {
-    //             blink(error_.pin, 200);
-    //         }
-    //         for (uint8_t i = 0; i < 3; ++i) {
-    //             blink(error_.pin, 600);
-    //         }
-    //         for (uint8_t i = 0; i < 3; ++i) {
-    //             blink(error_.pin, 200);
-    //         }
-    //         delay(1000);
-    //     }
-
-    //     NVIC_SystemReset();
-    // }
-};
-
-inline LedIndicator ledIndicator;
+inline LedStatusIndicator ledIndicator;

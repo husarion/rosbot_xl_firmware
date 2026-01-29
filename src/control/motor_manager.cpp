@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
 #include <semphr.h>
 
 #include "control/encoders_manager.hpp"
@@ -65,6 +65,7 @@ void MotorDriver::init() {
                       encoders[m]);
 
   last_update_time_ = millis();
+  enableDrivers();
 }
 
 void MotorDriver::enableDrivers() {

@@ -35,6 +35,7 @@
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "log.hpp"
+#include "namespace_config.hpp"
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
 #include "tasks.hpp"
@@ -99,12 +100,12 @@ void motorsCmdCallback(const void* msg_in) {
 
 void uRosLeftLedCallback(const void* msg) {
   auto led_msg = (std_msgs__msg__Bool*)msg;
-  // SetGreenLed(led_msg->data ? On : Off);
+  digitalWrite(GRN_LED, led_msg->data ? HIGH : LOW);
 }
 
 void uRosRightLedCallback(const void* msg) {
   auto led_msg = (std_msgs__msg__Bool*)msg;
-  // SetGreenLed2(led_msg->data ? On : Off);
+  digitalWrite(GRN_LED2, led_msg->data ? HIGH : LOW);
 }
 
 void timerCallback(rcl_timer_t* timer, int64_t last_call_time) {
@@ -159,7 +160,8 @@ bool createEntities(void) {
   // &init_options,
   //                                        &allocator));
   RCCHECK_RETURN(rclc_support_init(&support, 0, NULL, &allocator));
-  RCCHECK_RETURN(rclc_node_init_default(&node, NODE_NAME, "", &support));
+  RCCHECK_RETURN(
+      rclc_node_init_default(&node, NODE_NAME, g_namespace, &support));
 
   /*===== MSGS =====*/
   initBatteryMsg(&battery_msg);
@@ -356,7 +358,6 @@ void initRangeMsg(sensor_msgs__msg__Range* msg) {
 }
 
 void publishBattery() {
-
   if (rmw_uros_epoch_synchronized()) {
     battery_msg.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
     battery_msg.header.stamp.nanosec = rmw_uros_epoch_nanos();
@@ -376,7 +377,7 @@ void publishButtons() {
   buttons |= (digitalRead(PUSH_BUTTON1) == LOW) << 0;
   buttons |= (digitalRead(PUSH_BUTTON2) == LOW) << 1;
 
-  if(buttons != last_buttons) {
+  if (buttons != last_buttons) {
     last_buttons = buttons;
 
     buttons_msg.data = buttons;

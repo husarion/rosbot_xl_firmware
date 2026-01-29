@@ -31,38 +31,34 @@
 #include "log.hpp"
 #include "robot_config.hpp"
 
-#define SERIAL_SELECT_HOLD_TIME  2000  // 2 seconds
-#define BUTTON_CHECK_INTERVAL    50    // ms
+#define SERIAL_SELECT_HOLD_TIME 2000  // 2 seconds
+#define BUTTON_CHECK_INTERVAL 50      // ms
 
 namespace serial_selector {
 
 /**
  * @brief Select serial port based on button state at boot
- * 
+ *
  * If any button is held for 2 seconds, switch to alternate serial.
  * Otherwise, use default serial.
- * 
- * @param ledIndicator Optional: LED for visual feedback (blink during wait, solid on switch)
+ *
+ * @param ledIndicator Optional: LED for visual feedback (blink during wait,
+ * solid on switch)
  * @return const SerialConfig& Selected serial configuration
  */
 inline const SerialConfig& selectSerialConfig() {
-    pinMode(PUSH_BUTTON1, INPUT_PULLUP);
-    pinMode(PUSH_BUTTON2, INPUT_PULLUP);
-    
-    uint32_t startTime = millis();
-    while ((millis() - startTime) < SERIAL_SELECT_HOLD_TIME) {
-        bool button1Pressed = (digitalRead(PUSH_BUTTON1) == LOW);
-        bool button2Pressed = (digitalRead(PUSH_BUTTON2) == LOW);
-        if (button1Pressed || button2Pressed) {
-            return FTDI_SERIAL_CONFIG;
-        }
-        delay(BUTTON_CHECK_INTERVAL);
+  uint32_t startTime = millis();
+  while ((millis() - startTime) < SERIAL_SELECT_HOLD_TIME) {
+    if (digitalRead(PUSH_BUTTON1) == LOW || digitalRead(PUSH_BUTTON2) == LOW) {
+      return FTDI_SERIAL_CONFIG;
     }
-    
-    return SBC_SERIAL_CONFIG;
+    delay(BUTTON_CHECK_INTERVAL);
+  }
+
+  return SBC_SERIAL_CONFIG;
 }
 
-} // namespace serial_selector
+}  // namespace serial_selector
 
 static const SerialConfig* g_activeConfig = nullptr;
 
@@ -142,55 +138,52 @@ extern u_ros_state_t state;
 
 /* FUNCTIONS */
 inline void transportInit(const SerialConfig& config) {
-    // Store config pointer for use in callbacks
-    g_activeConfig = &config;
-    
-    rmw_uros_set_custom_transport(
-        /* Enable XRCE framing */
-        true,
-        /* Arguments for callbacks - pass config pointer */
-        (void*)&config,
-        
-        /* Open transport callback */
-        [](struct uxrCustomTransport* transport) -> bool {
-            const SerialConfig* cfg = (const SerialConfig*)transport->args;
-            cfg->serial->setRx(cfg->rxPin);
-            cfg->serial->setTx(cfg->txPin);
-            cfg->serial->setTimeout(cfg->timeout);
-            cfg->serial->begin(cfg->baudrate);
-            return cfg->serial->operator bool();
-        },
-        
-        /* Close transport callback */
-        [](struct uxrCustomTransport* transport) -> bool {
-            const SerialConfig* cfg = (const SerialConfig*)transport->args;
-            cfg->serial->end();
-            return true;
-        },
-        
-        /* Write transport callback */
-        [](struct uxrCustomTransport* transport, const uint8_t* buf, 
-           size_t len, uint8_t* errcode) -> unsigned int {
-            const SerialConfig* cfg = (const SerialConfig*)transport->args;
-            return cfg->serial->write(buf, len);
-        },
-        
-        /* Read transport callback */
-        [](struct uxrCustomTransport* transport, uint8_t* buf, 
-           size_t len, int timeout, uint8_t* errcode) -> unsigned int {
-            const SerialConfig* cfg = (const SerialConfig*)transport->args;
-            cfg->serial->setTimeout(timeout);
-            return cfg->serial->readBytes((char*)buf, len);
-        }
-    );
+  // Store config pointer for use in callbacks
+  g_activeConfig = &config;
+
+  rmw_uros_set_custom_transport(
+      /* Enable XRCE framing */
+      true,
+      /* Arguments for callbacks - pass config pointer */
+      (void*)&config,
+
+      /* Open transport callback */
+      [](struct uxrCustomTransport* transport) -> bool {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->setRx(cfg->rxPin);
+        cfg->serial->setTx(cfg->txPin);
+        cfg->serial->setTimeout(cfg->timeout);
+        cfg->serial->begin(cfg->baudrate);
+        return cfg->serial->operator bool();
+      },
+
+      /* Close transport callback */
+      [](struct uxrCustomTransport* transport) -> bool {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->end();
+        return true;
+      },
+
+      /* Write transport callback */
+      [](struct uxrCustomTransport* transport, const uint8_t* buf, size_t len,
+         uint8_t* errcode) -> unsigned int {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        return cfg->serial->write(buf, len);
+      },
+
+      /* Read transport callback */
+      [](struct uxrCustomTransport* transport, uint8_t* buf, size_t len,
+         int timeout, uint8_t* errcode) -> unsigned int {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->setTimeout(timeout);
+        return cfg->serial->readBytes((char*)buf, len);
+      });
 }
 
 /**
  * @brief Get currently active serial config
  */
-inline const SerialConfig* getActiveConfig() {
-    return g_activeConfig;
-}
+inline const SerialConfig* getActiveConfig() { return g_activeConfig; }
 
 bool pingAgent();
 void loop();

@@ -17,10 +17,9 @@
 #include <Arduino.h>
 
 PIDController::PIDController(float kp, float ki, float kd)
-    : kp_(kp), ki_(ki), kd_(kd)
-    {
-      max_integral_ = 1.0f / ki_;
-    }
+    : kp_(kp), ki_(ki), kd_(kd) {
+  max_integral_ = 1.0f / ki_;
+}
 
 void PIDController::setMaxAccel(float max_accel) { max_accel_ = max_accel; }
 
@@ -45,7 +44,8 @@ void PIDController::reset() {
   ramped_setpoint_ = 0.0f;
 }
 
-float PIDController::compute(float setpoint, float measurement, float dt, float min_drive) {
+float PIDController::compute(float setpoint, float measurement, float dt,
+                             float min_drive) {
   if (dt <= 0.0f) return 0.0f;
 
   // ========== ACCELERATION LIMITING ==========
@@ -87,9 +87,8 @@ float PIDController::compute(float setpoint, float measurement, float dt, float 
   if (drive_scale < 0.0f) drive_scale = 0.0f;
 
   if (fabs(setpoint) > 0.01f && fabs(output) < min_drive) {
-      output += ((output > 0) ? 1 : -1) * min_drive * drive_scale;
+    output += ((output > 0) ? 1 : -1) * min_drive * drive_scale;
   }
-
 
   return constrain(output, min_output_, max_output_);
 }

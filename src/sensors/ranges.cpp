@@ -31,7 +31,7 @@ void VL53L0XManager::addSensor(uint8_t xshutPin, uint8_t address) {
   _sensors.push_back(s);
 }
 
-bool VL53L0XManager::begin() {
+bool VL53L0XManager::init() {
   for (auto& s : _sensors) {
     pinMode(s.xshutPin, OUTPUT);
     digitalWrite(s.xshutPin, LOW);

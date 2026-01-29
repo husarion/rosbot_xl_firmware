@@ -73,43 +73,68 @@ constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
 }  // namespace RobotParams
 
 struct SerialConfig {
-    HardwareSerial* serial;
-    uint32_t        baudrate;
-    uint8_t         rxPin;
-    uint8_t         txPin;
-    uint32_t        timeout;
-    const char*     name;  // for debug
+  HardwareSerial* serial;
+  uint32_t baudrate;
+  uint8_t rxPin;
+  uint8_t txPin;
+  uint32_t timeout;
+  const char* name;
 };
 
-// Primary: SBC Serial (Serial1 - SBC connection)
-inline constexpr SerialConfig SBC_SERIAL_CONFIG = {
-    .serial   = &Serial1,
-    .baudrate = 921600,
-    .rxPin    = PA10,
-    .txPin    = PA9,
-    .timeout  = 1,
-    .name     = "SBC_SERIAL"
-};
+// Primary: SBC Serial (SBC connection)
+inline constexpr SerialConfig SBC_SERIAL_CONFIG = {.serial = &Serial1,
+                                                   .baudrate = 921600,
+                                                   .rxPin = PA10,
+                                                   .txPin = PA9,
+                                                   .timeout = 1,
+                                                   .name = "SBC_SERIAL"};
 
-// Secondary: FTDI Serial (Serial3 - USB (rear panel) connection)
-inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {
-    .serial   = &Serial3,
-    .baudrate = 921600,
-    .rxPin    = PB11,
-    .txPin    = PB10,
-    .timeout  = 1,
-    .name     = "FTDI_SERIAL"
-};
-
-// ============== Default Selection ==============
-#define DEFAULT_SERIAL_CONFIG  SBC_SERIAL_CONFIG
-#define ALT_SERIAL_CONFIG      FTDI_SERIAL_CONFIG
+// Secondary: FTDI Serial (Rear panel USB connection)
+inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
+                                                    .baudrate = 921600,
+                                                    .rxPin = PB11,
+                                                    .txPin = PB10,
+                                                    .timeout = 1,
+                                                    .name = "FTDI_SERIAL"};
 
 // ============== Buttons ==============
-#define PUSH_BUTTON1  PG12
-#define PUSH_BUTTON2  PG13
+#define PUSH_BUTTON1 PG12
+#define PUSH_BUTTON2 PG13
 
 // ============== LEDs ==============
 #define RD_LED PE2
 #define GRN_LED PE3
 #define GRN_LED2 PE4
+
+// ============== Battery ==============
+#define BATTERY_ADC_PIN PA5
+
+// ============== Firmware Mode ==============
+#define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
+
+// ============== Power Management ==============
+#define POWEROFF_DELAY 5000  // ms
+
+// ============== SBC Interface ==============
+#define SBC_SERIAL_TIMEOUT 1  // ms
+#define SBC_STATUS \
+  PG6  // According to "Rosbot v1.3 schematics", this should be connected to
+       // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define RPI_CONSOLE PG5
+#define RPI_BTN PG7
+
+// ============== IMU ==============
+#define IMU_POWER_ON PG4
+#define IMU_I2C_SDA PC9
+#define IMU_I2C_SCL PA8
+#define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
+#define IMU_ADDR_A 0x28
+#define IMU_ADDR_B 0x29
+
+// ============== Ranges ==============
+#define RANGE_FR_SHD_PIN PB1
+#define RANGE_FL_SHD_PIN PD8
+#define RANGE_RR_SHD_PIN PD9
+#define RANGE_RL_SHD_PIN PD10
+#define RANGE_I2C_SDA PB9
+#define RANGE_I2C_SCL PB8

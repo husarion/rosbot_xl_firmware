@@ -30,13 +30,13 @@ TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
 uint8_t ranges_shd_pins[RANGES_COUNT] = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
                                          RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
-void BoardGpioInit(void) {
+void buttonInit(void) {
   pinMode(PUSH_BUTTON1, INPUT_PULLUP);
   pinMode(PUSH_BUTTON2, INPUT_PULLUP);
 }
 
 void BoardPheripheralsInit(void) {
-  BoardGpioInit();
+  buttonInit();
   if (firmware_mode == fw_debug) {
     DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
   }
@@ -57,16 +57,9 @@ void BoardPheripheralsInit(void) {
   range_i2c.setClock(200000);
   delay(250);
 
-  if (!imuDriver.init()) {
-    LOG_ERROR("imuDriver.Init() failed!");
-  }
   for (uint8_t i = 0; i < RANGES_COUNT; i++) {
     rangeSensorsManager.addSensor(ranges_shd_pins[i]);
   }
-  if (!rangeSensorsManager.begin()) {
-    LOG_ERROR("Failed to init sensors!");
-  }
-  LOG_INFO("Range sensors initialized");
 }
 
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) { return Idle; }

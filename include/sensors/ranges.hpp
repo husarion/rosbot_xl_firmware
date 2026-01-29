@@ -41,7 +41,7 @@ class VL53L0XManager {
   VL53L0XManager(TwoWire* bus);
 
   void addSensor(uint8_t xshutPin, uint8_t address = 0);
-  bool begin();
+  bool init();
   void readAll();
 
   size_t count() const;

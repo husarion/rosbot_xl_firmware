@@ -19,20 +19,19 @@
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
+#include "namespace_config.hpp"
 #include "robot_config.hpp"
 #include "rosbot/tasks.hpp"
 #include "sensors/imu.hpp"
+#include "sensors/ranges.hpp"
 #include "u_ros.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 
-LedConfig batteryLed = {GRN_LED, false};
-LedConfig urosLed   = {GRN_LED2, false};
-LedConfig errorLed  = {RD_LED, true};
 const SerialConfig* g_serialConfig = nullptr;
-// char g_robotNamespace[NS_MAX_LENGTH] = {0};
+char g_namespace[NS_MAX_LENGTH] = {0};
 
 /*==================== SETUP ========================*/
 void setup() {
@@ -41,19 +40,18 @@ void setup() {
 
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
-  ledIndicator.init(batteryLed, urosLed, errorLed);
+  imuDriver.init();
+  ledIndicator.init(RD_LED);
   motors.init();
-  motors.enableDrivers();
+  rangeSensorsManager.init();
 
   g_serialConfig = &serial_selector::selectSerialConfig();
-      
-  // ns_config::configure(*g_serialConfig, g_robotNamespace, NS_MAX_LENGTH);
-  
-  // RTOS init
+  ns_config::configure(*g_serialConfig, g_namespace, NS_MAX_LENGTH);
   u_ros::transportInit(*g_serialConfig);
+
+  // RTOS
   rtos::createQueues();
   rtos::createTasks();
-
   vTaskStartScheduler();
 }
 
@@ -61,17 +59,18 @@ void setup() {
 void loop() {}
 
 /*=========== Runtime stats ====================*/
-HardwareTimer RuntimeStatsTimer(TIM5);  // TIM5 - 32 bit
+HardwareTimer RuntimeStatsTimer(TIM5);
 
 void vConfigureTimerForRunTimeStats(void) {
-  RuntimeStatsTimer.setPrescaleFactor(
-      1680);  // Set prescaler to 2564 => timer frequency = 168MHz/1680 = 100000
-              // Hz (from prediv'd by 1 clocksource of 168 MHz)
-  RuntimeStatsTimer.setOverflow(
-      0xffffffff);              // Set overflow to 32761 => timer
-                                // frequency = 65522 Hz / 32761 = 2 Hz
-  RuntimeStatsTimer.refresh();  // Make register changes take effect
-  RuntimeStatsTimer.resume();   // Start
+  // Prescaler: 168 MHz / 1680 = 100 kHz (10 µs per tick)
+  RuntimeStatsTimer.setPrescaleFactor(1680);
+
+  // Auto-reload set to maximum 32-bit
+  RuntimeStatsTimer.setOverflow(0xFFFFFFFF);
+
+  // Apply changes and start timer
+  RuntimeStatsTimer.refresh();
+  RuntimeStatsTimer.resume();
 }
 
 uint32_t vGetTimerValueForRunTimeStats(void) {

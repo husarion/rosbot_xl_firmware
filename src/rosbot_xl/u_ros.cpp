@@ -38,7 +38,6 @@ namespace u_ros {
 
 // PUBLISHERS
 rcl_publisher_t battery_pub;
-// rcl_publisher_t buttons_pubs[BUTTONS_COUNT];
 rcl_publisher_t imu_pub;
 rcl_publisher_t motor_state_pub;
 rcl_publisher_t range_pub;
@@ -66,7 +65,6 @@ rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t timer;
-
 
 bool pingAgent(void) {
   return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==

@@ -41,7 +41,6 @@ namespace rtos {
 void createQueues() {
   ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
   RangeQueue = xQueueCreate(1, sizeof(ranges_data_t));
-  SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
 }
 
 // ===== Config for all tasks =====
@@ -51,8 +50,9 @@ inline TaskConfig tasks[] = {
     {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
      encoderTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
-    {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ, ledIndicatorTask},
-    // {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
+    {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
+     ledIndicatorTask},
+    {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
      motorControlTask},
     {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},

@@ -17,37 +17,37 @@
 #include <Arduino.h>
 
 class Battery {
-public:
-    struct Config {
-        uint8_t adcPin;
-        float vRef = 3.3f;
-        float correction = 0.986f;
-        float upperResistor = 5.6e4;
-        float lowerResistor = 1.0e4;
-        float vMin = 9.6f;
-        float vMax = 12.6f;
-        float lowThreshold = 10.8f;
-        float hysteresis = 0.2f;
-    };
+ public:
+  struct Config {
+    uint8_t adcPin;
+    float vRef = 3.3f;
+    float correction = 0.986f;
+    float upperResistor = 5.6e4;
+    float lowerResistor = 1.0e4;
+    float vMin = 9.6f;
+    float vMax = 12.6f;
+    float lowThreshold = 10.8f;
+    float hysteresis = 0.2f;
+  };
 
-    void init(const Config& cfg);
-    void init(uint8_t adcPin);
-    void update();
+  void init(const Config& cfg);
+  void init(uint8_t adcPin);
+  void update();
 
-    float current() const { return current_; }
-    float temperature() const { return temperature_; }
-    float voltage() const { return voltage_; }
-    float percentage() const;
-    bool isLow() const { return isLow_; }
-    bool isCritical() const { return voltage_ < cfg_.vMin; }
+  float current() const { return current_; }
+  float temperature() const { return temperature_; }
+  float voltage() const { return voltage_; }
+  float percentage() const;
+  bool isLow() const { return isLow_; }
+  bool isCritical() const { return voltage_ < cfg_.vMin; }
 
-private:
-    Config cfg_;
-    float dividerRatio_ = 1.0f;
-    float current_ = NAN; // Not implemented
-    float temperature_ = NAN; // Not implemented
-    float voltage_ = 0.0f;
-    bool isLow_ = false;
+ private:
+  Config cfg_;
+  float dividerRatio_ = 1.0f;
+  float current_ = NAN;      // Not implemented
+  float temperature_ = NAN;  // Not implemented
+  float voltage_ = 0.0f;
+  bool isLow_ = false;
 };
 
 inline Battery battery;

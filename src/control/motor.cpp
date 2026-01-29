@@ -39,8 +39,7 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_channel_ = STM_PIN_CHANNEL(pinmap_function(pwm_pin_name, PinMap_PWM));
 
   pwm_timer_ = new HardwareTimer(timer_instance);
-  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, control::MOTOR_PWM_FREQ,
-                     0);
+  pwm_timer_->setPWM(pwm_channel_, pwm_pin_name, control::MOTOR_PWM_FREQ, 0);
   pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);
 
   // Initialize encoder
@@ -158,7 +157,8 @@ void SingleMotor::update(float dt, bool move) {
 
   const float target = target_velocity_.load(std::memory_order_relaxed);
   const float current = getVelocity();
-  const float output = pid_.compute(target, current, dt, control::MIN_FRICTION_OUTPUT);
+  const float output =
+      pid_.compute(target, current, dt, control::MIN_FRICTION_OUTPUT);
 
   applyPWM(output);
 }
@@ -167,6 +167,6 @@ void SingleMotor::reset() {
   brake();
   target_velocity_.store(0.0f, std::memory_order_relaxed);
   current_effort_.store(0.0f, std::memory_order_relaxed);
-  pid_.reset(); 
+  pid_.reset();
   encoder_->reset();
 }

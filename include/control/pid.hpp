@@ -36,7 +36,8 @@ class PIDController {
   void setMaxIntegral(float max_integral);
   void reset();
 
-  float compute(float setpoint, float measurement, float dt, float min_output = 0.0f);
+  float compute(float setpoint, float measurement, float dt,
+                float min_output = 0.0f);
 
  private:
   float kp_, ki_, kd_;

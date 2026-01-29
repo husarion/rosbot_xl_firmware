@@ -22,8 +22,6 @@ namespace rtos {
 
 inline QueueHandle_t ImuQueue;
 inline QueueHandle_t RangeQueue;
-inline QueueHandle_t SetpointQueue;
-inline QueueHandle_t uRosAgentConectionQueue;
 
 void createQueues();
 void createTasks();
