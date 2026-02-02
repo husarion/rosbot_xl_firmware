@@ -16,7 +16,6 @@
 
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
-#include <Wire.h>
 
 typedef struct {
   float orientation[4];       // quaternion: x y z w
@@ -26,14 +25,12 @@ typedef struct {
 
 class ImuDriver {
  public:
-  ImuDriver(uint8_t ImuId_, uint8_t ImuAddr_, TwoWire* ImuWire_);
-  ~ImuDriver();
-  bool init();
+  bool init(uint8_t id, uint8_t addr, TwoWire* wire);
   imu_data_t loopHandler();
 
  private:
-  Adafruit_BNO055* imuBno;
-  sensors_event_t event;
+  Adafruit_BNO055* imuBno_ = nullptr;
+  sensors_event_t event_;
 };
 
-extern ImuDriver imuDriver;
+inline ImuDriver imuDriver;

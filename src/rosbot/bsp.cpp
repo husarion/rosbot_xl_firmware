@@ -18,36 +18,29 @@
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
 
-#if EXT_SERIAL_EN_FLAG == 1
-HardwareSerial EXT_SERIAL(EXT_SERIAL_RX, EXT_SERIAL_TX);
-#endif
-
-String PowerBoardFirmwareVersion = "";
-String PowerBoardVersion = "";
-extern FirmwareModeTypeDef firmware_mode;
 TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
 TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
-uint8_t ranges_shd_pins[RANGES_COUNT] = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
-                                         RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
-
-void buttonInit(void) {
-  pinMode(PUSH_BUTTON1, INPUT_PULLUP);
-  pinMode(PUSH_BUTTON2, INPUT_PULLUP);
-}
 
 void BoardPheripheralsInit(void) {
-  buttonInit();
+  // Initialize Buttons
+  pinMode(PUSH_BUTTON1, INPUT_PULLUP);
+  pinMode(PUSH_BUTTON2, INPUT_PULLUP);
+  
+  // Initialize LEDs
   pinMode(RED_LED, OUTPUT);
   pinMode(GRN_LED, OUTPUT);
   pinMode(GRN_LED2, OUTPUT);
   digitalWrite(RED_LED, HIGH);
-  if (firmware_mode == fw_debug) {
-    DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
-  }
 
   // Enable power for IMU sensor
   pinMode(IMU_POWER_ON, OUTPUT);
   digitalWrite(IMU_POWER_ON, HIGH);
+
+  // I2C buses init
+  imu_i2c.begin();
+  imu_i2c.setClock(200000);
+  range_i2c.begin();
+  range_i2c.setClock(200000);
 
   // FTDI UART-USB init
   // Serial3.setRx(FTDI_SERIAL_CONFIG.rxPin);
@@ -55,20 +48,5 @@ void BoardPheripheralsInit(void) {
   // Serial3.setTimeout(FTDI_SERIAL_CONFIG.timeout);
   // Serial3.begin(FTDI_SERIAL_CONFIG.baudrate);
 
-  imu_i2c.begin();
-  imu_i2c.setClock(200000);
-  range_i2c.begin();
-  range_i2c.setClock(200000);
-  delay(250);
-
-  for (uint8_t i = 0; i < RANGES_COUNT; i++) {
-    rangeSensorsManager.addSensor(ranges_shd_pins[i]);
-  }
-}
-
-PowerOffSignalTypeDef PowerOffSignalLoopHandler(void) { return Idle; }
-
-String GetBoardVersion(void) {
-  static String BoardVersion = (String) "core2";
-  return BoardVersion;
+  delay(100);
 }

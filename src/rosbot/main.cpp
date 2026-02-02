@@ -14,6 +14,8 @@
 
 #include <Arduino.h>
 
+#include <vector>
+
 #include "battery.hpp"
 #include "bsp.hpp"
 #include "control/encoders_manager.hpp"
@@ -28,25 +30,28 @@
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
-FirmwareModeTypeDef firmware_mode = (FirmwareModeTypeDef)DEFAULT_FIRMWARE_MODE;
 
 const SerialConfig* g_serialConfig = nullptr;
 char g_namespace[NS_MAX_LENGTH] = {0};
+std::vector<uint8_t> ranges_shd_pins = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
+                                         RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
 /*==================== SETUP ========================*/
 void setup() {
   // Hardware configuration
   BoardPheripheralsInit();
 
-  battery.init(BATTERY_ADC_PIN);
-  encoders.init();
-  imuDriver.init();
-  ledIndicator.init(RED_LED);
-  motors.init();
-  rangeSensorsManager.init();
-
+  // Pre-communication configuration
   g_serialConfig = &serial_selector::selectSerialConfig();
   ns_config::configure(*g_serialConfig, g_namespace, NS_MAX_LENGTH);
+
+  // Peripherals initialization
+  battery.init(BATTERY_ADC_PIN);
+  encoders.init();
+  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
+  ledIndicator.init(RED_LED);
+  motors.init();
+  rangeSensorsManager.init(ranges_shd_pins);
   u_ros::transportInit(*g_serialConfig);
 
   // RTOS
@@ -62,13 +67,8 @@ void loop() {}
 HardwareTimer RuntimeStatsTimer(TIM5);
 
 void vConfigureTimerForRunTimeStats(void) {
-  // Prescaler: 168 MHz / 1680 = 100 kHz (10 µs per tick)
-  RuntimeStatsTimer.setPrescaleFactor(1680);
-
-  // Auto-reload set to maximum 32-bit
+  RuntimeStatsTimer.setPrescaleFactor(1680); // evry 10 µs (168MHz / 1680 = 100kHz)
   RuntimeStatsTimer.setOverflow(0xFFFFFFFF);
-
-  // Apply changes and start timer
   RuntimeStatsTimer.refresh();
   RuntimeStatsTimer.resume();
 }

@@ -15,6 +15,7 @@
 #include "sensors/ranges.hpp"
 
 #include <Arduino.h>
+#include <vector>
 
 #include "bsp.hpp"
 
@@ -29,6 +30,14 @@ void VL53L0XManager::addSensor(uint8_t xshutPin, uint8_t address) {
   s.lastRange = 0;
   s.timeout = false;
   _sensors.push_back(s);
+}
+
+bool VL53L0XManager::init(std::vector<uint8_t> xshut_pins) {
+  for (auto& pin : xshut_pins) {
+    addSensor(pin);
+  }
+
+  return init();
 }
 
 bool VL53L0XManager::init() {
@@ -60,6 +69,7 @@ bool VL53L0XManager::init() {
 
   return true;
 }
+
 
 void VL53L0XManager::readAll() {
   for (auto& s : _sensors) {

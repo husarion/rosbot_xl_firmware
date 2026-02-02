@@ -109,9 +109,6 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 // ============== Battery ==============
 #define BATTERY_ADC_PIN PA5
 
-// ============== Firmware Mode ==============
-#define DEFAULT_FIRMWARE_MODE 2  // 0 - normal; 1 - error; 2 - debug
-
 // ============== Power Management ==============
 #define POWEROFF_DELAY 5000  // ms
 

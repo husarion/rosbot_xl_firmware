@@ -27,46 +27,39 @@
 #endif
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
-ImuDriver imuDriver(BNO055_ID, BNO055_ADDRESS_B, &imu_i2c);
-
-ImuDriver::ImuDriver(uint8_t ImuId, uint8_t ImuAddr, TwoWire* ImuWire) {
-  this->imuBno = new Adafruit_BNO055(ImuId, ImuAddr, ImuWire);
-}
-
-ImuDriver::~ImuDriver() {}
-
-bool ImuDriver::init() {
-  if (!this->imuBno->begin(OPERATION_MODE_NDOF)) {
+bool ImuDriver::init(uint8_t id, uint8_t addr, TwoWire* wire) {
+  this->imuBno_ = new Adafruit_BNO055(id, addr, wire);
+  if (!this->imuBno_->begin(OPERATION_MODE_NDOF)) {
     return false;
   }
 
-  imuBno->setAxisRemap(IMU_AXIS_CONFIG);
-  imuBno->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
-  imuBno->setExtCrystalUse(true);
+  imuBno_->setAxisRemap(IMU_AXIS_CONFIG);
+  imuBno_->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
+  imuBno_->setExtCrystalUse(true);
 
   delay(10);
   return true;
 }
 
 imu_data_t ImuDriver::loopHandler() {
-  this->imuBno->getEvent(&this->event);
+  this->imuBno_->getEvent(&event_);
   imu_data_t data;
 
   // Acceleration
   imu::Vector<3> accel =
-      imuBno->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+      imuBno_->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
   data.acceleration[0] = accel.x();
   data.acceleration[1] = accel.y();
   data.acceleration[2] = accel.z();
 
   // Gyroscope
-  imu::Vector<3> gyro = imuBno->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+  imu::Vector<3> gyro = imuBno_->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
   data.angular_velocity[0] = gyro.x() * DEGREESPERSEC_TO_RADPERSEC;
   data.angular_velocity[1] = gyro.y() * DEGREESPERSEC_TO_RADPERSEC;
   data.angular_velocity[2] = gyro.z() * DEGREESPERSEC_TO_RADPERSEC;
 
   // Orientation (quaternion)
-  imu::Quaternion q = imuBno->getQuat();
+  imu::Quaternion q = imuBno_->getQuat();
   data.orientation[0] = q.x();
   data.orientation[1] = q.y();
   data.orientation[2] = q.z();

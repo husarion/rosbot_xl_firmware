@@ -16,6 +16,32 @@
 
 typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 
+#include <Arduino.h>
+#include <HardwareSerial.h>
+#include <array>
+#include "control/types.hpp"
+
+struct BoardConfig {
+    // Battery
+    uint8_t battery_adc_pin;
+    
+    // LED
+    uint8_t led_pin;
+    
+    // IMU
+    I2C_TypeDef* imu_i2c;
+    uint8_t imu_addr;
+    
+    // Motors & Encoders
+    std::array<MotorConfig, 4> motors;
+    
+    // Range sensors
+    // RangeSensorConfig range_sensors;
+    
+    // Serial
+    // SerialConfig serial;
+};
+
 /* CHOOSE HARDWARE CONFIG */
 #if defined(ROSBOT_XL)
 #include "rosbot_xl/hardware_cfg.hpp"
