@@ -35,9 +35,9 @@
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "log.hpp"
-#include "namespace_config.hpp"
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
+#include "serial_manager.hpp"
 #include "tasks.hpp"
 
 namespace u_ros {
@@ -161,7 +161,7 @@ bool createEntities(void) {
   //                                        &allocator));
   RCCHECK_RETURN(rclc_support_init(&support, 0, NULL, &allocator));
   RCCHECK_RETURN(
-      rclc_node_init_default(&node, NODE_NAME, g_namespace, &support));
+      rclc_node_init_default(&node, NODE_NAME, serialManager.getNamespace(), &support));
 
   /*===== MSGS =====*/
   initBatteryMsg(&battery_msg);

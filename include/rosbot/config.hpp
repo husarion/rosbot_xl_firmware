@@ -77,7 +77,7 @@ struct SerialConfig {
   uint32_t baudrate;
   uint8_t rxPin;
   uint8_t txPin;
-  uint32_t timeout;
+  uint32_t timeout_ms;
   const char* name;
 };
 
@@ -86,7 +86,7 @@ inline constexpr SerialConfig SBC_SERIAL_CONFIG = {.serial = &Serial1,
                                                    .baudrate = 921600,
                                                    .rxPin = PA10,
                                                    .txPin = PA9,
-                                                   .timeout = 1,
+                                                   .timeout_ms = 1,
                                                    .name = "SBC_SERIAL"};
 
 // Secondary: FTDI Serial (Rear panel USB connection)
@@ -94,7 +94,7 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
                                                     .baudrate = 921600,
                                                     .rxPin = PB11,
                                                     .txPin = PB10,
-                                                    .timeout = 1,
+                                                    .timeout_ms = 1,
                                                     .name = "FTDI_SERIAL"};
 
 // ============== Buttons ==============

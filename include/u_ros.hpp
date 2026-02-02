@@ -154,7 +154,7 @@ inline void transportInit(const SerialConfig& config) {
         const SerialConfig* cfg = (const SerialConfig*)transport->args;
         cfg->serial->setRx(cfg->rxPin);
         cfg->serial->setTx(cfg->txPin);
-        cfg->serial->setTimeout(cfg->timeout);
+        cfg->serial->setTimeout(cfg->timeout_ms);
         cfg->serial->begin(cfg->baudrate);
         return cfg->serial->operator bool();
       },

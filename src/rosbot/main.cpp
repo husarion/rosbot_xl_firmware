@@ -21,18 +21,17 @@
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
-#include "namespace_config.hpp"
 #include "robot_config.hpp"
 #include "rosbot/tasks.hpp"
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
+#include "serial_manager.hpp"
 #include "u_ros.hpp"
 
 /* EXTERN VARIABLES */
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 
-const SerialConfig* g_serialConfig = nullptr;
-char g_namespace[NS_MAX_LENGTH] = {0};
+SerialManager serialManager;
 std::vector<uint8_t> ranges_shd_pins = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
                                          RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
@@ -42,17 +41,18 @@ void setup() {
   BoardPheripheralsInit();
 
   // Pre-communication configuration
-  g_serialConfig = &serial_selector::selectSerialConfig();
-  ns_config::configure(*g_serialConfig, g_namespace, NS_MAX_LENGTH);
+  serialManager.init();
+  const auto& selected_serial = serialManager.selectActive();
+  serialManager.configureNamespace();
 
   // Peripherals initialization
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
-  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
+  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c); 
   ledIndicator.init(RED_LED);
   motors.init();
   rangeSensorsManager.init(ranges_shd_pins);
-  u_ros::transportInit(*g_serialConfig);
+  u_ros::transportInit(selected_serial);
 
   // RTOS
   rtos::createQueues();

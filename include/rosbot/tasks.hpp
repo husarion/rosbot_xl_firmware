@@ -62,18 +62,12 @@ struct TaskHandleWrapper {
     auto result = xTaskCreate(cfg.function, cfg.name,
                               configMINIMAL_STACK_SIZE + cfg.stack, nullptr,
                               cfg.priority, &handle);
-    if (result != pdPASS) {
-      LOG_ERROR("%s creation failed!", cfg.name);
-    } else {
-      LOG_INFO("%s started", cfg.name);
-    }
   }
 
   void destroy(const char* name) {
     if (handle != nullptr) {
       vTaskDelete(handle);
       handle = nullptr;
-      LOG_INFO("%s stopped", name);
     }
   }
 };
@@ -83,7 +77,6 @@ inline TickType_t frequencyToTicks(float freq) {
 }
 
 void batteryTask(void* pvParameters);
-void buttonsTask(void* pvParameters);
 void encoderTask(void* pvParameters);
 void imuTask(void* pvParameters);
 void ledIndicatorTask(void* pvParameters);
