@@ -160,8 +160,8 @@ bool createEntities(void) {
   // &init_options,
   //                                        &allocator));
   RCCHECK_RETURN(rclc_support_init(&support, 0, NULL, &allocator));
-  RCCHECK_RETURN(
-      rclc_node_init_default(&node, NODE_NAME, serialManager.getNamespace(), &support));
+  RCCHECK_RETURN(rclc_node_init_default(
+      &node, NODE_NAME, serialManager.getNamespace(), &support));
 
   /*===== MSGS =====*/
   initBatteryMsg(&battery_msg);

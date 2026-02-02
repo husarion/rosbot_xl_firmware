@@ -25,7 +25,7 @@ void BoardPheripheralsInit(void) {
   // Initialize Buttons
   pinMode(PUSH_BUTTON1, INPUT_PULLUP);
   pinMode(PUSH_BUTTON2, INPUT_PULLUP);
-  
+
   // Initialize LEDs
   pinMode(RED_LED, OUTPUT);
   pinMode(GRN_LED, OUTPUT);

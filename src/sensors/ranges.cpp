@@ -15,6 +15,7 @@
 #include "sensors/ranges.hpp"
 
 #include <Arduino.h>
+
 #include <vector>
 
 #include "bsp.hpp"
@@ -69,7 +70,6 @@ bool VL53L0XManager::init() {
 
   return true;
 }
-
 
 void VL53L0XManager::readAll() {
   for (auto& s : _sensors) {

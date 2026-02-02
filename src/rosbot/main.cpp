@@ -33,22 +33,22 @@ Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 
 SerialManager serialManager;
 std::vector<uint8_t> ranges_shd_pins = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
-                                         RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
+                                        RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
 /*==================== SETUP ========================*/
 void setup() {
-  // Hardware configuration
+  // Peripherals initialization
   BoardPheripheralsInit();
 
-  // Pre-communication configuration
+  // Pre-communication
   serialManager.init();
   const auto& selected_serial = serialManager.selectActive();
   serialManager.configureNamespace();
 
-  // Peripherals initialization
+  // Sensors initialization
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
-  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c); 
+  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
   ledIndicator.init(RED_LED);
   motors.init();
   rangeSensorsManager.init(ranges_shd_pins);
@@ -67,7 +67,8 @@ void loop() {}
 HardwareTimer RuntimeStatsTimer(TIM5);
 
 void vConfigureTimerForRunTimeStats(void) {
-  RuntimeStatsTimer.setPrescaleFactor(1680); // evry 10 µs (168MHz / 1680 = 100kHz)
+  RuntimeStatsTimer.setPrescaleFactor(
+      1680);  // every 10 µs (168MHz / 1680 = 100kHz)
   RuntimeStatsTimer.setOverflow(0xFFFFFFFF);
   RuntimeStatsTimer.refresh();
   RuntimeStatsTimer.resume();
