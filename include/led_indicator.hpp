@@ -20,10 +20,10 @@
 
 class LedStatusIndicator {
  public:
-  void init(uint8_t pin) {
+  void init(uint8_t pin, uint8_t initial_state = LOW) {
     pin_ = pin;
     pinMode(pin_, OUTPUT);
-    digitalWrite(pin_, LOW);
+    digitalWrite(pin_, initial_state);
   }
 
   void update(bool battery_low, bool uros_connected, bool error) {

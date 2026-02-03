@@ -49,7 +49,7 @@ void setup() {
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
   imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
-  ledIndicator.init(RED_LED);
+  ledIndicator.init(RED_LED, HIGH);
   motors.init();
   rangeSensorsManager.init(ranges_shd_pins);
   u_ros::transportInit(selected_serial);
@@ -64,16 +64,16 @@ void setup() {
 void loop() {}
 
 /*=========== Runtime stats ====================*/
-HardwareTimer RuntimeStatsTimer(TIM5);
+HardwareTimer RunTimeStatsTimer(TIM5);
 
 void vConfigureTimerForRunTimeStats(void) {
-  RuntimeStatsTimer.setPrescaleFactor(
+  RunTimeStatsTimer.setPrescaleFactor(
       1680);  // every 10 µs (168MHz / 1680 = 100kHz)
-  RuntimeStatsTimer.setOverflow(0xFFFFFFFF);
-  RuntimeStatsTimer.refresh();
-  RuntimeStatsTimer.resume();
+  RunTimeStatsTimer.setOverflow(0xFFFFFFFF);
+  RunTimeStatsTimer.refresh();
+  RunTimeStatsTimer.resume();
 }
 
 uint32_t vGetTimerValueForRunTimeStats(void) {
-  return RuntimeStatsTimer.getCount();
+  return RunTimeStatsTimer.getCount();
 }
