@@ -51,18 +51,12 @@ class SerialManager {
   bool configureNamespace(uint16_t timeout_ms = 2000) {
     if (!active_) return false;
 
-    // 1. Try to get from host
+    // Try to get from host
     if (waitForHostConfig(timeout_ms)) {
-      saveNamespaceToFlash();
       return true;
     }
 
-    // 2. Try load from Flash
-    if (loadNamespaceFromFlash()) {
-      return true;
-    }
-
-    // 3. Default
+    // Default namespace
     strncpy(namespace_, NS_DEFAULT, NS_MAX_LENGTH);
     namespace_[NS_MAX_LENGTH - 1] = '\0';
     return true;
@@ -145,72 +139,5 @@ class SerialManager {
 
     return false;
   }
-
-  // ============== Flash Operations ==============
-
-  uint32_t calculateCRC(const FlashStorage& storage) {
-    uint32_t crc = 0xFFFFFFFF;
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(&storage);
-    size_t len = offsetof(FlashStorage, crc);
-
-    for (size_t i = 0; i < len; i++) {
-      crc ^= data[i];
-      for (int j = 0; j < 8; j++) {
-        crc = (crc >> 1) ^ ((crc & 1) ? 0xEDB88320 : 0);
-      }
-    }
-    return ~crc;
-  }
-
-  bool loadNamespaceFromFlash() {
-    const FlashStorage* stored =
-        reinterpret_cast<const FlashStorage*>(FLASH_ADDR);
-
-    if (stored->magic != FLASH_MAGIC) return false;
-    if (stored->length == 0 || stored->length >= NS_MAX_LENGTH) return false;
-    if (calculateCRC(*stored) != stored->crc) return false;
-
-    memcpy(namespace_, stored->ns, stored->length);
-    namespace_[stored->length] = '\0';
-    return true;
-  }
-
-  bool saveNamespaceToFlash() {
-    FlashStorage storage;
-    storage.magic = FLASH_MAGIC;
-    storage.length = strlen(namespace_);
-    strncpy(storage.ns, namespace_, NS_MAX_LENGTH - 1);
-    storage.ns[NS_MAX_LENGTH - 1] = '\0';
-    storage.crc = calculateCRC(storage);
-
-    HAL_FLASH_Unlock();
-
-    FLASH_EraseInitTypeDef eraseInit = {.TypeErase = FLASH_TYPEERASE_SECTORS,
-                                        .Sector = FLASH_SECTOR,
-                                        .NbSectors = 1,
-                                        .VoltageRange = FLASH_VOLTAGE_RANGE_3};
-
-    uint32_t sectorError;
-    if (HAL_FLASHEx_Erase(&eraseInit, &sectorError) != HAL_OK) {
-      HAL_FLASH_Lock();
-      return false;
-    }
-
-    uint32_t* src = reinterpret_cast<uint32_t*>(&storage);
-    uint32_t addr = FLASH_ADDR;
-    size_t words = (sizeof(FlashStorage) + 3) / 4;
-
-    for (size_t i = 0; i < words; i++) {
-      if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, src[i]) != HAL_OK) {
-        HAL_FLASH_Lock();
-        return false;
-      }
-      addr += 4;
-    }
-
-    HAL_FLASH_Lock();
-    return true;
-  }
-};
 
 extern SerialManager serialManager;
