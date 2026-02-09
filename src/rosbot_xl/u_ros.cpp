@@ -123,9 +123,9 @@ void motorsCmdCallback(const void* arg_input_message) {
 
 void timerCallback(rcl_timer_t* arg_timer, int64_t arg_last_call_time) {
   RCLC_UNUSED(arg_last_call_time);
-  static imu_data_t queue_imu;
+  static ImuData queue_imu;
   static motor_joint_state_t motor_state_queue;
-  static battery_data_t battery_state_queue;
+  static BatteryData battery_state_queue;
   if (arg_timer != NULL) {
     // QOS default
     if (xQueueReceive(rtos::BatteryQueue, &battery_state_queue,

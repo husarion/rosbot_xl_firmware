@@ -15,6 +15,7 @@
 #include "rosbot/tasks.hpp"
 
 #include <STM32FreeRTOS.h>
+#include <micro_ros_arduino.h>
 
 #include "battery.hpp"
 #include "control/encoders_manager.hpp"
@@ -39,8 +40,9 @@
 namespace rtos {
 
 void createQueues() {
-  ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
-  RangeQueue = xQueueCreate(1, sizeof(ranges_data_t));
+  BatteryQueue = xQueueCreate(1, sizeof(BatteryData));
+  ImuQueue = xQueueCreate(1, sizeof(ImuData));
+  RangeQueue = xQueueCreate(1, sizeof(RangesData));
 }
 
 // ===== Config for all tasks =====
@@ -80,7 +82,15 @@ void batteryTask(void* pvParameters) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
+    int64_t timestamp_ns = 0;
+    if (rmw_uros_epoch_synchronized()) {
+      timestamp_ns = rmw_uros_epoch_nanos();
+    }
     battery.update();
+    BatteryData data = battery.getData();
+    data.timestamp_ns = timestamp_ns;
+
+    xQueueOverwrite(rtos::BatteryQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(BATTERY_TASK_FREQ));
   }
 }
@@ -98,11 +108,18 @@ void encoderTask(void* pvParameters) {
 void imuTask(void* pvParameters) {
   UNUSED(pvParameters);
   TickType_t wake_time = xTaskGetTickCount();
-  imu_data_t imu_data;
 
   while (true) {
-    imu_data = imuDriver.loopHandler();
-    xQueueOverwrite(rtos::ImuQueue, &imu_data);
+    int64_t timestamp_ns = 0;
+    if (rmw_uros_epoch_synchronized()) {
+      timestamp_ns = rmw_uros_epoch_nanos();
+    }
+
+    imuDriver.update();
+    ImuData data = imuDriver.getData();
+    data.timestamp_ns = timestamp_ns;
+
+    xQueueOverwrite(rtos::ImuQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(IMU_TASK_FREQ));
   }
 }
@@ -149,16 +166,17 @@ void motorControlTask(void* pvParameters) {
 void rangeTask(void* pvParameters) {
   UNUSED(pvParameters);
   TickType_t wake_time = xTaskGetTickCount();
-  ranges_data_t ranges_data;
 
   while (true) {
-    rangeSensorsManager.readAll();
-    for (size_t i = 0; i < rangeSensorsManager.count(); i++) {
-      VL53L0XSensor& s = rangeSensorsManager.getSensor(i);
-      ranges_data.range[i] = s.timeout ? NAN : s.lastRange / 1000.0;
+    int64_t timestamp_ns = 0;
+    if (rmw_uros_epoch_synchronized()) {
+      timestamp_ns = rmw_uros_epoch_nanos();
     }
+    rangeSensorsManager.update();
+    RangesData data = rangeSensorsManager.getData();
+    data.timestamp_ns = timestamp_ns;
 
-    xQueueOverwrite(RangeQueue, &ranges_data);
+    xQueueOverwrite(RangeQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(RANGE_TASK_FREQ));
   }
 }

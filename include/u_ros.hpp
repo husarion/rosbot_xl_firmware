@@ -21,49 +21,12 @@
 #include <rmw_microros/rmw_microros.h>
 
 /*===== ROS MSGS TYPES =====*/
-#include <sensor_msgs/msg/battery_state.h>
-#include <sensor_msgs/msg/imu.h>
 #include <sensor_msgs/msg/joint_state.h>
-#include <sensor_msgs/msg/range.h>
 #include <std_msgs/msg/float32_multi_array.h>
 
 /*===== REST =====*/
 #include "log.hpp"
 #include "robot_config.hpp"
-
-#define SERIAL_SELECT_HOLD_TIME 2000  // 2 seconds
-#define BUTTON_CHECK_INTERVAL 50      // ms
-
-namespace serial_selector {
-
-/**
- * @brief Select serial port based on button state at boot
- *
- * If any button is held for 2 seconds, switch to alternate serial.
- * Otherwise, use default serial.
- *
- * @param ledIndicator Optional: LED for visual feedback (blink during wait,
- * solid on switch)
- * @return const SerialConfig& Selected serial configuration
- */
-inline const SerialConfig& selectSerialConfig() {
-  uint32_t startTime = millis();
-  while ((millis() - startTime) < SERIAL_SELECT_HOLD_TIME) {
-    if (digitalRead(PUSH_BUTTON1) == LOW || digitalRead(PUSH_BUTTON2) == LOW) {
-      digitalWrite(GRN_LED, HIGH);
-      digitalWrite(GRN_LED2, HIGH);
-      return FTDI_SERIAL_CONFIG;
-    }
-    delay(BUTTON_CHECK_INTERVAL);
-  }
-
-  return SBC_SERIAL_CONFIG;
-}
-
-}  // namespace serial_selector
-
-static const SerialConfig* g_activeConfig = nullptr;
-
 namespace u_ros {
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
   255  // get ROS_DOMAIN_ID from Micro ROS Agent
@@ -140,9 +103,6 @@ extern u_ros_state_t state;
 
 /* FUNCTIONS */
 inline void transportInit(const SerialConfig& config) {
-  // Store config pointer for use in callbacks
-  g_activeConfig = &config;
-
   rmw_uros_set_custom_transport(
       /* Enable XRCE framing */
       true,
@@ -182,29 +142,16 @@ inline void transportInit(const SerialConfig& config) {
       });
 }
 
-/**
- * @brief Get currently active serial config
- */
-inline const SerialConfig* getActiveConfig() { return g_activeConfig; }
-
 bool pingAgent();
 void loop();
 bool createEntities();
 void destroyEntities();
 
 void motorsCmdCallback(const void* msg_in);
-void timerCallback(rcl_timer_t* timer, int64_t last_call_time);
 
-void initBatteryMsg(sensor_msgs__msg__BatteryState* msg);
-void initImuMsg(sensor_msgs__msg__Imu* msg);
 void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg);
 void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg);
-void initRangeMsg(sensor_msgs__msg__Range* msg);
 
-void publishBattery();
-void publishButtons();
-void publishImu();
-void publishRanges();
 void publishJointState();
 
 }  // namespace u_ros

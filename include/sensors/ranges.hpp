@@ -24,9 +24,10 @@ enum Ranges { RF, FL, RR, RL, RANGES_COUNT };
 static const char* range_frame_names[] = {"fr_range", "fl_range", "rr_range",
                                           "rl_range"};
 
-typedef struct {
+struct RangesData {
   float range[RANGES_COUNT];
-} ranges_data_t;
+  int64_t timestamp_ns = 0;
+};
 
 struct VL53L0XSensor {
   VL53L0X sensor;
@@ -43,17 +44,16 @@ class VL53L0XManager {
   void addSensor(uint8_t xshutPin, uint8_t address = 0);
   bool init(std::vector<uint8_t> xshut_pins);
   bool init();
-  void readAll();
+  void update();
+  RangesData getData() const { return data_; }
 
-  size_t count() const;
-  VL53L0XSensor& getSensor(size_t index);
-
-  // NOWA FUNKCJA – zwraca wskaźnik do tablicy ostatnich pomiarów
-  uint16_t* getAllRanges();
+  uint8_t count() const;
+  VL53L0XSensor& getSensor(uint8_t index);
 
  private:
-  TwoWire* _bus;
-  std::vector<VL53L0XSensor> _sensors;
+  RangesData data_;
+  TwoWire* bus_;
+  std::vector<VL53L0XSensor> sensors_;
 };
 
 extern VL53L0XManager rangeSensorsManager;

@@ -83,8 +83,8 @@ void setup() {
 
   /* RTOS QUEUES CREATION */
   SetpointQueue = xQueueCreate(1, sizeof(float) * 4);
-  ImuQueue = xQueueCreate(1, sizeof(imu_data_t));
-  BatteryQueue = xQueueCreate(1, sizeof(battery_data_t));
+  ImuQueue = xQueueCreate(1, sizeof(ImuData));
+  BatteryQueue = xQueueCreate(1, sizeof(BatteryData));
   LOG_DEBUG("Queues created");
   /* RTOS TASKS CREATION */
   s1 = xTaskCreate(uRosTask, "uRosTask", configMINIMAL_STACK_SIZE + 2500, NULL,
@@ -131,7 +131,7 @@ static void uRosTask(void* p) {
 }
 
 static void ImuTask(void* p) {
-  static imu_data_t queue_imu;
+  static ImuData queue_imu;
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     queue_imu = imuDriver.loopHandler();

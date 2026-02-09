@@ -16,6 +16,15 @@
 
 #include <Arduino.h>
 
+struct BatteryData 
+{
+  float current = NAN;
+  float percentage = NAN;  
+  float temperature = NAN; 
+  float voltage = NAN;       
+  int64_t timestamp_ns = 0;
+};
+
 class Battery {
  public:
   struct Config {
@@ -34,19 +43,16 @@ class Battery {
   void init(uint8_t adcPin);
   void update();
 
-  float current() const { return current_; }
-  float temperature() const { return temperature_; }
-  float voltage() const { return voltage_; }
-  float percentage() const;
+  BatteryData getData() const { return data_; }
   bool isLow() const { return isLow_; }
-  bool isCritical() const { return voltage_ < cfg_.vMin; }
+  bool isCritical() const { return data_.voltage < cfg_.vMin; }
 
  private:
+  float percentage(float voltage) const;
+
   Config cfg_;
+  BatteryData data_;
   float dividerRatio_ = 1.0f;
-  float current_ = NAN;      // Not implemented
-  float temperature_ = NAN;  // Not implemented
-  float voltage_ = 0.0f;
   bool isLow_ = false;
 };
 

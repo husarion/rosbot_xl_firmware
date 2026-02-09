@@ -31,16 +31,19 @@ void Battery::init(uint8_t adcPin) {
 
 void Battery::update() {
   float raw = analogRead(cfg_.adcPin) / 1023.0f;
-  voltage_ = cfg_.vRef * cfg_.correction * dividerRatio_ * raw;
+  float voltage = cfg_.vRef * cfg_.correction * dividerRatio_ * raw;
 
-  if (voltage_ < cfg_.lowThreshold) {
+  if (voltage < cfg_.lowThreshold) {
     isLow_ = true;
-  } else if (voltage_ > cfg_.lowThreshold + cfg_.hysteresis) {
+  } else if (voltage > cfg_.lowThreshold + cfg_.hysteresis) {
     isLow_ = false;
   }
+
+  data_.voltage = voltage;
+  data_.percentage = percentage(voltage);
 }
 
-float Battery::percentage() const {
-  float v = constrain(voltage_, cfg_.vMin, cfg_.vMax);
+float Battery::percentage(float voltage) const {
+  float v = constrain(voltage, cfg_.vMin, cfg_.vMax);
   return (v - cfg_.vMin) / (cfg_.vMax - cfg_.vMin);
 }

@@ -17,18 +17,20 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
 
-typedef struct {
+struct ImuData {
   float orientation[4];       // quaternion: x y z w
   float angular_velocity[3];  // rad/s
   float acceleration[3];      // m/s^2
-} imu_data_t;
+  int64_t timestamp_ns;       // timestamp przy odczycie
+};
 
 class ImuDriver {
  public:
   bool init(uint8_t id, uint8_t addr, TwoWire* wire);
-  imu_data_t loopHandler();
-
+  void update();
+  ImuData getData() const { return data_; }
  private:
+  ImuData data_;
   Adafruit_BNO055* imuBno_ = nullptr;
   sensors_event_t event_;
 };

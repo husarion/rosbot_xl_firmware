@@ -37,33 +37,27 @@ bool ImuDriver::init(uint8_t id, uint8_t addr, TwoWire* wire) {
   imuBno_->setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
   imuBno_->setExtCrystalUse(true);
 
-  delay(10);
   return true;
 }
 
-imu_data_t ImuDriver::loopHandler() {
-  this->imuBno_->getEvent(&event_);
-  imu_data_t data;
-
+void ImuDriver::update() {
   // Acceleration
   imu::Vector<3> accel =
       imuBno_->getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-  data.acceleration[0] = accel.x();
-  data.acceleration[1] = accel.y();
-  data.acceleration[2] = accel.z();
+  data_.acceleration[0] = accel.x();
+  data_.acceleration[1] = accel.y();
+  data_.acceleration[2] = accel.z();
 
   // Gyroscope
   imu::Vector<3> gyro = imuBno_->getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-  data.angular_velocity[0] = gyro.x() * DEGREESPERSEC_TO_RADPERSEC;
-  data.angular_velocity[1] = gyro.y() * DEGREESPERSEC_TO_RADPERSEC;
-  data.angular_velocity[2] = gyro.z() * DEGREESPERSEC_TO_RADPERSEC;
+  data_.angular_velocity[0] = gyro.x() * DEGREESPERSEC_TO_RADPERSEC;
+  data_.angular_velocity[1] = gyro.y() * DEGREESPERSEC_TO_RADPERSEC;
+  data_.angular_velocity[2] = gyro.z() * DEGREESPERSEC_TO_RADPERSEC;
 
   // Orientation (quaternion)
   imu::Quaternion q = imuBno_->getQuat();
-  data.orientation[0] = q.x();
-  data.orientation[1] = q.y();
-  data.orientation[2] = q.z();
-  data.orientation[3] = q.w();
-
-  return data;
+  data_.orientation[0] = q.x();
+  data_.orientation[1] = q.y();
+  data_.orientation[2] = q.z();
+  data_.orientation[3] = q.w();
 }

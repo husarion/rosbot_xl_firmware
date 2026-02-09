@@ -20,6 +20,7 @@
 
 namespace rtos {
 
+inline QueueHandle_t BatteryQueue;
 inline QueueHandle_t ImuQueue;
 inline QueueHandle_t RangeQueue;
 
