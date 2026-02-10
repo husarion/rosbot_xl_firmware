@@ -21,8 +21,9 @@
 namespace rtos {
 
 inline QueueHandle_t BatteryQueue;
+inline QueueHandle_t EncodersQueue;
 inline QueueHandle_t ImuQueue;
-inline QueueHandle_t RangeQueue;
+inline QueueHandle_t RangesQueue;
 
 void createQueues();
 void createTasks();

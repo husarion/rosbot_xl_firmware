@@ -19,6 +19,15 @@
 #include "control/encoder.hpp"
 #include "control/types.hpp"
 
+struct EncodersData
+{
+    float position[static_cast<uint8_t>(MotorID::COUNT)];
+    float velocity[static_cast<uint8_t>(MotorID::COUNT)];
+    float effort[static_cast<uint8_t>(MotorID::COUNT)];
+    uint64_t timestamp_ns = 0;
+};
+
+
 class EncoderManager {
  public:
   static constexpr uint8_t NUM_ENCODERS = static_cast<uint8_t>(MotorID::COUNT);
@@ -34,10 +43,12 @@ class EncoderManager {
     return encoders_[static_cast<uint8_t>(id)];
   }
 
-  void updateAll();
+  void update();
+  EncodersData getData() const { return data_; }
 
  private:
   Encoder encoders_[NUM_ENCODERS];
+  EncodersData data_;
 };
 
 inline EncoderManager encoders;

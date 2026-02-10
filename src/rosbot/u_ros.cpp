@@ -15,8 +15,6 @@
 #include "u_ros.hpp"
 
 /*===== ROS MSGS TYPES =====*/
-#include <builtin_interfaces/msg/time.h>
-#include <sensor_msgs/msg/joint_state.h>
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/string.h>
 #include <std_srvs/srv/trigger.h>
@@ -35,6 +33,7 @@
 #include "uros/battery_publisher.hpp"
 #include "uros/buttons_publisher.hpp"
 #include "uros/imu_publisher.hpp"
+#include "uros/joint_state_publisher.hpp"
 #include "uros/range_publisher.hpp"
 namespace u_ros {
 
@@ -42,15 +41,13 @@ namespace u_ros {
 BatteryPublisher batteryPublisher;
 ButtonsPublisher buttonsPublisher;
 ImuPublisher imuPublisher;
+JointStatePublisher jointStatePublisher;
 RangePublisher rangePublisher;
-rcl_publisher_t motor_state_pub;
 // SUBSCRIPTIONS
 rcl_subscription_t motors_cmd_sub;
 rcl_subscription_t left_led_sub;
 rcl_subscription_t right_led_sub;
 // MESSAGES
-builtin_interfaces__msg__Time now;
-sensor_msgs__msg__JointState joint_state_msg;
 std_msgs__msg__Bool led_msg;
 std_msgs__msg__Float32MultiArray motors_cmd_msg;
 // SERVICES
@@ -64,6 +61,46 @@ rclc_executor_t executor;
 rclc_support_t support;
 rcl_allocator_t allocator;
 rcl_node_t node;
+
+void transportInit(const SerialConfig& config) {
+  rmw_uros_set_custom_transport(
+      /* Enable XRCE framing */
+      true,
+      /* Arguments for callbacks - pass config pointer */
+      (void*)&config,
+
+      /* Open transport callback */
+      [](struct uxrCustomTransport* transport) -> bool {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->setRx(cfg->rxPin);
+        cfg->serial->setTx(cfg->txPin);
+        cfg->serial->setTimeout(cfg->timeout_ms);
+        cfg->serial->begin(cfg->baudrate);
+        return cfg->serial->operator bool();
+      },
+
+      /* Close transport callback */
+      [](struct uxrCustomTransport* transport) -> bool {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->end();
+        return true;
+      },
+
+      /* Write transport callback */
+      [](struct uxrCustomTransport* transport, const uint8_t* buf, size_t len,
+         uint8_t* errcode) -> unsigned int {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        return cfg->serial->write(buf, len);
+      },
+
+      /* Read transport callback */
+      [](struct uxrCustomTransport* transport, uint8_t* buf, size_t len,
+         int timeout, uint8_t* errcode) -> unsigned int {
+        const SerialConfig* cfg = (const SerialConfig*)transport->args;
+        cfg->serial->setTimeout(timeout);
+        return cfg->serial->readBytes((char*)buf, len);
+      });
+}
 
 bool pingAgent(void) {
   return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
@@ -144,7 +181,6 @@ bool createEntities(void) {
       &node, NODE_NAME, serialManager.getNamespace(), &support));
 
   /*===== MSGS =====*/
-  initMotorsJointStateMsg(&joint_state_msg);
   initMotorsCmdMsg(&motors_cmd_msg);
   std_srvs__srv__Trigger_Request__init(&get_cpu_id_service_request);
   std_srvs__srv__Trigger_Response__init(&get_cpu_id_service_response);
@@ -167,10 +203,7 @@ bool createEntities(void) {
   RCCHECK_RETURN(batteryPublisher.init(node, "battery"));
   RCCHECK_RETURN(buttonsPublisher.init(node, "buttons"));
   RCCHECK_RETURN(imuPublisher.init(node, "_imu/data_raw"));
-  RCCHECK_RETURN(rclc_publisher_init_best_effort(
-      &motor_state_pub, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, JointState),
-      "_motors_response"));
+  RCCHECK_RETURN(jointStatePublisher.init(node, "_motors_response", allocator));
   RCCHECK_RETURN(rangePublisher.init(node, "ranges"));
   /*===== SERVICES ===== */
   RCCHECK_RETURN(rclc_service_init_default(
@@ -194,7 +227,6 @@ bool createEntities(void) {
       &get_cpu_id_service_response, uRosGetIdCallback));
 
   RCCHECK_RETURN(rmw_uros_sync_session(1000));
-  delay(50);
   LOG_INFO("uROS communication started");
 
   return true;
@@ -204,11 +236,10 @@ void destroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-  sensor_msgs__msg__JointState__fini(&joint_state_msg);
-
   batteryPublisher.fini(node);
+  buttonsPublisher.fini(node);
   imuPublisher.fini(node);
-  rcl_publisher_fini(&motor_state_pub, &node);
+  jointStatePublisher.fini(node);
   rangePublisher.fini(node);
   rcl_subscription_fini(&motors_cmd_sub, &node);
   rcl_subscription_fini(&left_led_sub, &node);
@@ -221,98 +252,11 @@ void destroyEntities(void) {
   LOG_INFO("uROS communication stopped");
 }
 
-
-void initMotorsJointStateMsg(sensor_msgs__msg__JointState* msg) {
-  if (msg == nullptr) return;
-
-  // Initialize message
-  sensor_msgs__msg__JointState__init(msg);
-
-  // Allocate frame_id
-  msg->header.frame_id = micro_ros_string_utilities_init("base_link");
-
-  // Allocate name array
-  msg->name.capacity = 4;
-  msg->name.size = 4;
-  msg->name.data = (rosidl_runtime_c__String*)allocator.allocate(
-      4 * sizeof(rosidl_runtime_c__String), allocator.state);
-
-  // Set joint names
-  msg->name.data[0] =
-      micro_ros_string_utilities_init(control::getJointName(MotorID::FL));
-  msg->name.data[1] =
-      micro_ros_string_utilities_init(control::getJointName(MotorID::FR));
-  msg->name.data[2] =
-      micro_ros_string_utilities_init(control::getJointName(MotorID::RL));
-  msg->name.data[3] =
-      micro_ros_string_utilities_init(control::getJointName(MotorID::RR));
-
-  // Allocate position array
-  msg->position.capacity = 4;
-  msg->position.size = 4;
-  msg->position.data =
-      (double*)allocator.allocate(4 * sizeof(double), allocator.state);
-
-  // Allocate velocity array
-  msg->velocity.capacity = 4;
-  msg->velocity.size = 4;
-  msg->velocity.data =
-      (double*)allocator.allocate(4 * sizeof(double), allocator.state);
-
-  // Allocate effort array
-  // msg->effort.capacity = 4;
-  // msg->effort.size = 4;
-  // msg->effort.data = (double*)allocator.allocate(4 * sizeof(double),
-  // allocator.state);
-
-  // Zero initialize
-  memset(msg->position.data, 0, 4 * sizeof(double));
-  memset(msg->velocity.data, 0, 4 * sizeof(double));
-  // memset(msg->effort.data, 0, 4 * sizeof(double));
-}
-
 void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg) {
   static float data[MOT_CMD_MSG_LEN] = {0, 0, 0, 0};
   msg->data.capacity = MOT_CMD_MSG_LEN;
   msg->data.size = MOT_CMD_MSG_LEN;
   msg->data.data = (float*)data;
-}
-
-
-void publishJointState() {
-  Encoder& fl = encoders[MotorID::FL];
-  Encoder& fr = encoders[MotorID::FR];
-  Encoder& rl = encoders[MotorID::RL];
-  Encoder& rr = encoders[MotorID::RR];
-
-  // Set timestamp
-  int64_t time_ns = rmw_uros_epoch_nanos();
-  joint_state_msg.header.stamp.sec = time_ns / 1000000000;
-  joint_state_msg.header.stamp.nanosec = time_ns % 1000000000;
-
-  // Fill position data (order: FL, FR, RL, RR)
-  joint_state_msg.position.data[0] = fl.getPosition();
-  joint_state_msg.position.data[1] = fr.getPosition();
-  joint_state_msg.position.data[2] = rl.getPosition();
-  joint_state_msg.position.data[3] = rr.getPosition();
-
-  // Fill velocity data
-  joint_state_msg.velocity.data[0] = fl.getVelocity();
-  joint_state_msg.velocity.data[1] = fr.getVelocity();
-  joint_state_msg.velocity.data[2] = rl.getVelocity();
-  joint_state_msg.velocity.data[3] = rr.getVelocity();
-
-  // Fill effort data
-  // joint_state_msg.effort.data[0] =
-  // effort[static_cast<uint8_t>(MotorID::FL)];
-  // joint_state_msg.effort.data[1] =
-  // effort[static_cast<uint8_t>(MotorID::FR)];
-  // joint_state_msg.effort.data[2] =
-  // effort[static_cast<uint8_t>(MotorID::RL)];
-  // joint_state_msg.effort.data[3] =
-  // effort[static_cast<uint8_t>(MotorID::RR)];
-
-  RCCHECK_WARN(rcl_publish(&motor_state_pub, &joint_state_msg, NULL));
 }
 
 void loop() {
@@ -331,6 +275,7 @@ void loop() {
         destroyEntities();
         state = WAITING;
       }
+      vTaskDelay(pdMS_TO_TICKS(10));
       break;
 
     case CONNECTED:
@@ -342,8 +287,8 @@ void loop() {
       batteryPublisher.publish();
       buttonsPublisher.publish();
       imuPublisher.publish();
+      jointStatePublisher.publish();
       rangePublisher.publish();
-      publishJointState();
 
       rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
       vTaskDelay(pdMS_TO_TICKS(1));

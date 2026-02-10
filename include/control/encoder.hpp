@@ -28,7 +28,7 @@ class Encoder {
    * @brief Initialize encoder with hardware timer
    * @param pin_a Channel A pin (must be TIMx_CH1)
    * @param pin_b Channel B pin (must be TIMx_CH2)
-   * @param timer Timer instance (TIM1, TIM2, TIM3, TIM4, TIM5, TIM8)
+   * @param timer Timer instance
    * @param dir Direction inversion
    * @param rad_per_tick Radians per encoder tick
    */
@@ -38,16 +38,16 @@ class Encoder {
   void reset();
   void update();
 
-  const uint32_t getTicks() const { return timer_handle_->Instance->CNT; }
   float getPosition() const { return position_; }
   float getVelocity() const { return velocity_; }
 
+ private:
+  const uint32_t getTicks() const { return timer_handle_->Instance->CNT; }
   float lowPass(float prev, float input, float alpha) const {
     float filtered = alpha * input + (1.0f - alpha) * prev;
     return fabs(filtered) > ZERO_THRESHOLD ? filtered : 0.0f;
   }
 
- private:
   TIM_HandleTypeDef* timer_handle_ = nullptr;
   TIM_Encoder_InitTypeDef encoder_config_;
   float rad_per_tick_ = 0.0f;

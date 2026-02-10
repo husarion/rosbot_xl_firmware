@@ -19,13 +19,12 @@
 #include <Wire.h>
 
 #include <vector>
+#include <array>
 
-enum Ranges { RF, FL, RR, RL, RANGES_COUNT };
-static const char* range_frame_names[] = {"fr_range", "fl_range", "rr_range",
-                                          "rl_range"};
+#include "robot_config.hpp"
 
 struct RangesData {
-  float range[RANGES_COUNT];
+  float range[Ranges::COUNT];
   int64_t timestamp_ns = 0;
 };
 
@@ -39,10 +38,9 @@ struct VL53L0XSensor {
 
 class VL53L0XManager {
  public:
-  VL53L0XManager(TwoWire* bus);
+  VL53L0XManager(TwoWire* bus, const std::array<RangeConfig, Ranges::COUNT>& configs);
 
   void addSensor(uint8_t xshutPin, uint8_t address = 0);
-  bool init(std::vector<uint8_t> xshut_pins);
   bool init();
   void update();
   RangesData getData() const { return data_; }

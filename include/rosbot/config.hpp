@@ -129,9 +129,18 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define IMU_ADDR_B 0x29
 
 // ============== Ranges ==============
-#define RANGE_FR_SHD_PIN PB1
-#define RANGE_FL_SHD_PIN PD8
-#define RANGE_RR_SHD_PIN PD9
-#define RANGE_RL_SHD_PIN PD10
 #define RANGE_I2C_SDA PB9
 #define RANGE_I2C_SCL PB8
+
+
+enum Ranges { RF, FL, RR, RL, COUNT };
+struct RangeConfig {
+  uint8_t xshutPin;
+  const char* frame_id;
+};
+
+inline const std::array<RangeConfig, static_cast<size_t>(Ranges::COUNT)>
+    RANGE_CONFIG = {{{PD8, "fl_range"},
+                     {PB1, "fr_range"},
+                     {PD10, "rl_range"},
+                     {PD9, "rr_range"}}};

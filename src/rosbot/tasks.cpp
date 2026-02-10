@@ -41,8 +41,9 @@ namespace rtos {
 
 void createQueues() {
   BatteryQueue = xQueueCreate(1, sizeof(BatteryData));
+  EncodersQueue = xQueueCreate(1, sizeof(EncodersData));
   ImuQueue = xQueueCreate(1, sizeof(ImuData));
-  RangeQueue = xQueueCreate(1, sizeof(RangesData));
+  RangesQueue = xQueueCreate(1, sizeof(RangesData));
 }
 
 // ===== Config for all tasks =====
@@ -100,7 +101,16 @@ void encoderTask(void* pvParameters) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    encoders.updateAll();
+    int64_t timestamp_ns = 0;
+    if (rmw_uros_epoch_synchronized()) {
+      timestamp_ns = rmw_uros_epoch_nanos();
+    }
+    
+    encoders.update();
+    EncodersData data = encoders.getData();
+    data.timestamp_ns = timestamp_ns;
+
+    xQueueOverwrite(rtos::EncodersQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(ENCODER_TASK_FREQ));
   }
 }
@@ -176,7 +186,7 @@ void rangeTask(void* pvParameters) {
     RangesData data = rangeSensorsManager.getData();
     data.timestamp_ns = timestamp_ns;
 
-    xQueueOverwrite(RangeQueue, &data);
+    xQueueOverwrite(RangesQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(RANGE_TASK_FREQ));
   }
 }

@@ -20,9 +20,16 @@
 
 #include "bsp.hpp"
 
-VL53L0XManager rangeSensorsManager(&range_i2c);
+VL53L0XManager rangeSensorsManager(&range_i2c, RANGE_CONFIG);
 
-VL53L0XManager::VL53L0XManager(TwoWire* bus) : bus_(bus) {}
+VL53L0XManager::VL53L0XManager(TwoWire* bus,
+                   const std::array<RangeConfig, Ranges::COUNT>& configs)
+        : bus_(bus)
+    {
+        for (const auto& cfg : configs) {
+            addSensor(cfg.xshutPin);
+        }
+    }
 
 void VL53L0XManager::addSensor(uint8_t xshutPin, uint8_t address) {
   VL53L0XSensor s;
@@ -33,14 +40,6 @@ void VL53L0XManager::addSensor(uint8_t xshutPin, uint8_t address) {
   sensors_.push_back(s);
 }
 
-bool VL53L0XManager::init(std::vector<uint8_t> xshut_pins) {
-  for (auto& pin : xshut_pins) {
-    addSensor(pin);
-  }
-
-  return init();
-}
-
 bool VL53L0XManager::init() {
   for (auto& s : sensors_) {
     pinMode(s.xshutPin, OUTPUT);
@@ -49,7 +48,7 @@ bool VL53L0XManager::init() {
   delay(50);
 
   bus_->begin();
-  bus_->setClock(100000);
+  bus_->setClock(400000); // 400 kHz fast_mode / 100 kHz robust_mode
 
   for (uint8_t i = 0; i < sensors_.size(); i++) {
     auto& s = sensors_[i];
@@ -80,7 +79,7 @@ void VL53L0XManager::update() {
       s.timeout = s.sensor.timeoutOccurred();
     }
 
-    data_.range[i] = s.timeout ? NAN : s.lastRange / 1000.0;
+    data_.range[i] = s.timeout ? NAN : (s.lastRange / 1000.0);
   }
 }
 

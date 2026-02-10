@@ -44,12 +44,12 @@ void MotorDriver::init() {
   MotorID m;
   uint8_t m_idx;
 
-  m = MotorID::FR;
+  m = MotorID::FL;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
                       encoders[m]);
 
-  m = MotorID::RR;
+  m = MotorID::FR;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
                       encoders[m]);
@@ -58,8 +58,8 @@ void MotorDriver::init() {
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
                       encoders[m]);
-
-  m = MotorID::FL;
+                      
+  m = MotorID::RR;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
                       encoders[m]);

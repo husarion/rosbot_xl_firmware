@@ -35,18 +35,4 @@ void BoardPheripheralsInit(void) {
   // Enable power for IMU sensor
   pinMode(IMU_POWER_ON, OUTPUT);
   digitalWrite(IMU_POWER_ON, HIGH);
-
-  // I2C buses init
-  imu_i2c.begin();
-  imu_i2c.setClock(200000);
-  range_i2c.begin();
-  range_i2c.setClock(200000);
-
-  // FTDI UART-USB init
-  // Serial3.setRx(FTDI_SERIAL_CONFIG.rxPin);
-  // Serial3.setTx(FTDI_SERIAL_CONFIG.txPin);
-  // Serial3.setTimeout(FTDI_SERIAL_CONFIG.timeout);
-  // Serial3.begin(FTDI_SERIAL_CONFIG.baudrate);
-
-  delay(100);
 }

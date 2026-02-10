@@ -32,8 +32,6 @@
 Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 
 SerialManager serialManager;
-std::vector<uint8_t> ranges_shd_pins = {RANGE_FR_SHD_PIN, RANGE_FL_SHD_PIN,
-                                        RANGE_RR_SHD_PIN, RANGE_RL_SHD_PIN};
 
 /*==================== SETUP ========================*/
 void setup() {
@@ -51,7 +49,7 @@ void setup() {
   imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
   ledIndicator.init(RED_LED, HIGH);
   motors.init();
-  rangeSensorsManager.init(ranges_shd_pins);
+  rangeSensorsManager.init();
   u_ros::transportInit(selected_serial);
 
   // RTOS
