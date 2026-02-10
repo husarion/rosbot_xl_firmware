@@ -31,7 +31,7 @@
 #include <hal_conf_custom.h>
 
 #include "log.hpp"
-#include "tasks.hpp"
+#include "rtos.hpp"
 #include "uart.hpp"
 
 /* VARIABLES */
@@ -126,7 +126,6 @@ static void uRosTask(void* p) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   while (1) {
     u_ros::loop();
-    // vTaskDelayUntil(&wake_time, uROS_SPIN_DELAY_MS);
   }
 }
 

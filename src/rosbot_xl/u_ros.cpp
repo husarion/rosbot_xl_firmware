@@ -18,7 +18,7 @@
 #include "control/types.hpp"
 #include "hardware/imu.hpp"
 #include "log.hpp"
-#include "tasks.hpp"
+#include "rtos.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <builtin_interfaces/msg/time.h>

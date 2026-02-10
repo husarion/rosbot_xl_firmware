@@ -22,7 +22,7 @@
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
 #include "robot_config.hpp"
-#include "rosbot/tasks.hpp"
+#include "rtos.hpp"
 #include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
 #include "serial_manager.hpp"

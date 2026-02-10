@@ -21,7 +21,7 @@
 #include <sensor_msgs/msg/battery_state.h>
 
 #include "battery.hpp"
-#include "tasks.hpp"
+#include "rtos.hpp"
 
 class BatteryPublisher {
  public:

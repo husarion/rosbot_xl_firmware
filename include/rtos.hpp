@@ -16,7 +16,7 @@
 
 /* CHOOSE HARDWARE CONFIG */
 #if defined(ROSBOT_XL)
-#include "rosbot_xl/tasks.hpp"
+#include "rosbot_xl/rtos.hpp"
 #elif defined(ROSBOT)
-#include "rosbot/tasks.hpp"
+#include "rosbot/rtos.hpp"
 #endif

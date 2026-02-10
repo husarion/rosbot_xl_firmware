@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rosbot/tasks.hpp"
+#include "rtos.hpp"
 
 #include <STM32FreeRTOS.h>
 #include <micro_ros_arduino.h>

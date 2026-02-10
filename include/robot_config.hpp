@@ -25,7 +25,7 @@ typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
 
 /* CHOOSE HARDWARE CONFIG */
 #if defined(ROSBOT_XL)
-#include "rosbot_xl/hardware_cfg.hpp"
+#include "rosbot_xl/config.hpp"
 #elif defined(ROSBOT)
 #include "rosbot/config.hpp"
 #else
