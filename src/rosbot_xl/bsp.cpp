@@ -23,7 +23,6 @@ UartProtocolClass PowerBoardSerial(PWR_BRD_SERIAL_RX, PWR_BRD_SERIAL_TX,
 String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
-TwoWire imu_i2c(IMU_SDA, IMU_SCL);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
 
 void BoardGpioInit(void) {
@@ -60,9 +59,6 @@ void SetRedLed(SwitchStateTypeDef State_) {
 
 void BoardPheripheralsInit(void) {
   BoardGpioInit();
-  if (firmware_mode == fw_debug) {
-    DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM6_STOP;  // set debug options
-  }
   // SBC Serial port init
   SBC_SERIAL.setRx(SBC_SERIAL_RX);
   SBC_SERIAL.setTx(SBC_SERIAL_TX);

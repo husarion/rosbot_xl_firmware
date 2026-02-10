@@ -34,8 +34,8 @@ void destroyTasks();
 // 0 - Idle (tskIDLE_PRIORITY)
 enum Priority : UBaseType_t {
   STATS = 1,
-  COMMUNICATION = 2,
-  SENSORS = 3,
+  SENSORS = 2,
+  COMMUNICATION = 3,
   CONTROL = 4,
   SAFETY = 5
 };
@@ -78,13 +78,13 @@ inline TickType_t frequencyToTicks(float freq) {
   return freq == 0 ? 0 : (TickType_t)(configTICK_RATE_HZ / freq);
 }
 
-void batteryTask(void* pvParameters);
-void encoderTask(void* pvParameters);
-void imuTask(void* pvParameters);
-void ledIndicatorTask(void* pvParameters);
-void monitorTask(void* pvParameters);
-void motorControlTask(void* pvParameters);
-void rangeTask(void* pvParameters);
-void uRosTask(void* pvParameters);
+void batteryTask(void* p);
+void encoderTask(void* p);
+void imuTask(void* p);
+void ledIndicatorTask(void* p);
+void monitorTask(void* p);
+void motorControlTask(void* p);
+void rangeTask(void* p);
+void uRosTask(void* p);
 
 }  // namespace rtos

@@ -30,11 +30,13 @@
 #define BATTERY_TASK_FREQ 10
 #define BUTTON_TASK_FREQ 5
 #define ENCODER_TASK_FREQ 500
+#define FAN_TASK_FREQ 10
 #define IMU_TASK_FREQ 50
 #define LED_INDICATOR_TASK_FREQ 20
+#define LED_STRIP_TASK_FREQ 0.5
 #define MONITOR_TASK_FREQ 1
 #define MOTOR_CONTROL_TASK_FREQ 200
-#define RANGE_TASK_FREQ 10
+#define SHUTDOWN_TASK_FREQ 5
 #define UROS_TASK_FREQ 0  // Run as fast as possible
 
 namespace rtos {
@@ -43,22 +45,23 @@ void createQueues() {
   BatteryQueue = xQueueCreate(1, sizeof(BatteryData));
   EncodersQueue = xQueueCreate(1, sizeof(EncodersData));
   ImuQueue = xQueueCreate(1, sizeof(ImuData));
-  RangesQueue = xQueueCreate(1, sizeof(RangesData));
 }
 
 // ===== Config for all tasks =====
 inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ,
-     batteryTask},
+     batteryTask}, // PowerBoard is responsible for battery data
     {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
      encoderTask},
+    {"Fan", Priority::SENSORS, Stack::SMALL, FAN_TASK_FREQ, fanTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
     {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
      ledIndicatorTask},
+    {"LedStrip", Priority::STATS, Stack::SMALL, LED_STRIP_TASK_FREQ, ledStripTask},
     {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
      motorControlTask},
-    {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
+    {"Shutdown", Priority::COMMUNICATION, Stack::SMALL, SHUTDOWN_TASK_FREQ, shutdownTask},
     {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
@@ -82,17 +85,16 @@ void batteryTask(void* p) {
   UNUSED(p);
   TickType_t wake_time = xTaskGetTickCount();
 
+  uint16_t TimeDivider = 0;
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
+    if (PowerBoardFirmwareVersion.length() == 0 ||
+        PowerBoardVersion.length() == 0) {
+      PbInfoRequest();
     }
-    battery.update();
-    BatteryData data = battery.getData();
-    data.timestamp_ns = timestamp_ns;
-
-    xQueueOverwrite(rtos::BatteryQueue, &data);
-    vTaskDelayUntil(&wake_time, frequencyToTicks(BATTERY_TASK_FREQ));
+    TimeDivider++;
+    if (TimeDivider % 5 != 0) BatteryInfoRequest();
+    PowerBoardSerial.UartProtocolLoopHandler();
+    vTaskDelay(150);
   }
 }
 
@@ -112,6 +114,15 @@ void encoderTask(void* p) {
 
     xQueueOverwrite(rtos::EncodersQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(ENCODER_TASK_FREQ));
+  }
+}
+
+void fanTask(void* p) {
+  UNUSED(p);
+  FanHardwareInit();
+  while (true) {
+    FanLoopHanlder();
+    vTaskDelay(100);
   }
 }
 
@@ -148,6 +159,18 @@ void ledIndicatorTask(void* p) {
   }
 }
 
+void ledStripTask(void* p) {
+  UNUSED(p);
+  TickType_t wake_time = xTaskGetTickCount();
+
+  while (true) {
+    vTaskDelayUntil(&wake_time, frequencyToTicks(LED_STRIP_TASK_FREQ));
+    PixelIddleAnimation(&PixelStrip, 0x0F, 0x0F, 0x0F, 0x0F, 50);
+    vTaskDelayUntil(&wake_time, frequencyToTicks(LED_STRIP_TASK_FREQ));
+    PixelIddleAnimation(&PixelStrip, 0x0F, 0x00, 0x00, 0x0F, 50);
+  }
+}
+
 void monitorTask(void* p) {
   UNUSED(p);
   char buf[1000];
@@ -173,21 +196,20 @@ void motorControlTask(void* p) {
   }
 }
 
-void rangeTask(void* p) {
+void shutdownTask(void* p) {
   UNUSED(p);
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
+    if (PowerOffSignalLoopHandler() == Shutdown) {
+      if (EthClient.connect(SbcIpAddr, SHUTDOWN_PORT, SBC_ETH_CONNECT_TIMEOUT)) {
+        EthClient.println("GET /shutdown HTTP/1.1");
+        EthClient.stop();
+        vTaskDelay(POWEROFF_DELAY);
+        digitalWrite(PWR_BRD_GPIO_OUTPUT, HIGH);
+      }
     }
-    rangeSensorsManager.update();
-    RangesData data = rangeSensorsManager.getData();
-    data.timestamp_ns = timestamp_ns;
-
-    xQueueOverwrite(RangesQueue, &data);
-    vTaskDelayUntil(&wake_time, frequencyToTicks(RANGE_TASK_FREQ));
+    vTaskDelayUntil(&wake_time, frequencyToTicks(SHUTDOWN_TASK_FREQ));
   }
 }
 
