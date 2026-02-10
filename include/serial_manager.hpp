@@ -139,7 +139,6 @@ class SerialManager {
 
     return false;
   }
-
 };
 
 extern SerialManager serialManager;

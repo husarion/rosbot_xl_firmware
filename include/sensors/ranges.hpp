@@ -18,8 +18,8 @@
 #include <VL53L0X.h>
 #include <Wire.h>
 
-#include <vector>
 #include <array>
+#include <vector>
 
 #include "robot_config.hpp"
 
@@ -38,7 +38,8 @@ struct VL53L0XSensor {
 
 class VL53L0XManager {
  public:
-  VL53L0XManager(TwoWire* bus, const std::array<RangeConfig, Ranges::COUNT>& configs);
+  VL53L0XManager(TwoWire* bus,
+                 const std::array<RangeConfig, Ranges::COUNT>& configs);
 
   void addSensor(uint8_t xshutPin, uint8_t address = 0);
   bool init();

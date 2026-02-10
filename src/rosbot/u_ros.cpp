@@ -169,14 +169,12 @@ bool createEntities(void) {
   /*===== INIT ROS2 =====*/
   uint8_t ros_msgs_cnt = 0;
   allocator = rcl_get_default_allocator();
-  // init_options = rcl_get_zero_initialized_init_options();
-  // RCCHECK_RETURN(rcl_init_options_init(&init_options, allocator));
-  // RCCHECK_RETURN(rcl_init_options_set_domain_id(
-  //     &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
-  // RCCHECK_RETURN(rclc_support_init_with_options(&support, 0, NULL,
-  // &init_options,
-  //                                        &allocator));
-  RCCHECK_RETURN(rclc_support_init(&support, 0, NULL, &allocator));
+  init_options = rcl_get_zero_initialized_init_options();
+  RCCHECK_RETURN(rcl_init_options_init(&init_options, allocator));
+  RCCHECK_RETURN(rcl_init_options_set_domain_id(
+      &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
+  RCCHECK_RETURN(rclc_support_init_with_options(&support, 0, NULL,
+                                                &init_options, &allocator));
   RCCHECK_RETURN(rclc_node_init_default(
       &node, NODE_NAME, serialManager.getNamespace(), &support));
 
@@ -248,7 +246,7 @@ void destroyEntities(void) {
   rclc_executor_fini(&executor);
   rcl_node_fini(&node);
   rclc_support_fini(&support);
-  // rcl_init_options_fini(&init_options);
+  rcl_init_options_fini(&init_options);
   LOG_INFO("uROS communication stopped");
 }
 

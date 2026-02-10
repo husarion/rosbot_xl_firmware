@@ -14,6 +14,7 @@
 
 #pragma once
 #include <Arduino.h>
+
 #include "serial_manager.hpp"
 
 typedef enum {
@@ -25,38 +26,38 @@ typedef enum {
 
 extern Log_level_t firmware_log_level;
 
-#define LOG_DEBUG(...)                                      \
-  do {                                                      \
-    if (firmware_log_level <= LOG_LEVEL_DEBUG) {            \
+#define LOG_DEBUG(...)                                                     \
+  do {                                                                     \
+    if (firmware_log_level <= LOG_LEVEL_DEBUG) {                           \
       serialManager.debug().printf("[DEBUG][%s:%d] ", __FILE__, __LINE__); \
       serialManager.debug().printf(__VA_ARGS__);                           \
       serialManager.debug().printf("\r\n");                                \
-    }                                                       \
+    }                                                                      \
   } while (0);
 
-#define LOG_INFO(...)                                      \
-  do {                                                     \
-    if (firmware_log_level <= LOG_LEVEL_INFO) {            \
+#define LOG_INFO(...)                                                     \
+  do {                                                                    \
+    if (firmware_log_level <= LOG_LEVEL_INFO) {                           \
       serialManager.debug().printf("[INFO][%s:%d] ", __FILE__, __LINE__); \
       serialManager.debug().printf(__VA_ARGS__);                          \
       serialManager.debug().printf("\r\n");                               \
-    }                                                      \
+    }                                                                     \
   } while (0)
 
-#define LOG_WARN(...)                                      \
-  do {                                                     \
-    if (firmware_log_level <= LOG_LEVEL_WARN) {            \
+#define LOG_WARN(...)                                                     \
+  do {                                                                    \
+    if (firmware_log_level <= LOG_LEVEL_WARN) {                           \
       serialManager.debug().printf("[WARN][%s:%d] ", __FILE__, __LINE__); \
       serialManager.debug().printf(__VA_ARGS__);                          \
       serialManager.debug().printf("\r\n");                               \
-    }                                                      \
+    }                                                                     \
   } while (0)
 
-#define LOG_ERROR(...)                                      \
-  do {                                                      \
-    if (firmware_log_level <= LOG_LEVEL_ERROR) {            \
+#define LOG_ERROR(...)                                                     \
+  do {                                                                     \
+    if (firmware_log_level <= LOG_LEVEL_ERROR) {                           \
       serialManager.debug().printf("[ERROR][%s:%d] ", __FILE__, __LINE__); \
       serialManager.debug().printf(__VA_ARGS__);                           \
       serialManager.debug().printf("\r\n");                                \
-    }                                                       \
+    }                                                                      \
   } while (0)

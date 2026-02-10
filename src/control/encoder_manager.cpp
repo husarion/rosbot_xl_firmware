@@ -45,8 +45,8 @@ void EncoderManager::init() {
 void EncoderManager::update() {
   for (uint8_t i = 0; i < NUM_ENCODERS; ++i) {
     encoders_[i].update();
-      data_.position[i] = encoders_[i].getPosition();
-      data_.velocity[i] = encoders_[i].getVelocity();
-      // data_.effort[i] = 0.0f;  // Not implemented
+    data_.position[i] = encoders_[i].getPosition();
+    data_.velocity[i] = encoders_[i].getVelocity();
+    // data_.effort[i] = 0.0f;  // Not implemented
   }
 }

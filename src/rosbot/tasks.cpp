@@ -105,7 +105,7 @@ void encoderTask(void* pvParameters) {
     if (rmw_uros_epoch_synchronized()) {
       timestamp_ns = rmw_uros_epoch_nanos();
     }
-    
+
     encoders.update();
     EncodersData data = encoders.getData();
     data.timestamp_ns = timestamp_ns;

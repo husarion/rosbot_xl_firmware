@@ -29,7 +29,7 @@
 
 bool ImuDriver::init(uint8_t id, uint8_t addr, TwoWire* wire) {
   wire->begin();
-  wire->setClock(400000); // 400 kHz fast_mode / 100 kHz robust_mode
+  wire->setClock(400000);  // 400 kHz fast_mode / 100 kHz robust_mode
 
   this->imuBno_ = new Adafruit_BNO055(id, addr, wire);
   if (!this->imuBno_->begin(OPERATION_MODE_NDOF)) {

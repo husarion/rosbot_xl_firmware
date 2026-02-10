@@ -16,12 +16,11 @@
 
 #include <Arduino.h>
 
-struct BatteryData 
-{
+struct BatteryData {
   float current = NAN;
-  float percentage = NAN;  
-  float temperature = NAN; 
-  float voltage = NAN;       
+  float percentage = NAN;
+  float temperature = NAN;
+  float voltage = NAN;
   int64_t timestamp_ns = 0;
 };
 

@@ -29,6 +29,7 @@ class ImuDriver {
   bool init(uint8_t id, uint8_t addr, TwoWire* wire);
   void update();
   ImuData getData() const { return data_; }
+
  private:
   ImuData data_;
   Adafruit_BNO055* imuBno_ = nullptr;

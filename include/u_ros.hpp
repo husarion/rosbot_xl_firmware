@@ -33,14 +33,10 @@ namespace u_ros {
 /* DEFINES */
 #define uROS_PING_TIMEOUT_MS 50
 #define uROS_PING_ATTEMPTS 10
-#define uROS_PING_FREQUENCY 5.0
-#define uROS_SPIN_DELAY_MS 1
 // Motors msgs defines
 #define MOT_CMD_MSG_LEN 4
-#define MOT_RESP_MSG_LEN 4
-#define MOTORS_RESPONSE_FREQ 50
 // uRos topics
-#define NODE_NAME "rosbot_hw"
+#define NODE_NAME "rosbot_mcu"
 
 #define RCCHECK_RETURN(fn)              \
   {                                     \
