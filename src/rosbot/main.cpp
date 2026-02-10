@@ -14,10 +14,7 @@
 
 #include <Arduino.h>
 
-#include <vector>
-
 #include "battery.hpp"
-#include "bsp.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
@@ -33,6 +30,22 @@ Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
 
 SerialManager serialManager;
 
+void BoardPheripheralsInit() {
+  // Initialize Buttons
+  pinMode(PUSH_BUTTON1, INPUT_PULLUP);
+  pinMode(PUSH_BUTTON2, INPUT_PULLUP);
+
+  // Initialize LEDs
+  pinMode(RED_LED, OUTPUT);
+  pinMode(GRN_LED, OUTPUT);
+  pinMode(GRN_LED2, OUTPUT);
+  digitalWrite(RED_LED, HIGH);
+
+  // Enable power for IMU sensor
+  pinMode(IMU_POWER_ON, OUTPUT);
+  digitalWrite(IMU_POWER_ON, HIGH);
+}
+
 /*==================== SETUP ========================*/
 void setup() {
   // Peripherals initialization
@@ -46,7 +59,7 @@ void setup() {
   // Sensors initialization
   battery.init(BATTERY_ADC_PIN);
   encoders.init();
-  imuDriver.init(IMU_ID, IMU_ADDR_B, &imu_i2c);
+  imuDriver.init(IMU_ID, IMU_ADDR_B);
   ledIndicator.init(RED_LED, HIGH);
   motors.init();
   rangeSensorsManager.init();

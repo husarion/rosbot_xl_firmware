@@ -24,12 +24,10 @@ typedef enum { Off = 0, On = 1, Toggle = 2 } SwitchStateTypeDef;
 typedef enum { Idle = 0, Shutdown = 1 } PowerOffSignalTypeDef;
 
 extern TwoWire imu_i2c;
-extern TwoWire range_i2c;
 
 void BoardGpioInit(void);
 void SetLocalPower(SwitchStateTypeDef State_);
 void SetGreenLed(SwitchStateTypeDef State_);
-void SetGreenLed2(SwitchStateTypeDef State_);
 void SetRedLed(SwitchStateTypeDef State_);
 void BoardPheripheralsInit(void);
 PowerOffSignalTypeDef PowerOffSignalLoopHandler(void);

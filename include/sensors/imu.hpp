@@ -17,6 +17,8 @@
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
 
+#include "robot_config.hpp"
+
 struct ImuData {
   float orientation[4];       // quaternion: x y z w
   float angular_velocity[3];  // rad/s
@@ -26,14 +28,17 @@ struct ImuData {
 
 class ImuDriver {
  public:
-  bool init(uint8_t id, uint8_t addr, TwoWire* wire);
+  ImuDriver(TwoWire* bus) : bus_(bus) {}
+  bool init(uint8_t id, uint8_t addr);
   void update();
   ImuData getData() const { return data_; }
 
  private:
+  TwoWire* bus_;
   ImuData data_;
   Adafruit_BNO055* imuBno_ = nullptr;
   sensors_event_t event_;
 };
 
-inline ImuDriver imuDriver;
+inline TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
+inline ImuDriver imuDriver(&imu_i2c);

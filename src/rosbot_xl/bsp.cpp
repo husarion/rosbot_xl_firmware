@@ -24,7 +24,6 @@ String PowerBoardFirmwareVersion = "";
 String PowerBoardVersion = "";
 extern FirmwareModeTypeDef firmware_mode;
 TwoWire imu_i2c(IMU_SDA, IMU_SCL);
-TwoWire range_i2c(RANGE_SDA, RANGE_SCL);
 HardwareTimer FanTimer(FAN_PWM_TIMER);
 
 void BoardGpioInit(void) {

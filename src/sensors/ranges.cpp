@@ -18,10 +18,6 @@
 
 #include <vector>
 
-#include "bsp.hpp"
-
-VL53L0XManager rangeSensorsManager(&range_i2c, RANGE_CONFIG);
-
 VL53L0XManager::VL53L0XManager(
     TwoWire* bus, const std::array<RangeConfig, Ranges::COUNT>& configs)
     : bus_(bus) {

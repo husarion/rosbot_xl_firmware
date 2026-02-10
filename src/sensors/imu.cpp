@@ -18,8 +18,6 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-#include "bsp.hpp"
-
 #if defined(ROSBOT)
 #define IMU_AXIS_CONFIG Adafruit_BNO055::REMAP_CONFIG_P0
 #elif defined(ROSBOT_XL)
@@ -27,11 +25,11 @@
 #endif
 #define DEGREESPERSEC_TO_RADPERSEC 0.017453293
 
-bool ImuDriver::init(uint8_t id, uint8_t addr, TwoWire* wire) {
-  wire->begin();
-  wire->setClock(400000);  // 400 kHz fast_mode / 100 kHz robust_mode
+bool ImuDriver::init(uint8_t id, uint8_t addr) {
+  bus_->begin();
+  bus_->setClock(400000);  // 400 kHz fast_mode / 100 kHz robust_mode
 
-  this->imuBno_ = new Adafruit_BNO055(id, addr, wire);
+  this->imuBno_ = new Adafruit_BNO055(id, addr, bus_);
   if (!this->imuBno_->begin(OPERATION_MODE_NDOF)) {
     return false;
   }
