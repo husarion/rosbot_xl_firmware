@@ -27,37 +27,29 @@ typedef enum {
 extern log_level_t g_firmware_log_level;
 
 #define LOG_DEBUG(...)                                                     \
-  do {                                                                     \
-    if (g_firmware_log_level <= LOG_LEVEL_DEBUG) {                           \
-      serialManager.debug().printf("[DEBUG][%s:%d] ", __FILE__, __LINE__); \
-      serialManager.debug().printf(__VA_ARGS__);                           \
-      serialManager.debug().printf("\r\n");                                \
-    }                                                                      \
-  } while (0);
+  if (g_firmware_log_level <= LOG_LEVEL_DEBUG) {                           \
+    serialManager.debug().printf("[DEBUG][%s:%d] ", __FILE__, __LINE__); \
+    serialManager.debug().printf(__VA_ARGS__);                           \
+    serialManager.debug().printf("\r\n");                                \
+  }
 
 #define LOG_INFO(...)                                                     \
-  do {                                                                    \
-    if (g_firmware_log_level <= LOG_LEVEL_INFO) {                           \
-      serialManager.debug().printf("[INFO][%s:%d] ", __FILE__, __LINE__); \
-      serialManager.debug().printf(__VA_ARGS__);                          \
-      serialManager.debug().printf("\r\n");                               \
-    }                                                                     \
-  } while (0)
+  if (g_firmware_log_level <= LOG_LEVEL_INFO) {                           \
+    serialManager.debug().printf("[INFO][%s:%d] ", __FILE__, __LINE__); \
+    serialManager.debug().printf(__VA_ARGS__);                          \
+    serialManager.debug().printf("\r\n");                               \
+  }
 
 #define LOG_WARN(...)                                                     \
-  do {                                                                    \
-    if (g_firmware_log_level <= LOG_LEVEL_WARN) {                           \
-      serialManager.debug().printf("[WARN][%s:%d] ", __FILE__, __LINE__); \
-      serialManager.debug().printf(__VA_ARGS__);                          \
-      serialManager.debug().printf("\r\n");                               \
-    }                                                                     \
-  } while (0)
+  if (g_firmware_log_level <= LOG_LEVEL_WARN) {                           \
+    serialManager.debug().printf("[WARN][%s:%d] ", __FILE__, __LINE__); \
+    serialManager.debug().printf(__VA_ARGS__);                          \
+    serialManager.debug().printf("\r\n");                               \
+  }
 
 #define LOG_ERROR(...)                                                     \
-  do {                                                                     \
-    if (g_firmware_log_level <= LOG_LEVEL_ERROR) {                           \
-      serialManager.debug().printf("[ERROR][%s:%d] ", __FILE__, __LINE__); \
-      serialManager.debug().printf(__VA_ARGS__);                           \
-      serialManager.debug().printf("\r\n");                                \
-    }                                                                      \
-  } while (0)
+  if (g_firmware_log_level <= LOG_LEVEL_ERROR) {                           \
+    serialManager.debug().printf("[ERROR][%s:%d] ", __FILE__, __LINE__); \
+    serialManager.debug().printf(__VA_ARGS__);                           \
+    serialManager.debug().printf("\r\n");                                \
+  }

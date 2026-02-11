@@ -18,12 +18,7 @@
 
 class BatteryAdc : public BatteryInterface {
 public:
-    explicit BatteryAdc(uint8_t adc_pin,
-                        float v_ref = 3.3f,
-                        float v_min = 9.0f,
-                        float v_max = 12.6f,
-                        float divider_ratio = 11.0f,
-                        float correction = 1.0f);
+    explicit BatteryAdc(uint8_t adc_pin, float v_ref, float v_min, float v_max, float divider, float correction = 1.0f);
 
     void init() override;
     void update() override;
@@ -31,9 +26,9 @@ public:
 
 private:
     uint8_t     pin_;
-    float       divider_ratio_;
     float       v_ref_;
     float       v_min_;
     float       v_max_;
+    float       divider_;
     float       correction_;
 };

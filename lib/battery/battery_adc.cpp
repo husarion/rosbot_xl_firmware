@@ -15,18 +15,17 @@
 #include "battery_adc.hpp"
 #include <Arduino.h>
 
-BatteryAdc::BatteryAdc(uint8_t adc_pin, float divider_ratio,
-                       float v_ref, float v_min, float v_max, float correction)
-    : pin_(adc_pin), divider_ratio_(divider_ratio), v_ref_(v_ref), v_min_(v_min), v_max_(v_max), correction_(correction) {}
+BatteryAdc::BatteryAdc(uint8_t adc_pin, float v_ref, float v_min, float v_max, float divider, float correction)
+    : pin_(adc_pin), v_ref_(v_ref), v_min_(v_min), v_max_(v_max), divider_(divider), correction_(correction) {}
 
 void BatteryAdc::init() {
-    pinMode(pin_, INPUT_ANALOG);
+    pinMode(pin_, INPUT);
 }
 
 void BatteryAdc::update() {
-    uint16_t raw = analogRead(pin_) / 4095.0f;
+    float raw = analogRead(pin_) / 1023.0f;
 
-    data_.voltage = v_ref_ * correction_ * divider_ratio_ * raw;
+    data_.voltage = v_ref_ * correction_ * divider_ * raw;
 
     float pct = (data_.voltage - v_min_) / (v_max_ - v_min_);
     if (pct > 1.0f) pct = 1.0f;

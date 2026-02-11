@@ -22,12 +22,11 @@
 #include "rtos.hpp"
 #include "sensors/ranges.hpp"
 #include "serial_manager.hpp"
-#include "uros/uros.hpp"
+#include "uros.hpp"
 #include "battery_adc.hpp"
 #include "imu_bno055.hpp"
 
-float divider = (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR;
-BatteryAdc battery_impl(BATTERY_ADC_PIN, BATTERY_VREF, BATTERY_VMIN, BATTERY_VMAX, divider, BATTERY_CORRECTION);
+BatteryAdc battery_impl(BATTERY_ADC_PIN, BATTERY_VREF, BATTERY_VMIN, BATTERY_VMAX, BATTERY_DIVIDER, BATTERY_CORRECTION);
 
 TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
 ImuBno055 imu_impl(&imu_i2c, IMU_ID, IMU_ADDR_B, Adafruit_BNO055::REMAP_CONFIG_P0);
@@ -78,8 +77,6 @@ void setup() {
   motors.init();
   rangeSensorsManager.init();
   u_ros::transportInit(selected_serial);
-
-  delay(500);
 
   // RTOS
   rtos::createQueues();

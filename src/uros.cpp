@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "uros/uros.hpp"
+#include "uros.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/bool.h>

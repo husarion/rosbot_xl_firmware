@@ -22,7 +22,7 @@
 #include "led_indicator.hpp"
 #include "log.hpp"
 #include "sensors/ranges.hpp"
-#include "uros/uros.hpp"
+#include "uros.hpp"
 #include "imu_interface.hpp"
 
 #define BATTERY_TASK_FREQ 10
@@ -57,7 +57,7 @@ inline TaskConfig tasks[] = {
     // {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
     //  motorControlTask},
     // {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
-    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
+    // {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
 // ===== Handles =====
@@ -109,6 +109,7 @@ void imuTask(void* p) {
   UNUSED(p);
   TickType_t wake_time = xTaskGetTickCount();
   ImuStamped data = {};
+
   while (true) {
     data.timestamp_ns = rtos_get_timestamp_ns();
     g_imu->update();
