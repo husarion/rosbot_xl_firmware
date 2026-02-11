@@ -21,6 +21,15 @@
 
 #include "control/types.hpp"
 
+// ============== Battery ==============
+#define BATTERY_ADC_PIN         PA5
+#define BATTERY_VREF            3.3f
+#define BATTERY_VMIN            9.6f
+#define BATTERY_VMAX            12.6f
+#define BATTERY_UPPER_RESISTOR  5.6e4
+#define BATTERY_LOWER_RESISTOR  1.0e4
+#define BATTERY_CORRECTION      0.986f
+
 namespace control {
 
 constexpr uint8_t RIGHT_WHEELS_SLEEP = PC13;
@@ -105,9 +114,6 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define RED_LED PE2
 #define GRN_LED PE3
 #define GRN_LED2 PE4
-
-// ============== Battery ==============
-#define BATTERY_ADC_PIN PA5
 
 // ============== Power Management ==============
 #define POWEROFF_DELAY 5000  // ms

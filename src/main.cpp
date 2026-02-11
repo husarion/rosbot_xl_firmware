@@ -14,19 +14,33 @@
 
 #include <Arduino.h>
 
-#include "battery.hpp"
+#include "battery_interface.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
-#include "robot_config.hpp"
+#include "config.hpp"
 #include "rtos.hpp"
-#include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
 #include "serial_manager.hpp"
-#include "u_ros.hpp"
+#include "uros/uros.hpp"
+#include "battery_adc.hpp"
+#include "imu_bno055.hpp"
+
+float divider = (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR;
+BatteryAdc battery_impl(BATTERY_ADC_PIN, BATTERY_VREF, BATTERY_VMIN, BATTERY_VMAX, divider, BATTERY_CORRECTION);
+
+TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
+ImuBno055 imu_impl(&imu_i2c, IMU_ID, IMU_ADDR_B, Adafruit_BNO055::REMAP_CONFIG_P0);
+
+TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
+VL53L0XManager rangeSensorsManager(&range_i2c, RANGE_CONFIG);
 
 /* EXTERN VARIABLES */
-Log_level_t firmware_log_level = LOG_LEVEL_DEBUG;
+log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
+
+BatteryInterface* g_battery  = &battery_impl;
+ImuInterface* g_imu = &imu_impl;
+
 
 SerialManager serialManager;
 
@@ -57,9 +71,9 @@ void setup() {
   serialManager.configureNamespace();
 
   // Sensors initialization
-  battery.init(BATTERY_ADC_PIN);
+  battery_impl.init();
   encoders.init();
-  imuDriver.init(IMU_ID, IMU_ADDR_B);
+  imu_impl.init();
   ledIndicator.init(RED_LED, HIGH);
   motors.init();
   rangeSensorsManager.init();

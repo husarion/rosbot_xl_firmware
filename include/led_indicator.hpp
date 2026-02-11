@@ -16,7 +16,7 @@
 
 #include <Arduino.h>
 
-#include "battery.hpp"
+#include "battery_interface.hpp"
 
 class LedStatusIndicator {
  public:

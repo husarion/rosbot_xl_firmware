@@ -15,17 +15,16 @@
 #include "rtos.hpp"
 
 #include <STM32FreeRTOS.h>
-#include <micro_ros_arduino.h>
 
-#include "battery.hpp"
+#include "battery_interface.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
 #include "led_indicator.hpp"
 #include "log.hpp"
-#include "motors.hpp"
-#include "sensors/imu.hpp"
 #include "sensors/ranges.hpp"
-#include "u_ros.hpp"
+#include "uros/uros.hpp"
+#include "imu_interface.hpp"
+#include "imu_bno055.hpp"
 
 #define BATTERY_TASK_FREQ 10
 #define BUTTON_TASK_FREQ 5
@@ -40,9 +39,9 @@
 namespace rtos {
 
 void createQueues() {
-  BatteryQueue = xQueueCreate(1, sizeof(BatteryData));
+  BatteryQueue = xQueueCreate(1, sizeof(BatteryStamped));
   EncodersQueue = xQueueCreate(1, sizeof(EncodersData));
-  ImuQueue = xQueueCreate(1, sizeof(ImuData));
+  ImuQueue = xQueueCreate(1, sizeof(ImuStamped));
   RangesQueue = xQueueCreate(1, sizeof(RangesData));
 }
 
@@ -50,15 +49,15 @@ void createQueues() {
 inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ,
      batteryTask},
-    {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
-     encoderTask},
+    // {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
+    //  encoderTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
-    {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
-     ledIndicatorTask},
-    {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
-    {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
-     motorControlTask},
-    {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
+    // {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
+    //  ledIndicatorTask},
+    // {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
+    // {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
+    //  motorControlTask},
+    // {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
     {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
@@ -83,13 +82,12 @@ void batteryTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
-    }
-    battery.update();
-    BatteryData data = battery.getData();
-    data.timestamp_ns = timestamp_ns;
+
+    g_battery->update();
+    BatteryStamped data = {
+        .data         = g_battery->getData(),
+        .timestamp_ns = rtos_get_timestamp_ns(),
+    };
 
     xQueueOverwrite(rtos::BatteryQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(BATTERY_TASK_FREQ));
@@ -101,14 +99,9 @@ void encoderTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
-    }
-
     encoders.update();
     EncodersData data = encoders.getData();
-    data.timestamp_ns = timestamp_ns;
+    data.timestamp_ns = rtos_get_timestamp_ns();
 
     xQueueOverwrite(rtos::EncodersQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(ENCODER_TASK_FREQ));
@@ -120,14 +113,11 @@ void imuTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
-    }
-
-    imuDriver.update();
-    ImuData data = imuDriver.getData();
-    data.timestamp_ns = timestamp_ns;
+    // imu_impl.update();
+    ImuStamped data = {
+        // .data         = g_imu->getData(),
+        // .timestamp_ns = rtos_get_timestamp_ns(),
+    };
 
     xQueueOverwrite(rtos::ImuQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(IMU_TASK_FREQ));
@@ -139,7 +129,7 @@ void ledIndicatorTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    bool battery_low = battery.isLow();
+    bool battery_low = g_battery->isLow();
     bool uros_connected = (u_ros::state == u_ros::CONNECTED);
     bool error_state = false;
 
@@ -153,7 +143,7 @@ void monitorTask(void* p) {
   char buf[1000];
 
   while (true) {
-    if (firmware_log_level <= LOG_LEVEL_INFO) {
+    if (g_firmware_log_level <= LOG_LEVEL_INFO) {
       vTaskGetRunTimeStats(buf);
       LOG_INFO("\r\n%s", buf);
     }
@@ -178,13 +168,9 @@ void rangeTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    int64_t timestamp_ns = 0;
-    if (rmw_uros_epoch_synchronized()) {
-      timestamp_ns = rmw_uros_epoch_nanos();
-    }
     rangeSensorsManager.update();
     RangesData data = rangeSensorsManager.getData();
-    data.timestamp_ns = timestamp_ns;
+    data.timestamp_ns = rtos_get_timestamp_ns();
 
     xQueueOverwrite(RangesQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(RANGE_TASK_FREQ));

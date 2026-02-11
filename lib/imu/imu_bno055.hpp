@@ -14,31 +14,28 @@
 
 #pragma once
 
+#include "imu_interface.hpp"
+
 #include <Adafruit_BNO055.h>
 #include <Adafruit_Sensor.h>
+#include <Wire.h>
 
-#include "robot_config.hpp"
 
-struct ImuData {
-  float orientation[4];       // quaternion: x y z w
-  float angular_velocity[3];  // rad/s
-  float acceleration[3];      // m/s^2
-  int64_t timestamp_ns;       // timestamp przy odczycie
+class ImuBno055 : public ImuInterface {
+public:
+    ImuBno055(TwoWire* bus, uint8_t id, uint8_t addr, Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config);
+
+    bool init() override;
+    void update() override;
+    const char* name() const override { return "BNO055"; }
+
+private:
+    TwoWire*         bus_;
+    uint8_t          id_;
+    uint8_t          addr_;
+    Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config_;
+    Adafruit_BNO055* bno_ = nullptr;
+    ImuData          data_ = {};
 };
 
-class ImuDriver {
- public:
-  ImuDriver(TwoWire* bus) : bus_(bus) {}
-  bool init(uint8_t id, uint8_t addr);
-  void update();
-  ImuData getData() const { return data_; }
-
- private:
-  TwoWire* bus_;
-  ImuData data_;
-  Adafruit_BNO055* imuBno_ = nullptr;
-  sensors_event_t event_;
-};
-
-inline TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
-inline ImuDriver imuDriver(&imu_i2c);
+extern ImuBno055 imu_impl;

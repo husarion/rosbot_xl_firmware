@@ -17,7 +17,7 @@
 
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
-#include "robot_config.hpp"
+#include "config.hpp"
 
 using namespace control;
 

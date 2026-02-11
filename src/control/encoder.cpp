@@ -14,7 +14,7 @@
 
 #include "control/encoder.hpp"
 
-#include "robot_config.hpp"
+#include "config.hpp"
 
 static TIM_HandleTypeDef htim_encoders[4];
 static uint8_t encoder_count = 0;

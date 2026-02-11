@@ -25,7 +25,7 @@
 
 /*===== REST =====*/
 #include "log.hpp"
-#include "robot_config.hpp"
+#include "config.hpp"
 namespace u_ros {
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
   255  // get ROS_DOMAIN_ID from Micro ROS Agent

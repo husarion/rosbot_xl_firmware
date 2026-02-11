@@ -16,7 +16,7 @@
 
 #include <HardwareTimer.h>
 
-#include "robot_config.hpp"
+#include "config.hpp"
 
 // ============================================================================
 // SINGLE MOTOR IMPLEMENTATION - Hi-Z Control

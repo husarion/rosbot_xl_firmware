@@ -21,7 +21,7 @@
 #include <array>
 #include <vector>
 
-#include "robot_config.hpp"
+#include "config.hpp"
 
 struct RangesData {
   float range[Ranges::COUNT];
@@ -55,5 +55,4 @@ class VL53L0XManager {
   std::vector<VL53L0XSensor> sensors_;
 };
 
-inline TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
-inline VL53L0XManager rangeSensorsManager(&range_i2c, RANGE_CONFIG);
+extern VL53L0XManager rangeSensorsManager;

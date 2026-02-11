@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "u_ros.hpp"
+#include "uros/uros.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/bool.h>
@@ -30,11 +30,11 @@
 #include "log.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
-#include "uros/battery_publisher.hpp"
-#include "uros/buttons_publisher.hpp"
-#include "uros/imu_publisher.hpp"
-#include "uros/joint_state_publisher.hpp"
-#include "uros/range_publisher.hpp"
+#include "battery_publisher.hpp"
+#include "buttons_publisher.hpp"
+#include "imu_publisher.hpp"
+#include "joint_state_publisher.hpp"
+#include "range_publisher.hpp"
 namespace u_ros {
 
 // PUBLISHERS

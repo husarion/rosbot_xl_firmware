@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "control/encoders_manager.hpp"
-#include "robot_config.hpp"
+#include "config.hpp"
 
 using namespace control;
 

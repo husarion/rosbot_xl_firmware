@@ -20,7 +20,7 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/battery_state.h>
 
-#include "battery.hpp"
+#include "battery_interface.hpp"
 #include "rtos.hpp"
 
 class BatteryPublisher {
@@ -34,7 +34,7 @@ class BatteryPublisher {
   }
 
   void publish() {
-    BatteryData data;
+    BatteryStamped data;
     if (xQueueReceive(rtos::BatteryQueue, &data, 0) != pdPASS) {
       return;
     }
@@ -86,13 +86,13 @@ class BatteryPublisher {
     msg_.serial_number = micro_ros_string_utilities_set(msg_.serial_number, "");
   }
 
-  void fillMsg(const BatteryData& data) {
-    msg_.header.stamp.sec = data.timestamp_ns / 1000000000LL;
-    msg_.header.stamp.nanosec = data.timestamp_ns % 1000000000LL;
+  void fillMsg(const BatteryStamped& d) {
+    msg_.header.stamp.sec = d.timestamp_ns / 1000000000LL;
+    msg_.header.stamp.nanosec = d.timestamp_ns % 1000000000LL;
 
-    msg_.voltage = data.voltage;
-    msg_.temperature = data.temperature;
-    msg_.current = data.current;
-    msg_.percentage = data.percentage;
+    msg_.voltage = d.data.voltage;
+    msg_.temperature = d.data.temperature;
+    msg_.current = d.data.current;
+    msg_.percentage = d.data.percentage;
   }
 };

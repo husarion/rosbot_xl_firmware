@@ -21,7 +21,7 @@
 #include <sensor_msgs/msg/imu.h>
 
 #include "rtos.hpp"
-#include "sensors/imu.hpp"
+#include "imu_interface.hpp"
 
 class ImuPublisher {
  public:
@@ -33,12 +33,12 @@ class ImuPublisher {
   }
 
   void publish() {
-    ImuData data;
+    ImuStamped data;
     if (xQueueReceive(rtos::ImuQueue, &data, 0) != pdPASS) {
       return;
     }
 
-    fillMsg(data);
+    // fillMsg(data);
     rcl_publish(&pub_, &msg_, NULL);
   }
 
@@ -54,21 +54,21 @@ class ImuPublisher {
         micro_ros_string_utilities_set(msg_.header.frame_id, "imu_link");
   }
 
-  void fillMsg(const ImuData& d) {
+  void fillMsg(const ImuStamped& d) {
     msg_.header.stamp.sec = d.timestamp_ns / 1000000000LL;
     msg_.header.stamp.nanosec = d.timestamp_ns % 1000000000LL;
 
-    msg_.orientation.x = d.orientation[0];
-    msg_.orientation.y = d.orientation[1];
-    msg_.orientation.z = d.orientation[2];
-    msg_.orientation.w = d.orientation[3];
+    msg_.orientation.x = d.data.orientation[0];
+    msg_.orientation.y = d.data.orientation[1];
+    msg_.orientation.z = d.data.orientation[2];
+    msg_.orientation.w = d.data.orientation[3];
 
-    msg_.angular_velocity.x = d.angular_velocity[0];
-    msg_.angular_velocity.y = d.angular_velocity[1];
-    msg_.angular_velocity.z = d.angular_velocity[2];
+    msg_.angular_velocity.x = d.data.angular_velocity[0];
+    msg_.angular_velocity.y = d.data.angular_velocity[1];
+    msg_.angular_velocity.z = d.data.angular_velocity[2];
 
-    msg_.linear_acceleration.x = d.acceleration[0];
-    msg_.linear_acceleration.y = d.acceleration[1];
-    msg_.linear_acceleration.z = d.acceleration[2];
+    msg_.linear_acceleration.x = d.data.acceleration[0];
+    msg_.linear_acceleration.y = d.data.acceleration[1];
+    msg_.linear_acceleration.z = d.data.acceleration[2];
   }
 };

@@ -16,7 +16,7 @@
 
 #include <HardwareSerial.h>
 
-#include "robot_config.hpp"
+#include "config.hpp"
 
 class SerialManager {
  public:

@@ -14,23 +14,25 @@
 
 #pragma once
 
-typedef enum { fw_normal = 0, fw_error = 1, fw_debug = 2 } FirmwareModeTypeDef;
+#include <cstdint>
 
-#include <Arduino.h>
-#include <HardwareSerial.h>
+struct ImuData {
+    float   acceleration[3];      // m/s²
+    float   angular_velocity[3];  // rad/s
+    float   orientation[4];       // quaternion x, y, z, w
+};
 
-#include <array>
+class ImuInterface {
+public:
+    virtual ~ImuInterface() = default;
 
-#include "control/types.hpp"
+    virtual bool init() = 0;
+    virtual void update() = 0;
+    virtual const ImuData& getData() const { return data_; }
+    virtual const char* name() const = 0;
 
-/* CHOOSE HARDWARE CONFIG */
-#if defined(ROSBOT_XL)
-#include "rosbot_xl/config.hpp"
-#elif defined(ROSBOT)
-#include "rosbot/config.hpp"
-#else
-#error "No board version defined! Did you set correct flag in platformio.ini?"
-#endif
+protected:
+    ImuData data_ = {};
+};
 
-static_assert(control::CONFIG.size() == static_cast<size_t>(MotorID::COUNT),
-              "Motor config does not match MotorID count");
+extern ImuInterface* g_imu;
