@@ -44,9 +44,6 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
 
   // Initialize encoder
   encoder_ = &enc;
-
-  // Initialize PID
-  pid_.setLimits(-1.0f, 1.0f);
 }
 
 void SingleMotor::setMode(MotorMode movement) {

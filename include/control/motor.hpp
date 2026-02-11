@@ -30,7 +30,7 @@ enum MotorMode : uint8_t { FORWARD, REVERSE, BRAKE, NEUTRAL };
 // ============================================================================
 class SingleMotor {
  public:
-  SingleMotor() = default;
+  SingleMotor(PIDController pid): pid_(pid) {};
 
   void init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin, Direction dir,
             Encoder& enc);

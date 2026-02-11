@@ -26,7 +26,8 @@
 
 #include "control/encoder.hpp"
 #include "control/motor.hpp"
-#include "control/pid.hpp"
+#include "pid.hpp"
+#include "config.hpp"
 
 class MotorDriver {
  public:
@@ -70,7 +71,12 @@ class MotorDriver {
   MotorDriver(const MotorDriver&) = delete;
   MotorDriver& operator=(const MotorDriver&) = delete;
 
-  SingleMotor motors_[NUM_MOTORS];
+  SingleMotor motors_[NUM_MOTORS] = {
+      {PIDController(PID_KP, PID_KI, PID_KD)},
+      {PIDController(PID_KP, PID_KI, PID_KD)},
+      {PIDController(PID_KP, PID_KI, PID_KD)},
+      {PIDController(PID_KP, PID_KI, PID_KD)}
+  };
 
   // Watchdog state
   std::atomic<uint32_t> last_command_time_{0};

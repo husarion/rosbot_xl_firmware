@@ -31,6 +31,14 @@
 #define BATTERY_DIVIDER         (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR
 #define BATTERY_CORRECTION      0.986f
 
+// ============== PID ==============
+#define PID_KP 0.07f
+#define PID_KI 0.4f
+#define PID_KD 0.002f
+#define PID_MAX_ACCEL 0.0f
+#define PID_MIN_OUTPUT -1.0f
+#define PID_MAX_OUTPUT 1.0f
+
 namespace control {
 
 constexpr uint8_t RIGHT_WHEELS_SLEEP = PC13;

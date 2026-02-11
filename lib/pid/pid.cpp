@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "control/pid.hpp"
+#include "pid.hpp"
 
 #include <Arduino.h>
 
-PIDController::PIDController(float kp, float ki, float kd)
-    : kp_(kp), ki_(ki), kd_(kd) {
-  max_integral_ = 1.0f / ki_;
+PIDController::PIDController(float kp, float ki, float kd, float min_output, float max_output)
+    : kp_(kp), ki_(ki), kd_(kd), min_output_(min_output), max_output_(max_output) {
+  max_integral_ = 1.0f / ki_; // 1 second to reach full output at max error
 }
 
 void PIDController::setMaxAccel(float max_accel) { max_accel_ = max_accel; }

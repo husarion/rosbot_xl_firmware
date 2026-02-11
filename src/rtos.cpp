@@ -48,16 +48,16 @@ void createQueues() {
 inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, BATTERY_TASK_FREQ,
      batteryTask},
-    // {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
-    //  encoderTask},
+    {"Encoder", Priority::CONTROL, Stack::SMALL, ENCODER_TASK_FREQ,
+     encoderTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, IMU_TASK_FREQ, imuTask},
-    // {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
-    //  ledIndicatorTask},
+    {"LedIndicator", Priority::STATS, Stack::XSMALL, LED_INDICATOR_TASK_FREQ,
+     ledIndicatorTask},
     // {"Monitor", Priority::STATS, Stack::MEDIUM, MONITOR_TASK_FREQ, monitorTask},
-    // {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
-    //  motorControlTask},
-    // {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
-    // {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
+    {"MotorControl", Priority::CONTROL, Stack::MEDIUM, MOTOR_CONTROL_TASK_FREQ,
+     motorControlTask},
+    {"Range", Priority::SENSORS, Stack::SMALL, RANGE_TASK_FREQ, rangeTask},
+    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, UROS_TASK_FREQ, uRosTask},
 };
 
 // ===== Handles =====
