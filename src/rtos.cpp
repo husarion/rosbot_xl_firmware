@@ -24,7 +24,6 @@
 #include "sensors/ranges.hpp"
 #include "uros/uros.hpp"
 #include "imu_interface.hpp"
-#include "imu_bno055.hpp"
 
 #define BATTERY_TASK_FREQ 10
 #define BUTTON_TASK_FREQ 5
@@ -80,14 +79,12 @@ void destroyTasks() {
 void batteryTask(void* p) {
   UNUSED(p);
   TickType_t wake_time = xTaskGetTickCount();
+  BatteryStamped data = {};
 
   while (true) {
-
+    data.timestamp_ns = rtos_get_timestamp_ns();
     g_battery->update();
-    BatteryStamped data = {
-        .data         = g_battery->getData(),
-        .timestamp_ns = rtos_get_timestamp_ns(),
-    };
+    data.data = g_battery->getData();
 
     xQueueOverwrite(rtos::BatteryQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(BATTERY_TASK_FREQ));
@@ -111,13 +108,11 @@ void encoderTask(void* p) {
 void imuTask(void* p) {
   UNUSED(p);
   TickType_t wake_time = xTaskGetTickCount();
-
+  ImuStamped data = {};
   while (true) {
-    // imu_impl.update();
-    ImuStamped data = {
-        // .data         = g_imu->getData(),
-        // .timestamp_ns = rtos_get_timestamp_ns(),
-    };
+    data.timestamp_ns = rtos_get_timestamp_ns();
+    g_imu->update();
+    data.data = g_imu->getData();
 
     xQueueOverwrite(rtos::ImuQueue, &data);
     vTaskDelayUntil(&wake_time, frequencyToTicks(IMU_TASK_FREQ));

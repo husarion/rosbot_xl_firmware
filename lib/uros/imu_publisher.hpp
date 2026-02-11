@@ -38,7 +38,7 @@ class ImuPublisher {
       return;
     }
 
-    // fillMsg(data);
+    fillMsg(data);
     rcl_publish(&pub_, &msg_, NULL);
   }
 

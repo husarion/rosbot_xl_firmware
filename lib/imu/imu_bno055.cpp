@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "imu_bno055.hpp"
-#include "wiring_constants.h"
+
+#include <wiring_constants.h>
 
 ImuBno055::ImuBno055(TwoWire* bus, uint8_t id, uint8_t addr, Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config)
     : bus_(bus), id_(id), addr_(addr), axis_config_(axis_config) {}

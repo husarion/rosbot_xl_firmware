@@ -17,7 +17,6 @@
 #include "imu_interface.hpp"
 
 #include <Adafruit_BNO055.h>
-#include <Adafruit_Sensor.h>
 #include <Wire.h>
 
 
@@ -35,7 +34,4 @@ private:
     uint8_t          addr_;
     Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config_;
     Adafruit_BNO055* bno_ = nullptr;
-    ImuData          data_ = {};
 };
-
-extern ImuBno055 imu_impl;

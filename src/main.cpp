@@ -79,6 +79,8 @@ void setup() {
   rangeSensorsManager.init();
   u_ros::transportInit(selected_serial);
 
+  delay(500);
+
   // RTOS
   rtos::createQueues();
   rtos::createTasks();
