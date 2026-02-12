@@ -38,11 +38,12 @@ inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, 10, batteryTask},
     {"Encoder", Priority::CONTROL, Stack::SMALL, 500, encoderTask},
     {"Imu", Priority::SENSORS, Stack::SMALL, 50, imuTask},
-    {"LedIndicator", Priority::STATS, Stack::XSMALL, 20, ledIndicatorTask},
-    {"Monitor", Priority::STATS, Stack::MEDIUM, 1, monitorTask},
+    {"LedIndicator", Priority::OBSERVING, Stack::XSMALL, 20, ledIndicatorTask},
+    {"Monitor", Priority::OBSERVING, Stack::MEDIUM, 1, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, 200, motorControlTask},
     {"Range", Priority::SENSORS, Stack::SMALL, 10, rangeTask},
-    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, 0, uRosTask},
+    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, 200, uRosTask},
+    {"uRosPing", Priority::OBSERVING, Stack::SMALL, 2, uRosPingTask},
 };
 
 // ===== Handles =====
@@ -162,8 +163,20 @@ void rangeTask(void* p) {
 
 void uRosTask(void* p) {
   TickType_t period = taskGetPeriod(p);
+  TickType_t wake_time = xTaskGetTickCount();
+  while (true) {
+    u_ros::publishLoop();
+    vTaskDelayUntil(&wake_time, period);
+  }
+}
+
+void uRosPingTask(void* p) {
+  TickType_t period = taskGetPeriod(p);
+  TickType_t wake_time = xTaskGetTickCount();
+
   while (true) {
     u_ros::loop();
+    vTaskDelayUntil(&wake_time, period);
   }
 }
 

@@ -61,7 +61,7 @@ void destroyTasks();
 // 7 - Highest (configMAX_PRIORITIES)
 // 0 - Idle (tskIDLE_PRIORITY)
 enum Priority : UBaseType_t {
-  STATS = 1,
+  OBSERVING = 1,
   SENSORS = 2,
   COMMUNICATION = 3,
   CONTROL = 4,
@@ -123,5 +123,6 @@ void monitorTask(void* p);
 void motorControlTask(void* p);
 void rangeTask(void* p);
 void uRosTask(void* p);
+void uRosPingTask(void* p);
 
 }  // namespace rtos

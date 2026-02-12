@@ -33,17 +33,16 @@ class RangePublisher {
   }
 
   void publish() {
-    RangesStamped data;
-    if (xQueueReceive(rtos::RangesQueue, &data, 0) != pdPASS) {
+    if (xQueueReceive(rtos::RangesQueue, &data_, 0) != pdPASS) {
       return;
     }
 
-    msg_.header.stamp.sec = data.timestamp_ns / 1000000000LL;
-    msg_.header.stamp.nanosec = data.timestamp_ns % 1000000000LL;
+    msg_.header.stamp.sec = data_.timestamp_ns / 1000000000LL;
+    msg_.header.stamp.nanosec = data_.timestamp_ns % 1000000000LL;
 
-    for (uint8_t i = 0; i < data.data.count; i++) {
+    for (uint8_t i = 0; i < data_.data.count; i++) {
       msg_.header.frame_id.data = const_cast<char*>(RANGE_CONFIG[i].frame_id);
-      float range = data.data.range[i];
+      float range = data_.data.range[i];
       if (range > msg_.max_range) {
         msg_.range = INFINITY;
       } else if (range < msg_.min_range) {
@@ -60,6 +59,7 @@ class RangePublisher {
  private:
   rcl_publisher_t pub_;
   sensor_msgs__msg__Range msg_;
+  RangesStamped data_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));

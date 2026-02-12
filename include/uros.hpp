@@ -30,8 +30,8 @@ namespace u_ros {
 #define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
-#define uROS_PING_TIMEOUT_MS 50
-#define uROS_PING_ATTEMPTS 10
+#define uROS_PING_TIMEOUT_MS 30
+#define uROS_PING_ATTEMPTS 5
 #define MOT_CMD_MSG_LEN 4
 #define NODE_NAME "rosbot_mcu"
 
@@ -65,6 +65,7 @@ extern u_ros_state_t state;
 void transportInit(const SerialConfig& config);
 bool pingAgent();
 void loop();
+void publishLoop();
 bool createEntities();
 void destroyEntities();
 

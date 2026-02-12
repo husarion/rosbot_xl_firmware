@@ -33,12 +33,11 @@ class ImuPublisher {
   }
 
   void publish() {
-    ImuStamped data;
-    if (xQueueReceive(rtos::ImuQueue, &data, 0) != pdPASS) {
+    if (xQueueReceive(rtos::ImuQueue, &data_, 0) != pdPASS) {
       return;
     }
 
-    fillMsg(data);
+    fillMsg(data_);
     rcl_publish(&pub_, &msg_, NULL);
   }
 
@@ -47,6 +46,7 @@ class ImuPublisher {
  private:
   rcl_publisher_t pub_;
   sensor_msgs__msg__Imu msg_;
+  ImuStamped data_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));

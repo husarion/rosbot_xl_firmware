@@ -34,12 +34,11 @@ class BatteryPublisher {
   }
 
   void publish() {
-    BatteryStamped data;
-    if (xQueueReceive(rtos::BatteryQueue, &data, 0) != pdPASS) {
+    if (xQueueReceive(rtos::BatteryQueue, &data_, 0) != pdPASS) {
       return;
     }
 
-    fillMsg(data);
+    fillMsg(data_);
     rcl_publish(&pub_, &msg_, NULL);
   }
 
@@ -48,6 +47,7 @@ class BatteryPublisher {
  private:
   rcl_publisher_t pub_;
   sensor_msgs__msg__BatteryState msg_;
+  BatteryStamped data_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));

@@ -34,12 +34,11 @@ class JointStatePublisher {
   }
 
   void publish() {
-    EncodersData data;
-    if (xQueueReceive(rtos::EncodersQueue, &data, 0) != pdPASS) {
+    if (xQueueReceive(rtos::EncodersQueue, &data_, 0) != pdPASS) {
       return;
     }
 
-    fillMsg(data);
+    fillMsg(data_);
     rcl_publish(&pub_, &msg_, NULL);
   }
 
@@ -48,6 +47,7 @@ class JointStatePublisher {
  private:
   rcl_publisher_t pub_;
   sensor_msgs__msg__JointState msg_;
+  EncodersData data_;
 
   void initMsg(rcl_allocator_t& allocator) {
     // Init nested structures
