@@ -19,6 +19,7 @@
 
 #include "battery_interface.hpp"
 #include "imu_interface.hpp"
+#include "range_array.hpp"
 
 #include "log.hpp"
 
@@ -27,9 +28,13 @@ struct BatteryStamped{
     int64_t     timestamp_ns;
 };
 
-
 struct ImuStamped{
     ImuData data;
+    int64_t timestamp_ns;
+};
+
+struct RangesStamped {
+    RangesData data;
     int64_t timestamp_ns;
 };
 
@@ -80,12 +85,25 @@ struct TaskConfig {
   void (*function)(void*);
 };
 
+inline TickType_t frequencyToTicks(float freq) {
+  return freq == 0 ? 0 : (TickType_t)(configTICK_RATE_HZ / freq);
+}
+
+static inline uint16_t taskGetFreq(void* params) {
+    return static_cast<uint16_t>(reinterpret_cast<uintptr_t>(params));
+}
+
+static inline TickType_t taskGetPeriod(void* params) {
+    return frequencyToTicks(taskGetFreq(params));
+}
+
 struct TaskHandleWrapper {
   TaskHandle_t handle = nullptr;
 
   void create(const TaskConfig& cfg) {
+    void* freq_param = reinterpret_cast<void*>(static_cast<uintptr_t>(cfg.frequency));
     auto result = xTaskCreate(cfg.function, cfg.name,
-                              configMINIMAL_STACK_SIZE + cfg.stack, nullptr,
+                              configMINIMAL_STACK_SIZE + cfg.stack, freq_param,
                               cfg.priority, &handle);
   }
 
@@ -96,10 +114,6 @@ struct TaskHandleWrapper {
     }
   }
 };
-
-inline TickType_t frequencyToTicks(float freq) {
-  return freq == 0 ? 0 : (TickType_t)(configTICK_RATE_HZ / freq);
-}
 
 void batteryTask(void* p);
 void encoderTask(void* p);

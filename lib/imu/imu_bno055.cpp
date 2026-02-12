@@ -20,9 +20,6 @@ ImuBno055::ImuBno055(TwoWire* bus, uint8_t id, uint8_t addr, Adafruit_BNO055::ad
     : bus_(bus), id_(id), addr_(addr), axis_config_(axis_config) {}
 
 bool ImuBno055::init() {
-    bus_->begin();
-    bus_->setClock(400000);
-
     bno_ = new Adafruit_BNO055(id_, addr_, bus_);
     if (!bno_->begin(OPERATION_MODE_NDOF)) {
         return false;

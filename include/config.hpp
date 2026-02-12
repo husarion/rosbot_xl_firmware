@@ -146,6 +146,10 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 // ============== Ranges ==============
 #define RANGE_I2C_SDA PB9
 #define RANGE_I2C_SCL PB8
+#define RANGE_XSHUT_FL PD8
+#define RANGE_XSHUT_FR PB1
+#define RANGE_XSHUT_RL PD10
+#define RANGE_XSHUT_RR PD9
 
 enum Ranges { RF, FL, RR, RL, COUNT };
 struct RangeConfig {

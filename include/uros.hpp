@@ -27,15 +27,12 @@
 #include "log.hpp"
 #include "config.hpp"
 namespace u_ros {
-#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
-  255  // get ROS_DOMAIN_ID from Micro ROS Agent
+#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV 255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
 #define uROS_PING_TIMEOUT_MS 50
 #define uROS_PING_ATTEMPTS 10
-// Motors msgs defines
 #define MOT_CMD_MSG_LEN 4
-// uRos topics
 #define NODE_NAME "rosbot_mcu"
 
 #define RCCHECK_RETURN(fn)              \
@@ -72,7 +69,6 @@ bool createEntities();
 void destroyEntities();
 
 void motorsCmdCallback(const void* msg_in);
-
 void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg);
 
 }  // namespace u_ros

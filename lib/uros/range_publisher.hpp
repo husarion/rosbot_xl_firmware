@@ -21,7 +21,7 @@
 #include <sensor_msgs/msg/range.h>
 
 #include "rtos.hpp"
-#include "sensors/ranges.hpp"
+#include "range_array.hpp"
 
 class RangePublisher {
  public:
@@ -33,7 +33,7 @@ class RangePublisher {
   }
 
   void publish() {
-    RangesData data;
+    RangesStamped data;
     if (xQueueReceive(rtos::RangesQueue, &data, 0) != pdPASS) {
       return;
     }
@@ -41,14 +41,15 @@ class RangePublisher {
     msg_.header.stamp.sec = data.timestamp_ns / 1000000000LL;
     msg_.header.stamp.nanosec = data.timestamp_ns % 1000000000LL;
 
-    for (uint8_t i = 0; i < Ranges::COUNT; i++) {
+    for (uint8_t i = 0; i < data.data.count; i++) {
       msg_.header.frame_id.data = const_cast<char*>(RANGE_CONFIG[i].frame_id);
-      if (data.range[i] > msg_.max_range) {
+      float range = data.data.range[i];
+      if (range > msg_.max_range) {
         msg_.range = INFINITY;
-      } else if (data.range[i] < msg_.min_range) {
+      } else if (range < msg_.min_range) {
         msg_.range = -INFINITY;
       } else {
-        msg_.range = data.range[i];
+        msg_.range = range;
       }
       rcl_publish(&pub_, &msg_, NULL);
     }

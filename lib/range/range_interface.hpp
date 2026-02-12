@@ -14,25 +14,26 @@
 
 #pragma once
 
-#include "battery_interface.hpp"
+#include <cmath>
+#include <cstdint>
 
-struct ADCConfig {
-    uint8_t adc_pin;
-    float v_ref;
-    float v_min;
-    float v_max;
-    float divider;
-    float correction = 1.0f;
+
+struct RangeData {
+    float range = NAN;
 };
 
-class BatteryAdc : public BatteryInterface {
+
+class RangeInterface {
 public:
-    explicit BatteryAdc(const ADCConfig config);
+    virtual ~RangeInterface() = default;
 
-    void init() override;
-    void update() override;
-    const char* name() const override { return "ADC"; }
+    virtual void init() = 0;
+    virtual void update() = 0;
+    virtual void powerOff() = 0;
+    virtual void powerOn() = 0;
+    virtual const RangeData& getData() const { return data_; }
+    virtual const char* name() const = 0;
 
-private:
-    const ADCConfig config_;
+protected:
+    RangeData data_;
 };

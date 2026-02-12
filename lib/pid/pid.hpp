@@ -14,10 +14,6 @@
 
 #pragma once
 
-// ============================================================================
-// PID CONTROLLER - Optimized for real-time control
-// ============================================================================
-
 class PIDController {
  public:
   PIDController(float kp, float ki, float kd, float min_output=-1.0f, float max_output=1.0f);

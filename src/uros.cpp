@@ -35,6 +35,7 @@
 #include "imu_publisher.hpp"
 #include "joint_state_publisher.hpp"
 #include "range_publisher.hpp"
+
 namespace u_ros {
 
 // PUBLISHERS
@@ -273,7 +274,7 @@ void loop() {
         destroyEntities();
         state = WAITING;
       }
-      vTaskDelay(pdMS_TO_TICKS(10));
+      vTaskDelay(pdMS_TO_TICKS(50));
       break;
 
     case CONNECTED:
@@ -289,7 +290,7 @@ void loop() {
       rangePublisher.publish();
 
       rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
-      vTaskDelay(pdMS_TO_TICKS(1));
+      vTaskDelay(pdMS_TO_TICKS(5));
       break;
 
     case DISCONNECTED:

@@ -26,7 +26,7 @@ class LedStatusIndicator {
     digitalWrite(pin_, initial_state);
   }
 
-  void update(bool battery_low, bool uros_connected, bool error) {
+  void update(bool battery_low, bool uros_disconnected, bool error) {
     uint32_t now = millis();
     if (error) {
       handleSOS(now);
@@ -39,7 +39,7 @@ class LedStatusIndicator {
       return;
     }
 
-    if (!uros_connected) {
+    if (uros_disconnected) {
       digitalWrite(pin_, HIGH);
       return;
     }

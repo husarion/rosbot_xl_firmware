@@ -33,14 +33,14 @@ public:
   virtual const BatteryData& getData() const { return data_; }
   virtual const char* name() const = 0;
 
-  virtual bool isLow(float thresh = 20.0, float hist = 2.0)
+  virtual bool isLow(float thresh = 0.2, float hist = 0.02)
   {
     const float p = data_.percentage;
     is_low_ = (is_low_ ? (p <= thresh + hist) : (p < thresh));
     return is_low_;
   }
 
-  virtual bool isCritical(float thresh = 5.0, float hist = 2.0)
+  virtual bool isCritical(float thresh = 0.05, float hist = 0.02)
   {
     const float p = data_.percentage;
     is_critical_ = (is_critical_ ? (p <= thresh + hist) : (p < thresh));
