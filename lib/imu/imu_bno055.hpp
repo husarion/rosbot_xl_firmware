@@ -36,6 +36,6 @@ class ImuBno055 : public ImuInterface {
   const char* name() const override { return "BNO055"; }
 
  private:
-  Bno055Config config_;
+  Bno055Config cfg_;
   Adafruit_BNO055 bno_;
 };

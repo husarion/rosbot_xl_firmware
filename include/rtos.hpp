@@ -18,7 +18,7 @@
 #include <micro_ros_arduino.h>
 
 #include "battery_interface.hpp"
-#include "control/encoders_manager.hpp"
+#include "encoder_array.hpp"
 #include "imu_interface.hpp"
 #include "log.hpp"
 #include "range_array.hpp"

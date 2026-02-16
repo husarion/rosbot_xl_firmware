@@ -16,39 +16,41 @@
 
 #include <Arduino.h>
 
-#include "control/encoder.hpp"
-#include "control/types.hpp"
+#include "encoder_interface.hpp"
 
 #define MAX_NUM_ENCODERS 4
 
 struct EncodersData {
   float position[MAX_NUM_ENCODERS] = {};
   float velocity[MAX_NUM_ENCODERS] = {};
-  float effort[MAX_NUM_ENCODERS] = {};
   uint8_t count = 0;
 };
 
-class EncoderManager {
+class EncoderArray {
  public:
-  static constexpr uint8_t NUM_ENCODERS = MAX_NUM_ENCODERS;
-  EncoderManager() = default;
+  EncoderArray() = default;
+  EncoderArray(EncoderInterface** encoders, uint8_t count);
 
   void init();
-
-  Encoder& operator[](MotorID id) {
-    return encoders_[static_cast<uint8_t>(id)];
-  }
-
-  const Encoder& operator[](MotorID id) const {
-    return encoders_[static_cast<uint8_t>(id)];
-  }
-
   void update();
-  EncodersData getData() const { return data_; }
+
+  const EncodersData getData() const { return data_; }
+  uint8_t count()       const { return count_; }
+  bool isAvailable() const { return count_ > 0; }
+  void resetEncoder(uint8_t idx);
+  void resetAll();
+
+  EncoderInterface* operator[](uint8_t idx) {
+    return (idx < count_) ? encoders_[idx] : nullptr;
+  }
+  const EncoderInterface* operator[](uint8_t idx) const {
+    return (idx < count_) ? encoders_[idx] : nullptr;
+  }
 
  private:
-  Encoder encoders_[NUM_ENCODERS];
-  EncodersData data_;
+  EncoderInterface** encoders_ = nullptr;
+  uint8_t            count_    = 0;
+  EncodersData       data_     = {};
 };
 
-inline EncoderManager encoders;
+extern EncoderArray g_encoders;

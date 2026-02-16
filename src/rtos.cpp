@@ -17,8 +17,8 @@
 #include <STM32FreeRTOS.h>
 
 #include "battery_interface.hpp"
-#include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "encoder_array.hpp"
 #include "imu_interface.hpp"
 #include "led_indicator.hpp"
 #include "log.hpp"
@@ -86,8 +86,8 @@ void encoderTask(void* p) {
 
   while (true) {
     bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
-    encoders.update();
-    data.data = encoders.getData();
+    g_encoders.update();
+    data.data = g_encoders.getData();
 
     if (connected) {
       xQueueOverwrite(EncodersQueue, &data);
@@ -103,7 +103,7 @@ void imuTask(void* p) {
 
   while (true) {
     bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
-    g_imu->update(); // TODO: DMA should be used
+    g_imu->update();  // TODO: DMA should be used
     data.data = g_imu->getData();
 
     if (connected) {

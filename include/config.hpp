@@ -55,25 +55,25 @@ inline const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
     CONFIG = {{{MotorID::FL,
                 {PF9, PE5, PE6, PB6, PB7},
                 TIM4,
-                Direction::CCW,
+                false,
                 "fl_wheel_joint"},
 
                {MotorID::FR,
                 {PF6, PG10, PG11, PA0, PA1},
                 TIM2,
-                Direction::CW,
+                true,
                 "fr_wheel_joint"},
 
                {MotorID::RL,
                 {PF8, PC15, PF2, PB4, PA7},
                 TIM3,
-                Direction::CCW,
+                false,
                 "rl_wheel_joint"},
 
                {MotorID::RR,
                 {PF7, PD3, PD4, PC6, PC7},
                 TIM8,
-                Direction::CW,
+                true,
                 "rr_wheel_joint"}}};
 
 }  // namespace control
@@ -119,6 +119,29 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 // ============== Buttons ==============
 #define PUSH_BUTTON1 PG12
 #define PUSH_BUTTON2 PG13
+
+// ============== Enciders ==============
+#define GEAR_RATIO 34.014f
+#define ENCODER_CPR 48
+#define TICKS_PER_REVOLUTION (ENCODER_CPR * GEAR_RATIO)
+#define RAD_PER_TICK ((2.0f * PI) / TICKS_PER_REVOLUTION)
+
+#define ENC_FL_PIN_A PB6
+#define ENC_FL_PIN_B PB7
+#define ENC_FL_TIMER TIM4
+#define ENC_FL_DIR_CW false
+#define ENC_FR_PIN_A PA0
+#define ENC_FR_PIN_B PA1
+#define ENC_FR_TIMER TIM2
+#define ENC_FR_DIR_CW true
+#define ENC_RL_PIN_A PB4
+#define ENC_RL_PIN_B PA7
+#define ENC_RL_TIMER TIM3
+#define ENC_RL_DIR_CW false
+#define ENC_RR_PIN_A PD3
+#define ENC_RR_PIN_B PD4
+#define ENC_RR_TIMER TIM8
+#define ENC_RR_DIR_CW true
 
 // ============== LEDs ==============
 #define RED_LED PE2

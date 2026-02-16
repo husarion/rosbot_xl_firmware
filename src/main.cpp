@@ -17,8 +17,9 @@
 #include "battery_adc.hpp"
 #include "battery_interface.hpp"
 #include "config.hpp"
-#include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "encoder_array.hpp"
+#include "hardware_encoder.hpp"
 #include "imu_bno055.hpp"
 #include "led_indicator.hpp"
 #include "range_array.hpp"
@@ -27,6 +28,7 @@
 #include "serial_manager.hpp"
 #include "uros.hpp"
 
+// Battery
 ADCConfig battery_adc_config = {.adc_pin = BATTERY_ADC_PIN,
                                 .v_ref = BATTERY_VREF,
                                 .v_min = BATTERY_VMIN,
@@ -34,6 +36,45 @@ ADCConfig battery_adc_config = {.adc_pin = BATTERY_ADC_PIN,
                                 .divider = BATTERY_DIVIDER,
                                 .correction = BATTERY_CORRECTION};
 BatteryAdc battery_impl(battery_adc_config);
+
+// Encoders
+static HardwareEncoder enc_fl({
+    .pin_a = ENC_FL_PIN_A,
+    .pin_b = ENC_FL_PIN_B,
+    .timer = ENC_FL_TIMER,
+    .dir_cw = ENC_FL_DIR_CW,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "fl",
+});
+
+static HardwareEncoder enc_fr({
+    .pin_a = ENC_FR_PIN_A,
+    .pin_b = ENC_FR_PIN_B,
+    .timer = ENC_FR_TIMER,
+    .dir_cw = ENC_FR_DIR_CW,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "fr",
+});
+
+static HardwareEncoder enc_rl({
+    .pin_a = ENC_RL_PIN_A,
+    .pin_b = ENC_RL_PIN_B,
+    .timer = ENC_RL_TIMER,
+    .dir_cw = ENC_RL_DIR_CW,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "rl",
+});
+
+static HardwareEncoder enc_rr({
+    .pin_a = ENC_RR_PIN_A,
+    .pin_b = ENC_RR_PIN_B,
+    .timer = ENC_RR_TIMER,
+    .dir_cw = ENC_RR_DIR_CW,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "rr",
+});
+static EncoderInterface* encoders[] = {&enc_fl, &enc_fr, &enc_rl, &enc_rr};
+static constexpr uint8_t ENCODER_COUNT = sizeof(encoders) / sizeof(encoders[0]);
 
 // IMU
 TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
@@ -60,13 +101,14 @@ static RangeInterface* range_sensors[] = {
 };
 static constexpr uint8_t RANGE_COUNT =
     sizeof(range_sensors) / sizeof(range_sensors[0]);
-RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
 /* EXTERN VARIABLES */
 log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
 
 BatteryInterface* g_battery = &battery_impl;
+EncoderArray g_encoders(encoders, ENCODER_COUNT);
 ImuInterface* g_imu = &imu_impl;
+RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
 SerialManager serialManager;
 
@@ -106,7 +148,7 @@ void setup() {
 
   // Sensors initialization
   battery_impl.init();
-  encoders.init();
+  g_encoders.init();
   imu_impl.init();
   ledIndicator.init(RED_LED, HIGH);
   motors.init();

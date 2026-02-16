@@ -16,8 +16,8 @@
 #include <semphr.h>
 
 #include "config.hpp"
-#include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "encoder_array.hpp"
 
 using namespace control;
 
@@ -47,22 +47,22 @@ void MotorDriver::init() {
   m = MotorID::FL;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
-                      encoders[m]);
+                      g_encoders[m_idx]);
 
   m = MotorID::FR;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
-                      encoders[m]);
+                      g_encoders[m_idx]);
 
   m = MotorID::RL;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
-                      encoders[m]);
+                      g_encoders[m_idx]);
 
   m = MotorID::RR;
   m_idx = static_cast<uint8_t>(m);
   motors_[m_idx].init(getPwmPin(m), getInAPin(m), getInBPin(m), getDirection(m),
-                      encoders[m]);
+                      g_encoders[m_idx]);
 
   last_update_time_ = millis();
   enableDrivers();

@@ -17,14 +17,14 @@
 #include <wiring_constants.h>
 
 ImuBno055::ImuBno055(const Bno055Config& cfg)
-    : config_(cfg), bno_(cfg.sensor_id, cfg.i2c_addr, cfg.bus) {}
+    : cfg_(cfg), bno_(cfg.sensor_id, cfg.i2c_addr, cfg.bus) {}
 
 bool ImuBno055::init() {
   if (!bno_.begin(OPERATION_MODE_NDOF)) {
     return false;
   }
 
-  bno_.setAxisRemap(config_.axis_config);
+  bno_.setAxisRemap(cfg_.axis_config);
   bno_.setAxisSign(Adafruit_BNO055::REMAP_SIGN_P4);
   bno_.setExtCrystalUse(true);
 

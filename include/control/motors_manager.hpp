@@ -25,8 +25,8 @@
 #include <atomic>
 
 #include "config.hpp"
-#include "control/encoder.hpp"
 #include "control/motor.hpp"
+#include "encoder_array.hpp"
 #include "pid.hpp"
 
 class MotorDriver {

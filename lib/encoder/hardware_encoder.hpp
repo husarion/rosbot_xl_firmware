@@ -15,31 +15,26 @@
 #pragma once
 
 #include <Arduino.h>
+#include "encoder_interface.hpp"
 
-#include "control/types.hpp"
+struct HardwareEncoderConfig {
+    uint8_t      pin_a;          // TIMx_CH1 pin
+    uint8_t      pin_b;          // TIMx_CH2 pin
+    TIM_TypeDef* timer;          // e.g. TIM1, TIM3, TIM8
+    bool         dir_cw;         // polarity
+    float        rad_per_tick;   // radians per encoder tick
+    const char*  label;          // human name, e.g. "FR"
+};
 
-class Encoder {
+
+class HardwareEncoder : public EncoderInterface {
  public:
-  Encoder() = default;
-  Encoder(const Encoder&) = delete;
-  Encoder& operator=(const Encoder&) = delete;
+  explicit HardwareEncoder(const HardwareEncoderConfig& cfg);
 
-  /**
-   * @brief Initialize encoder with hardware timer
-   * @param pin_a Channel A pin (must be TIMx_CH1)
-   * @param pin_b Channel B pin (must be TIMx_CH2)
-   * @param timer Timer instance
-   * @param dir Direction inversion
-   * @param rad_per_tick Radians per encoder tick
-   */
-  void init(uint8_t pin_a, uint8_t pin_b, TIM_TypeDef* timer, Direction dir,
-            float rad_per_tick);
-
-  void reset();
-  void update();
-
-  float getPosition() const { return position_; }
-  float getVelocity() const { return velocity_; }
+  void init() override;
+  void update() override;
+  void reset() override;
+  const char* name() const override { return cfg_.label; }
 
  private:
   const uint32_t getTicks() const { return timer_handle_->Instance->CNT; }
@@ -49,15 +44,12 @@ class Encoder {
   }
   static inline int32_t compute_delta(uint32_t cnt, uint32_t last_cnt);
 
-  TIM_HandleTypeDef* timer_handle_ = nullptr;
-  TIM_Encoder_InitTypeDef encoder_config_;
-  float rad_per_tick_;
-  uint32_t last_cnt_ = 0;
-  uint32_t last_time_us_ = 0;
-
-  float position_ = 0.0f;
-  float velocity_ = 0.0f;
-  float last_velocity_ = 0.0f;
+  HardwareEncoderConfig    cfg_ = {};
+  TIM_HandleTypeDef*       timer_handle_  = nullptr;
+  TIM_Encoder_InitTypeDef  encoder_cfg_ = {};
+  uint32_t                 last_cnt_      = 0;
+  uint32_t                 last_time_us_  = 0;
+  float                    last_velocity_ = 0.0f;
 
   // Below value are true for 16-bit timers (TIM2/TIM5 (32-bit) not supported)
   static constexpr uint32_t CNT_MAX = 0xFFFF;

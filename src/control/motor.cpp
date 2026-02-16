@@ -23,11 +23,11 @@
 // ============================================================================
 
 void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
-                       Direction dir, Encoder& enc) {
+                       bool dir_cw, EncoderInterface* enc) {
   pwm_pin_ = pwm_pin;
   in_a_pin_ = in_a_pin;
   in_b_pin_ = in_b_pin;
-  dir_ = dir;
+  dir_cw_ = dir_cw;
 
   // Initialize direction pins to NEUTRAL (both Hi-Z)
   setMode(MotorMode::NEUTRAL);
@@ -43,7 +43,7 @@ void SingleMotor::init(uint8_t pwm_pin, uint8_t in_a_pin, uint8_t in_b_pin,
   pwm_arr_ = pwm_timer_->getOverflow(TICK_FORMAT);
 
   // Initialize encoder
-  encoder_ = &enc;
+  encoder_ = enc;
 }
 
 void SingleMotor::setMode(MotorMode movement) {
@@ -53,7 +53,7 @@ void SingleMotor::setMode(MotorMode movement) {
   current_mode_ = movement;
 
   uint8_t pin_a, pin_b;
-  if (dir_ == Direction::CCW) {
+  if (dir_cw_) {
     pin_a = in_a_pin_;
     pin_b = in_b_pin_;
   } else {

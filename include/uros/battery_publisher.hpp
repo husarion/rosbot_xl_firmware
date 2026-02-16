@@ -20,7 +20,6 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/battery_state.h>
 
-#include "battery_interface.hpp"
 #include "rtos.hpp"
 
 class BatteryPublisher {

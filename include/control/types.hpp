@@ -35,7 +35,7 @@ struct MotorConfig {
   MotorID id;
   MotorPins pins;
   TIM_TypeDef* encoder_timer;
-  Direction direction;
+  bool direction_cw;
   const char* joint_name;
 };
 
@@ -64,7 +64,7 @@ constexpr TIM_TypeDef* getEncoderTimer(MotorID id) {
   return getConfig(id).encoder_timer;
 }
 
-constexpr Direction getDirection(MotorID id) { return getConfig(id).direction; }
+constexpr bool getDirection(MotorID id) { return getConfig(id).direction_cw; }
 
 constexpr const char* getJointName(MotorID id) {
   return getConfig(id).joint_name;

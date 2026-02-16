@@ -34,7 +34,7 @@ class BatteryAdc : public BatteryInterface {
   const char* name() const override { return "ADC"; }
 
  private:
-  const ADCConfig config_;
+  const ADCConfig cfg_;
   float voltage_factor_ = 1.0f;
   float voltage_range_inv_ = 0.0f;
   uint16_t adc_dma_buffer_[1] = {};

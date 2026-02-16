@@ -19,20 +19,20 @@
 #include <cassert>
 #include <cmath>
 
-BatteryAdc::BatteryAdc(const ADCConfig config) : config_(config) {
-  voltage_factor_ = config_.v_ref * config_.correction * config_.divider;
-  assert(config_.v_max > config_.v_min);
-  voltage_range_inv_ = 1.0f / (config_.v_max - config_.v_min);
+BatteryAdc::BatteryAdc(const ADCConfig config) : cfg_(config) {
+  voltage_factor_ = cfg_.v_ref * cfg_.correction * cfg_.divider;
+  assert(cfg_.v_max > cfg_.v_min);
+  voltage_range_inv_ = 1.0f / (cfg_.v_max - cfg_.v_min);
 }
 
-void BatteryAdc::init() { pinMode(config_.adc_pin, INPUT); }
+void BatteryAdc::init() { pinMode(cfg_.adc_pin, INPUT); }
 
 void BatteryAdc::update() {
   constexpr float ADC_MAX_INV = 1.0f / 1023.0f;
-  float raw = analogRead(config_.adc_pin) * ADC_MAX_INV;
+  float raw = analogRead(cfg_.adc_pin) * ADC_MAX_INV;
 
   data_.voltage = raw * voltage_factor_;
 
-  float pct = (data_.voltage - config_.v_min) * voltage_range_inv_;
+  float pct = (data_.voltage - cfg_.v_min) * voltage_range_inv_;
   data_.percentage = fminf(fmaxf(pct, 0.0f), 1.0f);
 }

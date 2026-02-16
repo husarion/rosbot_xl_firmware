@@ -20,7 +20,6 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/joint_state.h>
 
-#include "control/encoders_manager.hpp"
 #include "rtos.hpp"
 
 class JointStatePublisher {

@@ -18,56 +18,56 @@
 #include <rcl/rcl.h>
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
-#include <sensor_msgs/msg/range.h>
+#include <sensor_msgs/msg/imu.h>
 
-#include "range_array.hpp"
 #include "rtos.hpp"
 
-class RangePublisher {
+class ImuPublisher {
  public:
   rcl_ret_t init(rcl_node_t& node, const char* topic_name) {
     initMsg();
     return rclc_publisher_init_best_effort(
-        &pub_, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+        &pub_, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
         topic_name);
   }
 
   void publish() {
-    if (xQueueReceive(rtos::RangesQueue, &data_, 0) != pdPASS) {
+    if (xQueueReceive(rtos::ImuQueue, &data_, 0) != pdPASS) {
       return;
     }
 
-    msg_.header.stamp.sec = data_.timestamp_ns / 1000000000LL;
-    msg_.header.stamp.nanosec = data_.timestamp_ns % 1000000000LL;
-
-    for (uint8_t i = 0; i < data_.data.count; i++) {
-      msg_.header.frame_id.data = const_cast<char*>(RANGE_CONFIG[i].frame_id);
-      float range = data_.data.range[i];
-      if (range > msg_.max_range) {
-        msg_.range = INFINITY;
-      } else if (range < msg_.min_range) {
-        msg_.range = -INFINITY;
-      } else {
-        msg_.range = range;
-      }
-      rcl_publish(&pub_, &msg_, NULL);
-    }
+    fillMsg(data_);
+    rcl_publish(&pub_, &msg_, NULL);
   }
 
   void fini(rcl_node_t& node) { rcl_publisher_fini(&pub_, &node); }
 
  private:
   rcl_publisher_t pub_;
-  sensor_msgs__msg__Range msg_;
-  RangesStamped data_;
+  sensor_msgs__msg__Imu msg_;
+  ImuStamped data_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));
-    msg_.radiation_type = sensor_msgs__msg__Range__INFRARED;
-    msg_.field_of_view = 0.26;
-    msg_.min_range = 0.01;
-    msg_.max_range = 0.9;
-    msg_.range = NAN;
-    msg_.variance = 0.0f;
+    msg_.header.frame_id =
+        micro_ros_string_utilities_set(msg_.header.frame_id, "imu_link");
+  }
+
+  void fillMsg(const ImuStamped& d) {
+    msg_.header.stamp.sec = d.timestamp_ns / 1000000000LL;
+    msg_.header.stamp.nanosec = d.timestamp_ns % 1000000000LL;
+
+    msg_.orientation.x = d.data.orientation[0];
+    msg_.orientation.y = d.data.orientation[1];
+    msg_.orientation.z = d.data.orientation[2];
+    msg_.orientation.w = d.data.orientation[3];
+
+    msg_.angular_velocity.x = d.data.angular_velocity[0];
+    msg_.angular_velocity.y = d.data.angular_velocity[1];
+    msg_.angular_velocity.z = d.data.angular_velocity[2];
+
+    msg_.linear_acceleration.x = d.data.acceleration[0];
+    msg_.linear_acceleration.y = d.data.acceleration[1];
+    msg_.linear_acceleration.z = d.data.acceleration[2];
   }
 };
