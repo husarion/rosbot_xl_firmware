@@ -14,27 +14,25 @@
 
 #include <Arduino.h>
 
+#include "battery_adc.hpp"
 #include "battery_interface.hpp"
+#include "config.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "imu_bno055.hpp"
 #include "led_indicator.hpp"
-#include "config.hpp"
+#include "range_array.hpp"
+#include "range_vl53l0.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
 #include "uros.hpp"
-#include "battery_adc.hpp"
-#include "imu_bno055.hpp"
-#include "range_array.hpp"
-#include "range_vl53l0.hpp"
 
-ADCConfig battery_adc_config = {
-    .adc_pin = BATTERY_ADC_PIN,
-    .v_ref = BATTERY_VREF,
-    .v_min = BATTERY_VMIN,
-    .v_max = BATTERY_VMAX,
-    .divider = BATTERY_DIVIDER,
-    .correction = BATTERY_CORRECTION
-};
+ADCConfig battery_adc_config = {.adc_pin = BATTERY_ADC_PIN,
+                                .v_ref = BATTERY_VREF,
+                                .v_min = BATTERY_VMIN,
+                                .v_max = BATTERY_VMAX,
+                                .divider = BATTERY_DIVIDER,
+                                .correction = BATTERY_CORRECTION};
 BatteryAdc battery_impl(battery_adc_config);
 
 // IMU
@@ -55,17 +53,20 @@ RangeVl53l0x range_fr(&range_i2c, RANGE_XSHUT_FR, 0x31);
 RangeVl53l0x range_rl(&range_i2c, RANGE_XSHUT_RL, 0x32);
 RangeVl53l0x range_rr(&range_i2c, RANGE_XSHUT_RR, 0x33);
 static RangeInterface* range_sensors[] = {
-    &range_fl,    &range_fr,    &range_rl,    &range_rr,
+    &range_fl,
+    &range_fr,
+    &range_rl,
+    &range_rr,
 };
-static constexpr uint8_t RANGE_COUNT = sizeof(range_sensors) / sizeof(range_sensors[0]);
+static constexpr uint8_t RANGE_COUNT =
+    sizeof(range_sensors) / sizeof(range_sensors[0]);
 RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
 /* EXTERN VARIABLES */
 log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
 
-BatteryInterface* g_battery  = &battery_impl;
+BatteryInterface* g_battery = &battery_impl;
 ImuInterface* g_imu = &imu_impl;
-
 
 SerialManager serialManager;
 

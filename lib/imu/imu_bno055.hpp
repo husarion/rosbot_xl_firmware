@@ -14,28 +14,28 @@
 
 #pragma once
 
-#include "imu_interface.hpp"
-
 #include <Adafruit_BNO055.h>
 #include <Wire.h>
 
+#include "imu_interface.hpp"
+
 struct Bno055Config {
-    TwoWire*   bus;
-    uint8_t    i2c_addr;
-    int32_t    sensor_id;
-    uint16_t   int_pin;
-    Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config;
+  TwoWire* bus;
+  uint8_t i2c_addr;
+  int32_t sensor_id;
+  uint16_t int_pin;
+  Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config;
 };
 
 class ImuBno055 : public ImuInterface {
-public:
-    explicit ImuBno055(const Bno055Config& cfg);
+ public:
+  explicit ImuBno055(const Bno055Config& cfg);
 
-    bool init() override;
-    void update() override;
-    const char* name() const override { return "BNO055"; }
+  bool init() override;
+  void update() override;
+  const char* name() const override { return "BNO055"; }
 
-private:
-    Bno055Config config_;
-    Adafruit_BNO055 bno_;
+ private:
+  Bno055Config config_;
+  Adafruit_BNO055 bno_;
 };

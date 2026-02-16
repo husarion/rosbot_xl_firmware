@@ -17,25 +17,25 @@
 #include "battery_interface.hpp"
 
 struct ADCConfig {
-    uint8_t adc_pin;
-    float v_ref;
-    float v_min;
-    float v_max;
-    float divider;
-    float correction = 1.0f;
+  uint8_t adc_pin;
+  float v_ref;
+  float v_min;
+  float v_max;
+  float divider;
+  float correction = 1.0f;
 };
 
 class BatteryAdc : public BatteryInterface {
-public:
-    explicit BatteryAdc(const ADCConfig config);
+ public:
+  explicit BatteryAdc(const ADCConfig config);
 
-    void init() override;
-    void update() override;
-    const char* name() const override { return "ADC"; }
+  void init() override;
+  void update() override;
+  const char* name() const override { return "ADC"; }
 
-private:
-    const ADCConfig config_;
-    float voltage_factor_ = 1.0f;
-    float voltage_range_inv_ = 0.0f;
-    uint16_t adc_dma_buffer_[1] = {};
+ private:
+  const ADCConfig config_;
+  float voltage_factor_ = 1.0f;
+  float voltage_range_inv_ = 0.0f;
+  uint16_t adc_dma_buffer_[1] = {};
 };

@@ -20,8 +20,8 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/imu.h>
 
-#include "rtos.hpp"
 #include "imu_interface.hpp"
+#include "rtos.hpp"
 
 class ImuPublisher {
  public:

@@ -16,9 +16,14 @@
 
 #include <Arduino.h>
 
-PIDController::PIDController(float kp, float ki, float kd, float min_output, float max_output)
-    : kp_(kp), ki_(ki), kd_(kd), min_output_(min_output), max_output_(max_output) {
-  max_integral_ = 1.0f / ki_; // 1 second to reach full output at max error
+PIDController::PIDController(float kp, float ki, float kd, float min_output,
+                             float max_output)
+    : kp_(kp),
+      ki_(ki),
+      kd_(kd),
+      min_output_(min_output),
+      max_output_(max_output) {
+  max_integral_ = 1.0f / ki_;  // 1 second to reach full output at max error
 }
 
 void PIDController::setMaxAccel(float max_accel) { max_accel_ = max_accel; }

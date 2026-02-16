@@ -14,8 +14,8 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdint>
-# include <cmath>
 
 struct BatteryData {
   float current = NAN;
@@ -25,7 +25,7 @@ struct BatteryData {
 };
 
 class BatteryInterface {
-public:
+ public:
   virtual ~BatteryInterface() = default;
 
   virtual void init() = 0;
@@ -33,21 +33,19 @@ public:
   virtual const BatteryData getData() const { return data_; }
   virtual const char* name() const = 0;
 
-  virtual bool isLow(float thresh = 0.2, float hist = 0.02)
-  {
+  virtual bool isLow(float thresh = 0.2, float hist = 0.02) {
     const float p = data_.percentage;
     is_low_ = (is_low_ ? (p <= thresh + hist) : (p < thresh));
     return is_low_;
   }
 
-  virtual bool isCritical(float thresh = 0.05, float hist = 0.02)
-  {
+  virtual bool isCritical(float thresh = 0.05, float hist = 0.02) {
     const float p = data_.percentage;
     is_critical_ = (is_critical_ ? (p <= thresh + hist) : (p < thresh));
     return is_critical_;
   }
 
-protected:
+ protected:
   BatteryData data_ = {};
   bool is_low_{false};
   bool is_critical_{false};

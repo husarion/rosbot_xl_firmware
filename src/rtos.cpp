@@ -19,10 +19,10 @@
 #include "battery_interface.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
+#include "imu_interface.hpp"
 #include "led_indicator.hpp"
 #include "log.hpp"
 #include "uros.hpp"
-#include "imu_interface.hpp"
 
 namespace rtos {
 
@@ -69,11 +69,10 @@ void batteryTask(void* p) {
 
   while (true) {
     bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
-    g_battery->update(); // TODO: DMA should be used
+    g_battery->update();  // TODO: DMA should be used
     data.data = g_battery->getData();
 
-    if(connected)
-    {
+    if (connected) {
       xQueueOverwrite(BatteryQueue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
@@ -90,8 +89,7 @@ void encoderTask(void* p) {
     encoders.update();
     data.data = encoders.getData();
 
-    if(connected)
-    {
+    if (connected) {
       xQueueOverwrite(EncodersQueue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
@@ -105,11 +103,10 @@ void imuTask(void* p) {
 
   while (true) {
     bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
-    g_imu->update();
+    g_imu->update(); // TODO: DMA should be used
     data.data = g_imu->getData();
 
-    if(connected)
-    {
+    if (connected) {
       xQueueOverwrite(ImuQueue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
@@ -166,8 +163,7 @@ void rangeTask(void* p) {
     g_ranges.update();
     data.data = g_ranges.getData();
 
-    if(connected)
-    {
+    if (connected) {
       xQueueOverwrite(RangesQueue, &data);
     }
     vTaskDelayUntil(&wake_time, period);

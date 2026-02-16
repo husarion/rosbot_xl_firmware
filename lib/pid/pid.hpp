@@ -16,7 +16,8 @@
 
 class PIDController {
  public:
-  PIDController(float kp, float ki, float kd, float min_output=-1.0f, float max_output=1.0f);
+  PIDController(float kp, float ki, float kd, float min_output = -1.0f,
+                float max_output = 1.0f);
 
   void setMaxAccel(float max_accel);
   void setGains(float kp, float ki, float kd);

@@ -22,14 +22,15 @@
 #include "control/types.hpp"
 
 // ============== Battery ==============
-#define BATTERY_ADC_PIN         PA5
-#define BATTERY_VREF            3.3f
-#define BATTERY_VMIN            9.6f
-#define BATTERY_VMAX            12.6f
-#define BATTERY_UPPER_RESISTOR  5.6e4
-#define BATTERY_LOWER_RESISTOR  1.0e4
-#define BATTERY_DIVIDER         (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR
-#define BATTERY_CORRECTION      0.986f
+#define BATTERY_ADC_PIN PA5
+#define BATTERY_VREF 3.3f
+#define BATTERY_VMIN 9.6f
+#define BATTERY_VMAX 12.6f
+#define BATTERY_UPPER_RESISTOR 5.6e4
+#define BATTERY_LOWER_RESISTOR 1.0e4
+#define BATTERY_DIVIDER \
+  (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR
+#define BATTERY_CORRECTION 0.986f
 
 // ============== PID ==============
 #define PID_KP 0.07f

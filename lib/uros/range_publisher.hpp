@@ -20,8 +20,8 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/range.h>
 
-#include "rtos.hpp"
 #include "range_array.hpp"
+#include "rtos.hpp"
 
 class RangePublisher {
  public:

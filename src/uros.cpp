@@ -25,16 +25,16 @@
 #include <rclc/executor.h>
 #include <rosidl_runtime_c/primitives_sequence_functions.h>
 
-#include "control/encoders_manager.hpp"
-#include "control/motors_manager.hpp"
-#include "log.hpp"
-#include "rtos.hpp"
-#include "serial_manager.hpp"
 #include "battery_publisher.hpp"
 #include "buttons_publisher.hpp"
+#include "control/encoders_manager.hpp"
+#include "control/motors_manager.hpp"
 #include "imu_publisher.hpp"
 #include "joint_state_publisher.hpp"
+#include "log.hpp"
 #include "range_publisher.hpp"
+#include "rtos.hpp"
+#include "serial_manager.hpp"
 
 namespace u_ros {
 

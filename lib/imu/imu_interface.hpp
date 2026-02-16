@@ -17,22 +17,22 @@
 #include <cstdint>
 
 struct ImuData {
-    float   acceleration[3];      // m/s²
-    float   angular_velocity[3];  // rad/s
-    float   orientation[4];       // quaternion x, y, z, w
+  float acceleration[3];      // m/s²
+  float angular_velocity[3];  // rad/s
+  float orientation[4];       // quaternion x, y, z, w
 };
 
 class ImuInterface {
-public:
-    virtual ~ImuInterface() = default;
+ public:
+  virtual ~ImuInterface() = default;
 
-    virtual bool init() = 0;
-    virtual void update() = 0;
-    virtual const ImuData getData() const { return data_; }
-    virtual const char* name() const = 0;
+  virtual bool init() = 0;
+  virtual void update() = 0;
+  virtual const ImuData getData() const { return data_; }
+  virtual const char* name() const = 0;
 
-protected:
-    ImuData data_ = {};
+ protected:
+  ImuData data_ = {};
 };
 
 extern ImuInterface* g_imu;

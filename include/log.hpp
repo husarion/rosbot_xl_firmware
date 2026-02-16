@@ -26,29 +26,29 @@ typedef enum {
 
 extern log_level_t g_firmware_log_level;
 
-#define LOG_DEBUG(...)                                                     \
-  if (g_firmware_log_level <= LOG_LEVEL_DEBUG) {                           \
+#define LOG_DEBUG(...)                                                   \
+  if (g_firmware_log_level <= LOG_LEVEL_DEBUG) {                         \
     serialManager.debug().printf("[DEBUG][%s:%d] ", __FILE__, __LINE__); \
     serialManager.debug().printf(__VA_ARGS__);                           \
     serialManager.debug().printf("\r\n");                                \
   }
 
-#define LOG_INFO(...)                                                     \
-  if (g_firmware_log_level <= LOG_LEVEL_INFO) {                           \
+#define LOG_INFO(...)                                                   \
+  if (g_firmware_log_level <= LOG_LEVEL_INFO) {                         \
     serialManager.debug().printf("[INFO][%s:%d] ", __FILE__, __LINE__); \
     serialManager.debug().printf(__VA_ARGS__);                          \
     serialManager.debug().printf("\r\n");                               \
   }
 
-#define LOG_WARN(...)                                                     \
-  if (g_firmware_log_level <= LOG_LEVEL_WARN) {                           \
+#define LOG_WARN(...)                                                   \
+  if (g_firmware_log_level <= LOG_LEVEL_WARN) {                         \
     serialManager.debug().printf("[WARN][%s:%d] ", __FILE__, __LINE__); \
     serialManager.debug().printf(__VA_ARGS__);                          \
     serialManager.debug().printf("\r\n");                               \
   }
 
-#define LOG_ERROR(...)                                                     \
-  if (g_firmware_log_level <= LOG_LEVEL_ERROR) {                           \
+#define LOG_ERROR(...)                                                   \
+  if (g_firmware_log_level <= LOG_LEVEL_ERROR) {                         \
     serialManager.debug().printf("[ERROR][%s:%d] ", __FILE__, __LINE__); \
     serialManager.debug().printf(__VA_ARGS__);                           \
     serialManager.debug().printf("\r\n");                                \

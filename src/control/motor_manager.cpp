@@ -15,9 +15,9 @@
 #include <FreeRTOS.h>
 #include <semphr.h>
 
+#include "config.hpp"
 #include "control/encoders_manager.hpp"
 #include "control/motors_manager.hpp"
-#include "config.hpp"
 
 using namespace control;
 

@@ -18,42 +18,39 @@
 #include <micro_ros_arduino.h>
 
 #include "battery_interface.hpp"
-#include "imu_interface.hpp"
 #include "control/encoders_manager.hpp"
+#include "imu_interface.hpp"
+#include "log.hpp"
 #include "range_array.hpp"
 
-#include "log.hpp"
-
-struct BatteryStamped{
-    BatteryData data;
-    int64_t     timestamp_ns;
+struct BatteryStamped {
+  BatteryData data;
+  int64_t timestamp_ns;
 };
 
-struct EncodersStamped{
-    EncodersData data;
-    int64_t      timestamp_ns;
+struct EncodersStamped {
+  EncodersData data;
+  int64_t timestamp_ns;
 };
 
-struct ImuStamped{
-    ImuData data;
-    int64_t timestamp_ns;
+struct ImuStamped {
+  ImuData data;
+  int64_t timestamp_ns;
 };
 
 struct RangesStamped {
-    RangesData data;
-    int64_t timestamp_ns;
+  RangesData data;
+  int64_t timestamp_ns;
 };
 
 namespace rtos {
 
-static inline bool rtos_get_timestamp_ns(int64_t& timestamp_ns)
-{
-    if (rmw_uros_epoch_synchronized())
-    {
-        timestamp_ns = rmw_uros_epoch_nanos();
-        return true;
-    }
-    return false;
+static inline bool rtos_get_timestamp_ns(int64_t& timestamp_ns) {
+  if (rmw_uros_epoch_synchronized()) {
+    timestamp_ns = rmw_uros_epoch_nanos();
+    return true;
+  }
+  return false;
 }
 
 inline QueueHandle_t BatteryQueue;
@@ -98,18 +95,19 @@ inline TickType_t frequencyToTicks(float freq) {
 }
 
 static inline uint16_t taskGetFreq(void* params) {
-    return static_cast<uint16_t>(reinterpret_cast<uintptr_t>(params));
+  return static_cast<uint16_t>(reinterpret_cast<uintptr_t>(params));
 }
 
 static inline TickType_t taskGetPeriod(void* params) {
-    return frequencyToTicks(taskGetFreq(params));
+  return frequencyToTicks(taskGetFreq(params));
 }
 
 struct TaskHandleWrapper {
   TaskHandle_t handle = nullptr;
 
   void create(const TaskConfig& cfg) {
-    void* freq_param = reinterpret_cast<void*>(static_cast<uintptr_t>(cfg.frequency));
+    void* freq_param =
+        reinterpret_cast<void*>(static_cast<uintptr_t>(cfg.frequency));
     auto result = xTaskCreate(cfg.function, cfg.name,
                               configMINIMAL_STACK_SIZE + cfg.stack, freq_param,
                               cfg.priority, &handle);
