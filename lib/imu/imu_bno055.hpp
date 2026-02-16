@@ -19,19 +19,23 @@
 #include <Adafruit_BNO055.h>
 #include <Wire.h>
 
+struct Bno055Config {
+    TwoWire*   bus;
+    uint8_t    i2c_addr;
+    int32_t    sensor_id;
+    uint16_t   int_pin;
+    Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config;
+};
 
 class ImuBno055 : public ImuInterface {
 public:
-    ImuBno055(TwoWire* bus, uint8_t id, uint8_t addr, Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config);
+    explicit ImuBno055(const Bno055Config& cfg);
 
     bool init() override;
     void update() override;
     const char* name() const override { return "BNO055"; }
 
 private:
-    TwoWire*         bus_;
-    uint8_t          id_;
-    uint8_t          addr_;
-    Adafruit_BNO055::adafruit_bno055_axis_remap_config_t axis_config_;
-    Adafruit_BNO055* bno_ = nullptr;
+    Bno055Config config_;
+    Adafruit_BNO055 bno_;
 };

@@ -3,10 +3,10 @@
 #include "range_interface.hpp"
 #include <cstdint>
 
-static constexpr uint8_t MAX_SENSORS = 4;
+#define MAX_NUM_RANGE_SENSORS 4
 
 struct RangesData {
-    float range[MAX_SENSORS] = {};
+    float range[MAX_NUM_RANGE_SENSORS] = {};
     uint8_t count = 0;
 };
 

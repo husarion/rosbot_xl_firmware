@@ -142,6 +142,7 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
 #define IMU_ADDR_A 0x28
 #define IMU_ADDR_B 0x29
+#define IMU_INT PA6
 
 // ============== Ranges ==============
 #define RANGE_I2C_SDA PB9

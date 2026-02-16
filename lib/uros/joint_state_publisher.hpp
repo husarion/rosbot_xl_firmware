@@ -47,7 +47,7 @@ class JointStatePublisher {
  private:
   rcl_publisher_t pub_;
   sensor_msgs__msg__JointState msg_;
-  EncodersData data_;
+  EncodersStamped data_;
 
   void initMsg(rcl_allocator_t& allocator) {
     // Init nested structures
@@ -97,26 +97,26 @@ class JointStatePublisher {
     // memset(msg_.effort.data, 0, num_of_joints * sizeof(double));
   }
 
-  void fillMsg(const EncodersData& d) {
+  void fillMsg(const EncodersStamped& d) {
     msg_.header.stamp.sec = d.timestamp_ns / 1000000000LL;
     msg_.header.stamp.nanosec = d.timestamp_ns % 1000000000LL;
 
     // Fill position data
-    msg_.position.data[0] = d.position[static_cast<uint8_t>(MotorID::FL)];
-    msg_.position.data[1] = d.position[static_cast<uint8_t>(MotorID::FR)];
-    msg_.position.data[2] = d.position[static_cast<uint8_t>(MotorID::RL)];
-    msg_.position.data[3] = d.position[static_cast<uint8_t>(MotorID::RR)];
+    msg_.position.data[0] = d.data.position[static_cast<uint8_t>(MotorID::FL)];
+    msg_.position.data[1] = d.data.position[static_cast<uint8_t>(MotorID::FR)];
+    msg_.position.data[2] = d.data.position[static_cast<uint8_t>(MotorID::RL)];
+    msg_.position.data[3] = d.data.position[static_cast<uint8_t>(MotorID::RR)];
 
     // Fill velocity data
-    msg_.velocity.data[0] = d.velocity[static_cast<uint8_t>(MotorID::FL)];
-    msg_.velocity.data[1] = d.velocity[static_cast<uint8_t>(MotorID::FR)];
-    msg_.velocity.data[2] = d.velocity[static_cast<uint8_t>(MotorID::RL)];
-    msg_.velocity.data[3] = d.velocity[static_cast<uint8_t>(MotorID::RR)];
+    msg_.velocity.data[0] = d.data.velocity[static_cast<uint8_t>(MotorID::FL)];
+    msg_.velocity.data[1] = d.data.velocity[static_cast<uint8_t>(MotorID::FR)];
+    msg_.velocity.data[2] = d.data.velocity[static_cast<uint8_t>(MotorID::RL)];
+    msg_.velocity.data[3] = d.data.velocity[static_cast<uint8_t>(MotorID::RR)];
 
     // Fill effort data
-    // msg_.effort.data[0] = d.effort[static_cast<uint8_t>(MotorID::FL)];
-    // msg_.effort.data[1] = d.effort[static_cast<uint8_t>(MotorID::FR)];
-    // msg_.effort.data[2] = d.effort[static_cast<uint8_t>(MotorID::RL)];
-    // msg_.effort.data[3] = d.effort[static_cast<uint8_t>(MotorID::RR)];
+    // msg_.effort.data[0] = d.data.effort[static_cast<uint8_t>(MotorID::FL)];
+    // msg_.effort.data[1] = d.data.effort[static_cast<uint8_t>(MotorID::FR)];
+    // msg_.effort.data[2] = d.data.effort[static_cast<uint8_t>(MotorID::RL)];
+    // msg_.effort.data[3] = d.data.effort[static_cast<uint8_t>(MotorID::RR)];
   }
 };

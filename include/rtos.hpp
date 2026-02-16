@@ -19,6 +19,7 @@
 
 #include "battery_interface.hpp"
 #include "imu_interface.hpp"
+#include "control/encoders_manager.hpp"
 #include "range_array.hpp"
 
 #include "log.hpp"
@@ -26,6 +27,11 @@
 struct BatteryStamped{
     BatteryData data;
     int64_t     timestamp_ns;
+};
+
+struct EncodersStamped{
+    EncodersData data;
+    int64_t      timestamp_ns;
 };
 
 struct ImuStamped{
@@ -40,13 +46,15 @@ struct RangesStamped {
 
 namespace rtos {
 
-static inline int64_t rtos_get_timestamp_ns() {
-    if (rmw_uros_epoch_synchronized()) {
-        return rmw_uros_epoch_nanos();
+static inline bool rtos_get_timestamp_ns(int64_t& timestamp_ns)
+{
+    if (rmw_uros_epoch_synchronized())
+    {
+        timestamp_ns = rmw_uros_epoch_nanos();
+        return true;
     }
-    return 0;
+    return false;
 }
-
 
 inline QueueHandle_t BatteryQueue;
 inline QueueHandle_t EncodersQueue;

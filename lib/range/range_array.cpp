@@ -5,8 +5,8 @@ RangeArray::RangeArray(RangeInterface** sensors, uint8_t count)
     : sensors_(sensors)
     , count_(count) {
 
-    if (count_ > MAX_SENSORS) {
-        count_ = MAX_SENSORS;
+    if (count_ > MAX_NUM_RANGE_SENSORS) {
+        count_ = MAX_NUM_RANGE_SENSORS;
     }
     data_.count = count_;
 }

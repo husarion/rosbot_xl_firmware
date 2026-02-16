@@ -103,24 +103,33 @@ void Encoder::reset() {
 
 void Encoder::update() {
   const uint32_t now = micros();
-  const uint32_t dt = now - last_time_us_;
+  const uint32_t dt_us = now - last_time_us_;
 
-  if (dt >= MIN_DT_US) {
+  if (dt_us >= MIN_DT_US) {
     const uint32_t cnt = getTicks();
-    int32_t delta = static_cast<int32_t>(cnt - last_cnt_);
-
-    if (delta > CNT_HALF)
-      delta -= (CNT_MAX + 1);
-    else if (delta < -CNT_HALF)
-      delta += (CNT_MAX + 1);
+    int32_t delta = compute_delta(cnt, last_cnt_);
 
     float delta_position = static_cast<float>(delta) * rad_per_tick_;
     position_ += delta_position;
-    velocity_ = (delta_position * 1000000.0f) / static_cast<float>(dt);
-    velocity_ = lowPass(last_velocity_, velocity_, 0.1f);
-    last_velocity_ = velocity_;
 
+    float dt = static_cast<float>(dt_us) * US_TO_SEC;
+    float vel = delta_position / dt;
+    velocity_ = lowPass(last_velocity_, vel, 0.1f);
+    
+    last_velocity_ = velocity_;
     last_cnt_ = cnt;
     last_time_us_ = now;
   }
+}
+
+inline int32_t Encoder::compute_delta(uint32_t cnt, uint32_t last_cnt) {
+  int32_t delta = static_cast<int32_t>(cnt - last_cnt);
+  
+  // Wrap-around detection (dla 16-bit timer)
+  if (delta > CNT_HALF)
+      delta -= (CNT_MAX + 1);
+  else if (delta < -CNT_HALF)
+      delta += (CNT_MAX + 1);
+  
+  return delta;
 }

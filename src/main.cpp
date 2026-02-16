@@ -39,7 +39,14 @@ BatteryAdc battery_impl(battery_adc_config);
 
 // IMU
 TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
-ImuBno055 imu_impl(&imu_i2c, IMU_ID, IMU_ADDR_B, Adafruit_BNO055::REMAP_CONFIG_P0);
+Bno055Config imu_bno055_config = {
+    .bus = &imu_i2c,
+    .i2c_addr = IMU_ADDR_B,
+    .sensor_id = IMU_ID,
+    .int_pin = IMU_INT,
+    .axis_config = Adafruit_BNO055::REMAP_CONFIG_P0,
+};
+ImuBno055 imu_impl(imu_bno055_config);
 
 // Range sensors
 TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);

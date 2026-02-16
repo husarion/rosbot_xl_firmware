@@ -28,7 +28,7 @@ namespace rtos {
 
 void createQueues() {
   BatteryQueue = xQueueCreate(1, sizeof(BatteryStamped));
-  EncodersQueue = xQueueCreate(1, sizeof(EncodersData));
+  EncodersQueue = xQueueCreate(1, sizeof(EncodersStamped));
   ImuQueue = xQueueCreate(1, sizeof(ImuStamped));
   RangesQueue = xQueueCreate(1, sizeof(RangesStamped));
 }
@@ -68,11 +68,14 @@ void batteryTask(void* p) {
   BatteryStamped data = {};
 
   while (true) {
-    data.timestamp_ns = rtos_get_timestamp_ns();
-    g_battery->update();
+    bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
+    g_battery->update(); // TODO: DMA should be used
     data.data = g_battery->getData();
 
-    xQueueOverwrite(BatteryQueue, &data);
+    if(connected)
+    {
+      xQueueOverwrite(BatteryQueue, &data);
+    }
     vTaskDelayUntil(&wake_time, period);
   }
 }
@@ -80,13 +83,17 @@ void batteryTask(void* p) {
 void encoderTask(void* p) {
   TickType_t period = taskGetPeriod(p);
   TickType_t wake_time = xTaskGetTickCount();
+  EncodersStamped data = {};
 
   while (true) {
+    bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
     encoders.update();
-    EncodersData data = encoders.getData();
-    data.timestamp_ns = rtos_get_timestamp_ns();
+    data.data = encoders.getData();
 
-    xQueueOverwrite(EncodersQueue, &data);
+    if(connected)
+    {
+      xQueueOverwrite(EncodersQueue, &data);
+    }
     vTaskDelayUntil(&wake_time, period);
   }
 }
@@ -97,11 +104,14 @@ void imuTask(void* p) {
   ImuStamped data = {};
 
   while (true) {
-    data.timestamp_ns = rtos_get_timestamp_ns();
+    bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
     g_imu->update();
     data.data = g_imu->getData();
 
-    xQueueOverwrite(ImuQueue, &data);
+    if(connected)
+    {
+      xQueueOverwrite(ImuQueue, &data);
+    }
     vTaskDelayUntil(&wake_time, period);
   }
 }
@@ -152,11 +162,14 @@ void rangeTask(void* p) {
   RangesStamped data = {};
 
   while (true) {
-    data.timestamp_ns = rtos_get_timestamp_ns();
+    bool connected = rtos_get_timestamp_ns(data.timestamp_ns);
     g_ranges.update();
     data.data = g_ranges.getData();
 
-    xQueueOverwrite(RangesQueue, &data);
+    if(connected)
+    {
+      xQueueOverwrite(RangesQueue, &data);
+    }
     vTaskDelayUntil(&wake_time, period);
   }
 }
