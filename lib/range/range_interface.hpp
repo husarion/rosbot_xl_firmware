@@ -31,7 +31,7 @@ public:
     virtual void update() = 0;
     virtual void powerOff() = 0;
     virtual void powerOn() = 0;
-    virtual const RangeData& getData() const { return data_; }
+    virtual const RangeData getData() const { return data_; }
     virtual const char* name() const = 0;
 
 protected:

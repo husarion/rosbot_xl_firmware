@@ -28,7 +28,7 @@ public:
 
     virtual bool init() = 0;
     virtual void update() = 0;
-    virtual const ImuData& getData() const { return data_; }
+    virtual const ImuData getData() const { return data_; }
     virtual const char* name() const = 0;
 
 protected:

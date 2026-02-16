@@ -35,4 +35,7 @@ public:
 
 private:
     const ADCConfig config_;
+    float voltage_factor_ = 1.0f;
+    float voltage_range_inv_ = 0.0f;
+    uint16_t adc_dma_buffer_[1] = {};
 };

@@ -42,8 +42,8 @@ inline TaskConfig tasks[] = {
     {"Monitor", Priority::OBSERVING, Stack::MEDIUM, 1, monitorTask},
     {"MotorControl", Priority::CONTROL, Stack::MEDIUM, 200, motorControlTask},
     {"Range", Priority::SENSORS, Stack::SMALL, 10, rangeTask},
-    {"uRos", Priority::COMMUNICATION, Stack::XLARGE, 200, uRosTask},
-    {"uRosPing", Priority::OBSERVING, Stack::SMALL, 2, uRosPingTask},
+    {"uRos", Priority::COMMUNICATION, Stack::MEDIUM, 200, uRosTask},
+    {"uRosPing", Priority::OBSERVING, Stack::MEDIUM, 2, uRosPingTask},
 };
 
 // ===== Handles =====

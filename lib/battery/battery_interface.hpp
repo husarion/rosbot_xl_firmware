@@ -30,7 +30,7 @@ public:
 
   virtual void init() = 0;
   virtual void update() = 0;
-  virtual const BatteryData& getData() const { return data_; }
+  virtual const BatteryData getData() const { return data_; }
   virtual const char* name() const = 0;
 
   virtual bool isLow(float thresh = 0.2, float hist = 0.02)

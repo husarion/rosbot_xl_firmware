@@ -19,7 +19,7 @@ public:
     void init();
     void update();
 
-    const RangesData& getData() const { return data_; }
+    const RangesData getData() const { return data_; }
     uint8_t count() const { return count_; }
     bool isAvailable() const { return count_ > 0; }
 
