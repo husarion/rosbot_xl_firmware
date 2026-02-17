@@ -16,31 +16,12 @@
 
 #include <Arduino.h>
 
-PIDController::PIDController(float kp, float ki, float kd, float min_output,
-                             float max_output)
-    : kp_(kp),
-      ki_(ki),
-      kd_(kd),
-      min_output_(min_output),
-      max_output_(max_output) {
-  max_integral_ = 1.0f / ki_;  // 1 second to reach full output at max error
-}
+#include <algorithm>
 
-void PIDController::setMaxAccel(float max_accel) { max_accel_ = max_accel; }
-
-void PIDController::setGains(float kp, float ki, float kd) {
-  kp_ = kp;
-  ki_ = ki;
-  kd_ = kd;
-}
-
-void PIDController::setLimits(float min_output, float max_output) {
-  min_output_ = min_output;
-  max_output_ = max_output;
-}
-
-void PIDController::setMaxIntegral(float max_integral) {
-  max_integral_ = max_integral;
+PIDController::PIDController(const PIDConfig& cfg) : cfg_(cfg) {
+  if (cfg_.max_integral == 0.0f && cfg_.ki != 0.0f) {
+    cfg_.max_integral = 1.0f / cfg_.ki;
+  }
 }
 
 void PIDController::reset() {
@@ -49,51 +30,57 @@ void PIDController::reset() {
   ramped_setpoint_ = 0.0f;
 }
 
-float PIDController::compute(float setpoint, float measurement, float dt,
-                             float min_drive) {
+float PIDController::compute(float setpoint, float measurement, float dt) {
   if (dt <= 0.0f) return 0.0f;
 
   // ========== ACCELERATION LIMITING ==========
   float target = setpoint;
-  if (max_accel_ > 0.0f) {
-    const float max_change = max_accel_ * dt;
-    const float delta = setpoint - ramped_setpoint_;
-
-    if (delta > max_change) {
-      ramped_setpoint_ += max_change;
-    } else if (delta < -max_change) {
-      ramped_setpoint_ -= max_change;
-    } else {
-      ramped_setpoint_ = setpoint;
-    }
-    target = ramped_setpoint_;
+  if (cfg_.max_accel > 0.0f) {
+    target = calculateRampedSetpoint(setpoint, dt);
   }
 
   // ========== STANDARD PID ==========
   const float error = target - measurement;
 
   // Proportional
-  const float p = kp_ * error;
+  const float p = cfg_.kp * error;
 
   // Integral with anti-windup
   integral_ += error * dt;
-  integral_ = constrain(integral_, -max_integral_, max_integral_);
-  const float i = ki_ * integral_;
+  integral_ = constrain(integral_, -cfg_.max_integral, cfg_.max_integral);
+  const float i = cfg_.ki * integral_;
 
   // Derivative
   const float derivative = (error - prev_error_) / dt;
-  const float d = kd_ * derivative;
+  const float d = cfg_.kd * derivative;
   prev_error_ = error;
 
   float output = p + i + d;
 
-  // =========== MIN DRIVE ==========
-  float drive_scale = 1.0f - fabs(measurement) / 2.0f;
-  if (drive_scale < 0.0f) drive_scale = 0.0f;
-
-  if (fabs(setpoint) > 0.01f && fabs(output) < min_drive) {
-    output += ((output > 0) ? 1 : -1) * min_drive * drive_scale;
+  // Inertia compensation to overcome static friction at low speeds
+  if (fabs(setpoint) > 0.01f && fabs(output) < cfg_.min_power_to_move) {
+    output += ((output > 0) ? 1 : -1) * inertiaCompensation(measurement);
   }
 
-  return constrain(output, min_output_, max_output_);
+  return constrain(output, cfg_.min_output, cfg_.max_output);
+}
+
+float PIDController::calculateRampedSetpoint(float setpoint, float dt) {
+  const float max_change = cfg_.max_accel * dt;
+  const float delta = setpoint - ramped_setpoint_;
+
+  if (delta > max_change) {
+    ramped_setpoint_ += max_change;
+  } else if (delta < -max_change) {
+    ramped_setpoint_ -= max_change;
+  } else {
+    ramped_setpoint_ = setpoint;
+  }
+  return ramped_setpoint_;
+}
+
+float PIDController::inertiaCompensation(float measurement) {
+  float drive_scale =
+      std::max(0.0f, 1.0f - fabs(measurement) / cfg_.compensation_up_to_speed);
+  return cfg_.min_power_to_move * drive_scale;
 }

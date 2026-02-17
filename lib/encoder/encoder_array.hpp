@@ -35,7 +35,7 @@ class EncoderArray {
   void update();
 
   const EncodersData getData() const { return data_; }
-  uint8_t count()       const { return count_; }
+  uint8_t count() const { return count_; }
   bool isAvailable() const { return count_ > 0; }
   void resetEncoder(uint8_t idx);
   void resetAll();
@@ -49,8 +49,8 @@ class EncoderArray {
 
  private:
   EncoderInterface** encoders_ = nullptr;
-  uint8_t            count_    = 0;
-  EncodersData       data_     = {};
+  uint8_t count_ = 0;
+  EncodersData data_ = {};
 };
 
 extern EncoderArray g_encoders;

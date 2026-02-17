@@ -54,11 +54,11 @@ void SingleMotor::setMode(MotorMode movement) {
 
   uint8_t pin_a, pin_b;
   if (dir_cw_) {
-    pin_a = in_a_pin_;
-    pin_b = in_b_pin_;
-  } else {
     pin_a = in_b_pin_;
     pin_b = in_a_pin_;
+  } else {
+    pin_a = in_a_pin_;
+    pin_b = in_b_pin_;
   }
 
   switch (movement) {
@@ -154,8 +154,7 @@ void SingleMotor::update(float dt, bool move) {
 
   const float target = target_velocity_.load(std::memory_order_relaxed);
   const float current = getVelocity();
-  const float output =
-      pid_.compute(target, current, dt, control::MIN_FRICTION_OUTPUT);
+  const float output = pid_.compute(target, current, dt);
 
   applyPWM(output);
 }

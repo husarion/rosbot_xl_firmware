@@ -15,17 +15,17 @@
 #pragma once
 
 #include <Arduino.h>
+
 #include "encoder_interface.hpp"
 
 struct HardwareEncoderConfig {
-    uint8_t      pin_a;          // TIMx_CH1 pin
-    uint8_t      pin_b;          // TIMx_CH2 pin
-    TIM_TypeDef* timer;          // e.g. TIM1, TIM3, TIM8
-    bool         dir_cw;         // polarity
-    float        rad_per_tick;   // radians per encoder tick
-    const char*  label;          // human name, e.g. "FR"
+  uint8_t pin_a;       // TIMx_CH1 pin
+  uint8_t pin_b;       // TIMx_CH2 pin
+  TIM_TypeDef* timer;  // e.g. TIM1, TIM3, TIM8
+  bool dir_cw;         // polarity
+  float rad_per_tick;  // radians per encoder tick
+  const char* label;   // human name, e.g. "FR"
 };
-
 
 class HardwareEncoder : public EncoderInterface {
  public:
@@ -44,12 +44,12 @@ class HardwareEncoder : public EncoderInterface {
   }
   static inline int32_t compute_delta(uint32_t cnt, uint32_t last_cnt);
 
-  HardwareEncoderConfig    cfg_ = {};
-  TIM_HandleTypeDef*       timer_handle_  = nullptr;
-  TIM_Encoder_InitTypeDef  encoder_cfg_ = {};
-  uint32_t                 last_cnt_      = 0;
-  uint32_t                 last_time_us_  = 0;
-  float                    last_velocity_ = 0.0f;
+  HardwareEncoderConfig cfg_ = {};
+  TIM_HandleTypeDef* timer_handle_ = nullptr;
+  TIM_Encoder_InitTypeDef encoder_cfg_ = {};
+  uint32_t last_cnt_ = 0;
+  uint32_t last_time_us_ = 0;
+  float last_velocity_ = 0.0f;
 
   // Below value are true for 16-bit timers (TIM2/TIM5 (32-bit) not supported)
   static constexpr uint32_t CNT_MAX = 0xFFFF;

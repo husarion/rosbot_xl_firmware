@@ -71,10 +71,20 @@ class MotorDriver {
   MotorDriver(const MotorDriver&) = delete;
   MotorDriver& operator=(const MotorDriver&) = delete;
 
-  SingleMotor motors_[NUM_MOTORS] = {{PIDController(PID_KP, PID_KI, PID_KD)},
-                                     {PIDController(PID_KP, PID_KI, PID_KD)},
-                                     {PIDController(PID_KP, PID_KI, PID_KD)},
-                                     {PIDController(PID_KP, PID_KI, PID_KD)}};
+  PIDConfig pid_cnf = {
+      .kp = 0.07f,
+      .ki = 0.4f,
+      .kd = 0.002f,
+      .min_output = -1.0f,
+      .max_output = 1.0f,
+      .min_power_to_move = 0.4f,
+      .compensation_up_to_speed = 2.0f,
+  };
+
+  SingleMotor motors_[NUM_MOTORS] = {{PIDController(pid_config)},
+                                     {PIDController(pid_config)},
+                                     {PIDController(pid_config)},
+                                     {PIDController(pid_config)}};
 
   // Watchdog state
   std::atomic<uint32_t> last_command_time_{0};

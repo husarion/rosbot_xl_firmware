@@ -15,7 +15,7 @@
 #include "encoder_array.hpp"
 
 EncoderArray::EncoderArray(EncoderInterface** encoders, uint8_t count)
-      : encoders_(encoders), count_(count) {
+    : encoders_(encoders), count_(count) {
   if (count_ > MAX_NUM_ENCODERS) {
     count_ = MAX_NUM_ENCODERS;
   }
@@ -23,25 +23,23 @@ EncoderArray::EncoderArray(EncoderInterface** encoders, uint8_t count)
 }
 
 void EncoderArray::init() {
-    data_.count = count_;
-    for (uint8_t i = 0; i < count_; ++i)
-        encoders_[i]->init();
+  data_.count = count_;
+  for (uint8_t i = 0; i < count_; ++i) encoders_[i]->init();
 }
 
 void EncoderArray::update() {
-    for (uint8_t i = 0; i < count_; ++i) {
-        encoders_[i]->update();
-        const auto d = encoders_[i]->getData();
-        data_.position[i] = d.position;
-        data_.velocity[i] = d.velocity;
-    }
+  for (uint8_t i = 0; i < count_; ++i) {
+    encoders_[i]->update();
+    const auto d = encoders_[i]->getData();
+    data_.position[i] = d.position;
+    data_.velocity[i] = d.velocity;
+  }
 }
 
 void EncoderArray::resetEncoder(uint8_t idx) {
-    if (idx < count_) encoders_[idx]->reset();
+  if (idx < count_) encoders_[idx]->reset();
 }
 
 void EncoderArray::resetAll() {
-    for (uint8_t i = 0; i < count_; ++i)
-        encoders_[i]->reset();
+  for (uint8_t i = 0; i < count_; ++i) encoders_[i]->reset();
 }

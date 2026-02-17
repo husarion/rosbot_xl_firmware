@@ -14,28 +14,33 @@
 
 #pragma once
 
+struct PIDConfig {
+  float kp;
+  float ki;
+  float kd;
+  float min_output = -1.0f;        // Default output limits
+  float max_output = 1.0f;         // Default output limits
+  float min_power_to_move = 0.0f;  // Minimum output to overcome
+  float compensation_up_to_speed =
+      2.0f;  // Speed up to which inertia compensation is applied
+  float max_integral =
+      0.0f;  // Will be set to 1/ki if ki > 0, otherwise no integral action
+  float max_accel = 0.0f;  // No acceleration limit by default
+};
+
 class PIDController {
  public:
-  PIDController(float kp, float ki, float kd, float min_output = -1.0f,
-                float max_output = 1.0f);
+  PIDController(const PIDConfig& cfg);
 
-  void setMaxAccel(float max_accel);
-  void setGains(float kp, float ki, float kd);
-  void setLimits(float min_output, float max_output);
-  void setMaxIntegral(float max_integral);
+  float compute(float setpoint, float measurement, float dt);
   void reset();
 
-  float compute(float setpoint, float measurement, float dt,
-                float min_output = 0.0f);
-
  private:
-  float kp_, ki_, kd_;
-  float min_output_, max_output_;
-  float max_integral_;
+  float calculateRampedSetpoint(float setpoint, float dt);
+  float inertiaCompensation(float measurement);
 
+  PIDConfig cfg_;
   float integral_ = 0.0f;
   float prev_error_ = 0.0f;
-
-  float max_accel_ = 0.0f;  // No acceleration limit by default
   float ramped_setpoint_ = 0.0f;
 };

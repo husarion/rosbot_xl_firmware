@@ -20,6 +20,7 @@
 #include <array>
 
 #include "control/types.hpp"
+#include "pid.hpp"
 
 // ============== Battery ==============
 #define BATTERY_ADC_PIN PA5
@@ -138,8 +139,8 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define ENC_RL_PIN_B PA7
 #define ENC_RL_TIMER TIM3
 #define ENC_RL_DIR_CW false
-#define ENC_RR_PIN_A PD3
-#define ENC_RR_PIN_B PD4
+#define ENC_RR_PIN_A PC6
+#define ENC_RR_PIN_B PC7
 #define ENC_RR_TIMER TIM8
 #define ENC_RR_DIR_CW true
 
@@ -168,7 +169,19 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define IMU_ADDR_B 0x29
 #define IMU_INT PA6
 
-// ============== Ranges ==============
+// ────────────── PID ──────────────
+// PID configuration is the same for all motors
+inline constexpr PIDConfig pid_config = {
+    .kp = 0.07f,
+    .ki = 0.4f,
+    .kd = 0.002f,
+    .min_output = -1.0f,
+    .max_output = 1.0f,
+    .min_power_to_move = 0.4f,
+    .compensation_up_to_speed = 2.0f,
+};
+
+// ────────────── Ranges ──────────────
 #define RANGE_I2C_SDA PB9
 #define RANGE_I2C_SCL PB8
 #define RANGE_XSHUT_FL PD8
