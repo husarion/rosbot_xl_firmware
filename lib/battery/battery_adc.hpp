@@ -16,7 +16,7 @@
 
 #include "battery_interface.hpp"
 
-struct ADCConfig {
+struct BatteryAdcConfig {
   uint8_t adc_pin;
   float v_ref;
   float v_min;
@@ -27,14 +27,14 @@ struct ADCConfig {
 
 class BatteryAdc : public BatteryInterface {
  public:
-  explicit BatteryAdc(const ADCConfig config);
+  explicit BatteryAdc(const BatteryAdcConfig config);
 
   void init() override;
   void update() override;
   const char* name() const override { return "ADC"; }
 
  private:
-  const ADCConfig cfg_;
+  const BatteryAdcConfig cfg_;
   float voltage_factor_ = 1.0f;
   float voltage_range_inv_ = 0.0f;
   uint16_t adc_dma_buffer_[1] = {};

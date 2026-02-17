@@ -14,6 +14,8 @@
 
 #include "hardware_encoder.hpp"
 
+#include <cassert>
+
 static TIM_HandleTypeDef s_htim_pool[4];
 static uint8_t s_htim_count = 0;
 
@@ -32,6 +34,8 @@ static void enableTimerClock(TIM_TypeDef* tim) {
     __HAL_RCC_TIM5_CLK_ENABLE();
   else if (tim == TIM8)
     __HAL_RCC_TIM8_CLK_ENABLE();
+  else
+    assert(!"Invalid timer instance");
 }
 
 static void enableGpioClock(GPIO_TypeDef* port) {
@@ -47,8 +51,13 @@ static void enableGpioClock(GPIO_TypeDef* port) {
 
 static uint8_t timerAF(TIM_TypeDef* tim) {
   if (tim == TIM1 || tim == TIM2) return GPIO_AF1_TIM1;
+
+  if (tim == TIM3 || tim == TIM4 || tim == TIM5) return GPIO_AF2_TIM3;
+
   if (tim == TIM8) return GPIO_AF3_TIM8;
-  return GPIO_AF2_TIM3;  // TIM3, TIM4, TIM5
+
+  // TIM6, TIM7 no AF
+  assert(!"Timer does not support GPIO Alternate Function");
 }
 
 HardwareEncoder::HardwareEncoder(const HardwareEncoderConfig& cfg)

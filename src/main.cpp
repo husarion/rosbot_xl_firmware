@@ -28,66 +28,21 @@
 #include "serial_manager.hpp"
 #include "uros.hpp"
 
-// Battery
-ADCConfig battery_adc_config = {.adc_pin = BATTERY_ADC_PIN,
-                                .v_ref = BATTERY_VREF,
-                                .v_min = BATTERY_VMIN,
-                                .v_max = BATTERY_VMAX,
-                                .divider = BATTERY_DIVIDER,
-                                .correction = BATTERY_CORRECTION};
+// ───────── Battery ─────────
 BatteryAdc battery_impl(battery_adc_config);
 
-// Encoders
-static HardwareEncoder enc_fl({
-    .pin_a = ENC_FL_PIN_A,
-    .pin_b = ENC_FL_PIN_B,
-    .timer = ENC_FL_TIMER,
-    .dir_cw = ENC_FL_DIR_CW,
-    .rad_per_tick = RAD_PER_TICK,
-    .label = "fl",
-});
-
-static HardwareEncoder enc_fr({
-    .pin_a = ENC_FR_PIN_A,
-    .pin_b = ENC_FR_PIN_B,
-    .timer = ENC_FR_TIMER,
-    .dir_cw = ENC_FR_DIR_CW,
-    .rad_per_tick = RAD_PER_TICK,
-    .label = "fr",
-});
-
-static HardwareEncoder enc_rl({
-    .pin_a = ENC_RL_PIN_A,
-    .pin_b = ENC_RL_PIN_B,
-    .timer = ENC_RL_TIMER,
-    .dir_cw = ENC_RL_DIR_CW,
-    .rad_per_tick = RAD_PER_TICK,
-    .label = "rl",
-});
-
-static HardwareEncoder enc_rr({
-    .pin_a = ENC_RR_PIN_A,
-    .pin_b = ENC_RR_PIN_B,
-    .timer = ENC_RR_TIMER,
-    .dir_cw = ENC_RR_DIR_CW,
-    .rad_per_tick = RAD_PER_TICK,
-    .label = "rr",
-});
+// ───────── Encoders ─────────
+static HardwareEncoder enc_fl(enc_fl_config);
+static HardwareEncoder enc_fr(enc_fr_config);
+static HardwareEncoder enc_rl(enc_rl_config);
+static HardwareEncoder enc_rr(enc_rr_config);
 static EncoderInterface* encoders[] = {&enc_fl, &enc_fr, &enc_rl, &enc_rr};
 static constexpr uint8_t ENCODER_COUNT = sizeof(encoders) / sizeof(encoders[0]);
 
-// IMU
-TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
-Bno055Config imu_bno055_config = {
-    .bus = &imu_i2c,
-    .i2c_addr = IMU_ADDR_B,
-    .sensor_id = IMU_ID,
-    .int_pin = IMU_INT,
-    .axis_config = Adafruit_BNO055::REMAP_CONFIG_P0,
-};
+// ───────── IMU ─────────
 ImuBno055 imu_impl(imu_bno055_config);
 
-// Range sensors
+// ───────── Ranges ─────────
 TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
 RangeVl53l0x range_fl(&range_i2c, RANGE_XSHUT_FL, 0x30);
 RangeVl53l0x range_fr(&range_i2c, RANGE_XSHUT_FR, 0x31);

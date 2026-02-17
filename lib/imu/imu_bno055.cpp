@@ -16,7 +16,7 @@
 
 #include <wiring_constants.h>
 
-ImuBno055::ImuBno055(const Bno055Config& cfg)
+ImuBno055::ImuBno055(const ImuBno055Config& cfg)
     : cfg_(cfg), bno_(cfg.sensor_id, cfg.i2c_addr, cfg.bus) {}
 
 bool ImuBno055::init() {

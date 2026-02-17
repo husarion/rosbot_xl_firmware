@@ -15,25 +15,16 @@
 #pragma once
 
 #include <Arduino.h>
-#include <HardwareSerial.h>
 
 #include <array>
 
 #include "control/types.hpp"
+#include "battery_adc.hpp"
+#include "hardware_encoder.hpp"
+#include "imu_bno055.hpp"
 #include "pid.hpp"
 
-// ============== Battery ==============
-#define BATTERY_ADC_PIN PA5
-#define BATTERY_VREF 3.3f
-#define BATTERY_VMIN 9.6f
-#define BATTERY_VMAX 12.6f
-#define BATTERY_UPPER_RESISTOR 5.6e4
-#define BATTERY_LOWER_RESISTOR 1.0e4
-#define BATTERY_DIVIDER \
-  (BATTERY_UPPER_RESISTOR + BATTERY_LOWER_RESISTOR) / BATTERY_LOWER_RESISTOR
-#define BATTERY_CORRECTION 0.986f
-
-// ============== PID ==============
+// ────────────── PID ──────────────
 #define PID_KP 0.07f
 #define PID_KI 0.4f
 #define PID_KD 0.002f
@@ -79,19 +70,6 @@ inline const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
 
 }  // namespace control
 
-// ============================================================================
-// ROBOT PHYSICAL PARAMETERS
-// ============================================================================
-namespace RobotParams {
-
-// Wheel & Drivetrain
-constexpr float GEAR_RATIO = 34.014f;
-constexpr uint16_t ENCODER_CPR = 48;
-constexpr float TICKS_PER_REVOLUTION = ENCODER_CPR * GEAR_RATIO;
-constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
-
-}  // namespace RobotParams
-
 struct SerialConfig {
   HardwareSerial* serial;
   uint32_t baudrate;
@@ -117,42 +95,70 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
                                                     .timeout_ms = 1,
                                                     .name = "FTDI_SERIAL"};
 
-// ============== Buttons ==============
+// ────────────── Battery ──────────────
+inline constexpr BatteryAdcConfig battery_adc_config = {
+    .adc_pin = PA5,
+    .v_ref = 3.3f,
+    .v_min = 9.6f,
+    .v_max = 12.6f,
+    .divider = (5.6e4 + 1.0e4) / 1.0e4,
+    .correction = 0.986f};
+
+// ────────────── Buttons ──────────────
 #define PUSH_BUTTON1 PG12
 #define PUSH_BUTTON2 PG13
 
-// ============== Enciders ==============
-#define GEAR_RATIO 34.014f
-#define ENCODER_CPR 48
-#define TICKS_PER_REVOLUTION (ENCODER_CPR * GEAR_RATIO)
-#define RAD_PER_TICK ((2.0f * PI) / TICKS_PER_REVOLUTION)
+// ────────────── Encoders ──────────────
+constexpr float GEAR_RATIO = 34.014f;
+constexpr uint16_t ENCODER_CPR = 48;
+constexpr float TICKS_PER_REVOLUTION = ENCODER_CPR * GEAR_RATIO;
+constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
 
-#define ENC_FL_PIN_A PB6
-#define ENC_FL_PIN_B PB7
-#define ENC_FL_TIMER TIM4
-#define ENC_FL_DIR_CW false
-#define ENC_FR_PIN_A PA0
-#define ENC_FR_PIN_B PA1
-#define ENC_FR_TIMER TIM2
-#define ENC_FR_DIR_CW true
-#define ENC_RL_PIN_A PB4
-#define ENC_RL_PIN_B PA7
-#define ENC_RL_TIMER TIM3
-#define ENC_RL_DIR_CW false
-#define ENC_RR_PIN_A PC6
-#define ENC_RR_PIN_B PC7
-#define ENC_RR_TIMER TIM8
-#define ENC_RR_DIR_CW true
+inline constexpr HardwareEncoderConfig enc_fl_config = {
+    .pin_a = PB6,
+    .pin_b = PB7,
+    .timer = TIM4,
+    .dir_cw = false,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "fl",
+};
 
-// ============== LEDs ==============
+inline constexpr HardwareEncoderConfig enc_fr_config = {
+    .pin_a = PA0,
+    .pin_b = PA1,
+    .timer = TIM2,
+    .dir_cw = true,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "fr",
+};
+
+inline constexpr HardwareEncoderConfig enc_rl_config = {
+    .pin_a = PB4,
+    .pin_b = PA7,
+    .timer = TIM3,
+    .dir_cw = false,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "rl",
+};
+
+inline constexpr HardwareEncoderConfig enc_rr_config = {
+    .pin_a = PC6,
+    .pin_b = PC7,
+    .timer = TIM8,
+    .dir_cw = true,
+    .rad_per_tick = RAD_PER_TICK,
+    .label = "rr",
+};
+
+// ────────────── LEDs ──────────────
 #define RED_LED PE2
 #define GRN_LED PE3
 #define GRN_LED2 PE4
 
-// ============== Power Management ==============
+// ────────────── Power Management ──────────────
 #define POWEROFF_DELAY 5000  // ms
 
-// ============== SBC Interface ==============
+// ────────────── SBC Interface ──────────────
 #define SBC_SERIAL_TIMEOUT 1  // ms
 #define SBC_STATUS \
   PG6  // According to "Rosbot v1.3 schematics", this should be connected to
@@ -160,14 +166,19 @@ inline constexpr SerialConfig FTDI_SERIAL_CONFIG = {.serial = &Serial3,
 #define RPI_CONSOLE PG5
 #define RPI_BTN PG7
 
-// ============== IMU ==============
+// ────────────── IMU ──────────────
 #define IMU_POWER_ON PG4
 #define IMU_I2C_SDA PC9
 #define IMU_I2C_SCL PA8
-#define IMU_ID 0xA0  // used internally by the Adafruit Unified Sensor API ?
-#define IMU_ADDR_A 0x28
-#define IMU_ADDR_B 0x29
-#define IMU_INT PA6
+
+inline TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
+inline constexpr ImuBno055Config imu_bno055_config = {
+    .bus = &imu_i2c,
+    .i2c_addr = 0x29,
+    .sensor_id = 0xA0,
+    .int_pin = PA6,
+    .axis_config = Adafruit_BNO055::REMAP_CONFIG_P0,
+};
 
 // ────────────── PID ──────────────
 // PID configuration is the same for all motors

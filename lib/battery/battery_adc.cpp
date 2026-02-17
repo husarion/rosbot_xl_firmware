@@ -19,7 +19,7 @@
 #include <cassert>
 #include <cmath>
 
-BatteryAdc::BatteryAdc(const ADCConfig config) : cfg_(config) {
+BatteryAdc::BatteryAdc(const BatteryAdcConfig config) : cfg_(config) {
   voltage_factor_ = cfg_.v_ref * cfg_.correction * cfg_.divider;
   assert(cfg_.v_max > cfg_.v_min);
   voltage_range_inv_ = 1.0f / (cfg_.v_max - cfg_.v_min);

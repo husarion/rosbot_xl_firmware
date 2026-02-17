@@ -19,7 +19,7 @@
 
 #include "imu_interface.hpp"
 
-struct Bno055Config {
+struct ImuBno055Config {
   TwoWire* bus;
   uint8_t i2c_addr;
   int32_t sensor_id;
@@ -29,13 +29,13 @@ struct Bno055Config {
 
 class ImuBno055 : public ImuInterface {
  public:
-  explicit ImuBno055(const Bno055Config& cfg);
+  explicit ImuBno055(const ImuBno055Config& cfg);
 
   bool init() override;
   void update() override;
   const char* name() const override { return "BNO055"; }
 
  private:
-  Bno055Config cfg_;
+  ImuBno055Config cfg_;
   Adafruit_BNO055 bno_;
 };
