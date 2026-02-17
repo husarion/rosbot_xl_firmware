@@ -16,59 +16,15 @@
 
 #include <Arduino.h>
 
-#include <array>
-
-#include "control/types.hpp"
 #include "battery_adc.hpp"
 #include "hardware_encoder.hpp"
 #include "imu_bno055.hpp"
+#include "led_indicator.hpp"
+#include "motor_array.hpp"
+#include "motor_drv8848.hpp"
 #include "pid.hpp"
 
-// ────────────── PID ──────────────
-#define PID_KP 0.07f
-#define PID_KI 0.4f
-#define PID_KD 0.002f
-#define PID_MAX_ACCEL 0.0f
-#define PID_MIN_OUTPUT -1.0f
-#define PID_MAX_OUTPUT 1.0f
-
-namespace control {
-
-constexpr uint8_t RIGHT_WHEELS_SLEEP = PC13;
-constexpr uint8_t RIGHT_WHEELS_FAULT = PE0;
-constexpr uint8_t LEFT_WHEELS_SLEEP = PC14;
-constexpr uint8_t LEFT_WHEELS_FAULT = PE1;
-constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
-constexpr float MAX_VELOCITY = 30.0f;
-constexpr float MIN_VELOCITY = 1.0f;
-constexpr float MIN_FRICTION_OUTPUT = 0.4f;
-
-inline const std::array<MotorConfig, static_cast<size_t>(MotorID::COUNT)>
-    CONFIG = {{{MotorID::FL,
-                {PF9, PE5, PE6, PB6, PB7},
-                TIM4,
-                false,
-                "fl_wheel_joint"},
-
-               {MotorID::FR,
-                {PF6, PG10, PG11, PA0, PA1},
-                TIM2,
-                true,
-                "fr_wheel_joint"},
-
-               {MotorID::RL,
-                {PF8, PC15, PF2, PB4, PA7},
-                TIM3,
-                false,
-                "rl_wheel_joint"},
-
-               {MotorID::RR,
-                {PF7, PD3, PD4, PC6, PC7},
-                TIM8,
-                true,
-                "rr_wheel_joint"}}};
-
-}  // namespace control
+enum class MotorID : uint8_t { FL = 0, FR = 1, RL = 2, RR = 3, COUNT = 4 };
 
 struct SerialConfig {
   HardwareSerial* serial;
@@ -150,22 +106,6 @@ inline constexpr HardwareEncoderConfig enc_rr_config = {
     .label = "rr",
 };
 
-// ────────────── LEDs ──────────────
-#define RED_LED PE2
-#define GRN_LED PE3
-#define GRN_LED2 PE4
-
-// ────────────── Power Management ──────────────
-#define POWEROFF_DELAY 5000  // ms
-
-// ────────────── SBC Interface ──────────────
-#define SBC_SERIAL_TIMEOUT 1  // ms
-#define SBC_STATUS \
-  PG6  // According to "Rosbot v1.3 schematics", this should be connected to
-       // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
-#define RPI_CONSOLE PG5
-#define RPI_BTN PG7
-
 // ────────────── IMU ──────────────
 #define IMU_POWER_ON PG4
 #define IMU_I2C_SDA PC9
@@ -178,6 +118,67 @@ inline constexpr ImuBno055Config imu_bno055_config = {
     .sensor_id = 0xA0,
     .int_pin = PA6,
     .axis_config = Adafruit_BNO055::REMAP_CONFIG_P0,
+};
+
+// ────────────── LEDs ──────────────
+#define RED_LED PE2
+#define GRN_LED PE3
+#define GRN_LED2 PE4
+
+// ────────────── Motors ──────────────
+inline constexpr DriverGroupConfig right_motors_driver = {PC13, PE0};
+inline constexpr DriverGroupConfig left_motors_driver = {PC14, PE1};
+inline constexpr DriverGroupConfig driver_groups[] = {
+    right_motors_driver,
+    left_motors_driver,
+};
+
+constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
+constexpr float MAX_VELOCITY = 30.0f;
+constexpr float MIN_VELOCITY = 1.0f;
+
+inline constexpr MotorDrv8848Config motor_fl_config = {
+    .pwm_pin = PF9,
+    .in_a_pin = PE5,
+    .in_b_pin = PE6,
+    .dir_cw = false,
+    .max_velocity = MAX_VELOCITY,
+    .min_velocity = MIN_VELOCITY,
+    .pwm_freq = MOTOR_PWM_FREQ,
+    .label = "FL",
+};
+
+inline constexpr MotorDrv8848Config motor_fr_config = {
+    .pwm_pin = PF6,
+    .in_a_pin = PG10,
+    .in_b_pin = PG11,
+    .dir_cw = true,
+    .max_velocity = MAX_VELOCITY,
+    .min_velocity = MIN_VELOCITY,
+    .pwm_freq = MOTOR_PWM_FREQ,
+    .label = "FR",
+};
+
+inline constexpr MotorDrv8848Config motor_rl_config = {
+    .pwm_pin = PF8,
+    .in_a_pin = PC15,
+    .in_b_pin = PF2,
+    .dir_cw = false,
+    .max_velocity = MAX_VELOCITY,
+    .min_velocity = MIN_VELOCITY,
+    .pwm_freq = MOTOR_PWM_FREQ,
+    .label = "RL",
+};
+
+inline constexpr MotorDrv8848Config motor_rr_config = {
+    .pwm_pin = PF7,
+    .in_a_pin = PD3,
+    .in_b_pin = PD4,
+    .dir_cw = true,
+    .max_velocity = MAX_VELOCITY,
+    .min_velocity = MIN_VELOCITY,
+    .pwm_freq = MOTOR_PWM_FREQ,
+    .label = "RR",
 };
 
 // ────────────── PID ──────────────
@@ -200,14 +201,13 @@ inline constexpr PIDConfig pid_config = {
 #define RANGE_XSHUT_RL PD10
 #define RANGE_XSHUT_RR PD9
 
-enum Ranges { RF, FL, RR, RL, COUNT };
-struct RangeConfig {
-  uint8_t xshutPin;
-  const char* frame_id;
-};
+inline const std::array<const char*, 4> RANGE_FRAME_IDS = {
+    "fl_range", "fr_range", "rl_range", "rr_range"};
 
-inline const std::array<RangeConfig, static_cast<size_t>(Ranges::COUNT)>
-    RANGE_CONFIG = {{{PD8, "fl_range"},
-                     {PB1, "fr_range"},
-                     {PD10, "rl_range"},
-                     {PD9, "rr_range"}}};
+// ────────────── SBC Interface ──────────────
+#define SBC_SERIAL_TIMEOUT 1  // ms
+#define SBC_STATUS \
+  PG6  // According to "Rosbot v1.3 schematics", this should be connected to
+       // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define RPI_CONSOLE PG5
+#define RPI_BTN PG7

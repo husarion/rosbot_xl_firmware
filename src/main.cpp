@@ -17,11 +17,12 @@
 #include "battery_adc.hpp"
 #include "battery_interface.hpp"
 #include "config.hpp"
-#include "control/motors_manager.hpp"
 #include "encoder_array.hpp"
 #include "hardware_encoder.hpp"
 #include "imu_bno055.hpp"
 #include "led_indicator.hpp"
+#include "motor_array.hpp"
+#include "motor_drv8848.hpp"
 #include "range_array.hpp"
 #include "range_vl53l0.hpp"
 #include "rtos.hpp"
@@ -29,7 +30,7 @@
 #include "uros.hpp"
 
 // ───────── Battery ─────────
-BatteryAdc battery_impl(battery_adc_config);
+BatteryAdc battery_adc(battery_adc_config);
 
 // ───────── Encoders ─────────
 static HardwareEncoder enc_fl(enc_fl_config);
@@ -40,7 +41,21 @@ static EncoderInterface* encoders[] = {&enc_fl, &enc_fr, &enc_rl, &enc_rr};
 static constexpr uint8_t ENCODER_COUNT = sizeof(encoders) / sizeof(encoders[0]);
 
 // ───────── IMU ─────────
-ImuBno055 imu_impl(imu_bno055_config);
+ImuBno055 imu_bno055(imu_bno055_config);
+
+// ───────── Motors ─────────
+static MotorDrv8848 motor_fl(motor_fl_config, &enc_fl,
+                             PIDController(pid_config));
+static MotorDrv8848 motor_fr(motor_fr_config, &enc_fr,
+                             PIDController(pid_config));
+static MotorDrv8848 motor_rl(motor_rl_config, &enc_rl,
+                             PIDController(pid_config));
+static MotorDrv8848 motor_rr(motor_rr_config, &enc_rr,
+                             PIDController(pid_config));
+static MotorInterface* motors[] = {&motor_fl, &motor_fr, &motor_rl, &motor_rr};
+static constexpr uint8_t MOTOR_COUNT = sizeof(motors) / sizeof(motors[0]);
+static constexpr uint8_t DRIVER_GROUP_COUNT =
+    sizeof(driver_groups) / sizeof(driver_groups[0]);
 
 // ───────── Ranges ─────────
 TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
@@ -48,21 +63,18 @@ RangeVl53l0x range_fl(&range_i2c, RANGE_XSHUT_FL, 0x30);
 RangeVl53l0x range_fr(&range_i2c, RANGE_XSHUT_FR, 0x31);
 RangeVl53l0x range_rl(&range_i2c, RANGE_XSHUT_RL, 0x32);
 RangeVl53l0x range_rr(&range_i2c, RANGE_XSHUT_RR, 0x33);
-static RangeInterface* range_sensors[] = {
-    &range_fl,
-    &range_fr,
-    &range_rl,
-    &range_rr,
-};
+static RangeInterface* range_sensors[] = {&range_fl, &range_fr, &range_rl,
+                                          &range_rr};
 static constexpr uint8_t RANGE_COUNT =
     sizeof(range_sensors) / sizeof(range_sensors[0]);
 
-/* EXTERN VARIABLES */
+// ─────────Extern variables─────────
 log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
 
-BatteryInterface* g_battery = &battery_impl;
+BatteryInterface* g_battery = &battery_adc;
 EncoderArray g_encoders(encoders, ENCODER_COUNT);
-ImuInterface* g_imu = &imu_impl;
+ImuInterface* g_imu = &imu_bno055;
+MotorArray g_motors(motors, MOTOR_COUNT, driver_groups, DRIVER_GROUP_COUNT);
 RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
 SerialManager serialManager;
@@ -91,7 +103,7 @@ void BoardPheripheralsInit() {
   delay(20);
 }
 
-/*==================== SETUP ========================*/
+/*──────────────────── Setup ────────────────────────*/
 void setup() {
   // Peripherals initialization
   BoardPheripheralsInit();
@@ -102,11 +114,11 @@ void setup() {
   serialManager.configureNamespace();
 
   // Sensors initialization
-  battery_impl.init();
+  battery_adc.init();
   g_encoders.init();
-  imu_impl.init();
+  imu_bno055.init();
   ledIndicator.init(RED_LED, HIGH);
-  motors.init();
+  g_motors.init();
   g_ranges.init();
   u_ros::transportInit(selected_serial);
 
@@ -116,10 +128,10 @@ void setup() {
   vTaskStartScheduler();
 }
 
-/*============== LOOP ===============*/
+/*────────────── Loop ───────────────*/
 void loop() {}
 
-/*=========== Runtime stats ====================*/
+/*─────────── Runtime stats ────────────────────*/
 HardwareTimer RunTimeStatsTimer(TIM5);
 
 void vConfigureTimerForRunTimeStats(void) {

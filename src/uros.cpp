@@ -25,8 +25,8 @@
 #include <rclc/executor.h>
 #include <rosidl_runtime_c/primitives_sequence_functions.h>
 
-#include "control/motors_manager.hpp"
 #include "log.hpp"
+#include "motor_array.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
 #include "uros/battery_publisher.hpp"
@@ -115,14 +115,13 @@ void motorsCmdCallback(const void* msg_in) {
   if (msg->data.size >= 4) {
     float velocities[4];
 
-    // Map ROS message order to motor order
-    // ROS order: [FL, FR, RL, RR] -> Motor order: [FR, RR, RL, FL]
-    velocities[static_cast<uint8_t>(MotorID::FR)] = msg->data.data[1];
-    velocities[static_cast<uint8_t>(MotorID::RR)] = msg->data.data[3];
-    velocities[static_cast<uint8_t>(MotorID::RL)] = msg->data.data[2];
-    velocities[static_cast<uint8_t>(MotorID::FL)] = msg->data.data[0];
+    // order: [FL, FR, RL, RR]
+    velocities[0] = msg->data.data[0];
+    velocities[1] = msg->data.data[1];
+    velocities[2] = msg->data.data[2];
+    velocities[3] = msg->data.data[3];
 
-    motors.setVelocities(velocities);
+    g_motors.setVelocities(velocities);
   }
 }
 

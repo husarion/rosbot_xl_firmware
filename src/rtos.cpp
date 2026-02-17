@@ -17,11 +17,11 @@
 #include <STM32FreeRTOS.h>
 
 #include "battery_interface.hpp"
-#include "control/motors_manager.hpp"
 #include "encoder_array.hpp"
 #include "imu_interface.hpp"
 #include "led_indicator.hpp"
 #include "log.hpp"
+#include "motor_array.hpp"
 #include "uros.hpp"
 
 namespace rtos {
@@ -147,7 +147,7 @@ void motorControlTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    motors.update();
+    g_motors.update();
 
     vTaskDelayUntil(&wake_time, period);
   }

@@ -22,9 +22,6 @@
 
 #include "rtos.hpp"
 
-inline const std::array<const char*, 4> FRAME_IDS = {
-    "fl_range", "fr_range", "rl_range", "rr_range"};
-
 class RangePublisher {
  public:
   rcl_ret_t init(rcl_node_t& node, const char* topic_name) {
@@ -43,7 +40,7 @@ class RangePublisher {
     msg_.header.stamp.nanosec = data_.timestamp_ns % 1000000000LL;
 
     for (uint8_t i = 0; i < data_.data.count; i++) {
-      msg_.header.frame_id.data = const_cast<char*>(FRAME_IDS[i]);
+      msg_.header.frame_id.data = const_cast<char*>(RANGE_FRAME_IDS[i]);
       float range = data_.data.range[i];
       if (range > msg_.max_range) {
         msg_.range = INFINITY;
