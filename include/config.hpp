@@ -125,6 +125,13 @@ inline constexpr ImuBno055Config imu_bno055_config = {
 #define GRN_LED PE3
 #define GRN_LED2 PE4
 
+inline constexpr LedIndicatorConfig led_status_config = {
+    .pin             = RED_LED,
+    .initial_state   = HIGH,
+    .blink_period_ms = 500,
+    .label           = "STATUS",
+};
+
 // ────────────── Motors ──────────────
 inline constexpr DriverGroupConfig right_motors_driver = {PC13, PE0};
 inline constexpr DriverGroupConfig left_motors_driver = {PC14, PE1};

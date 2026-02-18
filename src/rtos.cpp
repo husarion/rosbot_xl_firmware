@@ -122,7 +122,7 @@ void ledIndicatorTask(void* p) {
     bool uros_disconnected = (u_ros::state != u_ros::CONNECTED);
     bool error_state = false;
 
-    ledIndicator.update(battery_low, uros_disconnected, error_state);
+    g_indicator.update(battery_low, uros_disconnected, error_state);
     vTaskDelayUntil(&wake_time, period);
   }
 }

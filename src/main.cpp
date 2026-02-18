@@ -74,6 +74,7 @@ log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
 BatteryInterface* g_battery = &battery_adc;
 EncoderArray g_encoders(encoders, ENCODER_COUNT);
 ImuInterface* g_imu = &imu_bno055;
+LedIndicator g_indicator(led_status_config);
 MotorArray g_motors(motors, MOTOR_COUNT, driver_groups, DRIVER_GROUP_COUNT);
 RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
@@ -117,7 +118,7 @@ void setup() {
   battery_adc.init();
   g_encoders.init();
   imu_bno055.init();
-  ledIndicator.init(RED_LED, HIGH);
+  g_indicator.init();
   g_motors.init();
   g_ranges.init();
   u_ros::transportInit(selected_serial);
