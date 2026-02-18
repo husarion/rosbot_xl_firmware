@@ -20,6 +20,7 @@
 #include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/joint_state.h>
 
+#include "motor_array.hpp"
 #include "rtos.hpp"
 
 class JointStatePublisher {
@@ -52,44 +53,45 @@ class JointStatePublisher {
     // Init nested structures
     memset(&msg_, 0, sizeof(msg_));
     sensor_msgs__msg__JointState__init(&msg_);
-    msg_.header.frame_id = micro_ros_string_utilities_init("base_link");
+    msg_.header.frame_id =
+        micro_ros_string_utilities_init(JOINT_STATE_FRAME_ID);
 
-    size_t num_of_joints = static_cast<size_t>(4);
+    const uint8_t n = g_motors.count();
 
     // Allocate name array
-    msg_.name.capacity = num_of_joints;
-    msg_.name.size = num_of_joints;
+    msg_.name.capacity = n;
+    msg_.name.size = n;
     msg_.name.data = (rosidl_runtime_c__String*)allocator.allocate(
-        num_of_joints * sizeof(rosidl_runtime_c__String), allocator.state);
+        n * sizeof(rosidl_runtime_c__String), allocator.state);
 
     // Set joint names
-    msg_.name.data[0] = micro_ros_string_utilities_init("fl_wheel_joint");
-    msg_.name.data[1] = micro_ros_string_utilities_init("fr_wheel_joint");
-    msg_.name.data[2] = micro_ros_string_utilities_init("rl_wheel_joint");
-    msg_.name.data[3] = micro_ros_string_utilities_init("rr_wheel_joint");
+    for (uint8_t i = 0; i < n; ++i) {
+      msg_.name.data[i] =
+          micro_ros_string_utilities_init(g_motors[i]->jointName());
+    }
 
     // Allocate position array
-    msg_.position.capacity = num_of_joints;
-    msg_.position.size = num_of_joints;
-    msg_.position.data = (double*)allocator.allocate(
-        num_of_joints * sizeof(double), allocator.state);
+    msg_.position.capacity = n;
+    msg_.position.size = n;
+    msg_.position.data =
+        (double*)allocator.allocate(n * sizeof(double), allocator.state);
 
     // Allocate velocity array
-    msg_.velocity.capacity = num_of_joints;
-    msg_.velocity.size = num_of_joints;
-    msg_.velocity.data = (double*)allocator.allocate(
-        num_of_joints * sizeof(double), allocator.state);
+    msg_.velocity.capacity = n;
+    msg_.velocity.size = n;
+    msg_.velocity.data =
+        (double*)allocator.allocate(n * sizeof(double), allocator.state);
 
     // Allocate effort array
-    // msg_.effort.capacity = num_of_joints;
-    // msg_.effort.size = num_of_joints;
-    // msg_.effort.data = (double*)allocator.allocate(num_of_joints *
+    // msg_.effort.capacity = n;
+    // msg_.effort.size = n;
+    // msg_.effort.data = (double*)allocator.allocate(n *
     // sizeof(double), allocator.state);
 
     // Zero initialize
-    memset(msg_.position.data, 0, num_of_joints * sizeof(double));
-    memset(msg_.velocity.data, 0, num_of_joints * sizeof(double));
-    // memset(msg_.effort.data, 0, num_of_joints * sizeof(double));
+    memset(msg_.position.data, 0, n * sizeof(double));
+    memset(msg_.velocity.data, 0, n * sizeof(double));
+    // memset(msg_.effort.data, 0, n * sizeof(double)); // not implemented
   }
 
   void fillMsg(const EncodersStamped& d) {

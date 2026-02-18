@@ -108,18 +108,16 @@ bool pingAgent(void) {
 }
 
 void motorsCmdCallback(const void* msg_in) {
-  const std_msgs__msg__Float32MultiArray* msg =
-      static_cast<const std_msgs__msg__Float32MultiArray*>(msg_in);
-  if (msg == nullptr) return;
+  if (msg_in == nullptr) return;
+  auto msg = static_cast<const std_msgs__msg__Float32MultiArray*>(msg_in);
 
-  if (msg->data.size >= 4) {
-    float velocities[4];
+  const uint8_t n = g_motors.count();
+  if (msg->data.size == n) {
+    float velocities[n];
 
-    // order: [FL, FR, RL, RR]
-    velocities[0] = msg->data.data[0];
-    velocities[1] = msg->data.data[1];
-    velocities[2] = msg->data.data[2];
-    velocities[3] = msg->data.data[3];
+    for (uint8_t i = 0; i < n; ++i) {
+      velocities[i] = msg->data.data[i];
+    }
 
     g_motors.setVelocities(velocities);
   }

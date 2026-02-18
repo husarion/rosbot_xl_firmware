@@ -65,7 +65,7 @@ inline constexpr BatteryAdcConfig battery_adc_config = {
 #define PUSH_BUTTON2 PG13
 
 // ────────────── Encoders ──────────────
-constexpr float GEAR_RATIO = 34.014f;
+constexpr float GEAR_RATIO = 34.0f;
 constexpr uint16_t ENCODER_CPR = 48;
 constexpr float TICKS_PER_REVOLUTION = ENCODER_CPR * GEAR_RATIO;
 constexpr float RAD_PER_TICK = (2.0f * PI) / TICKS_PER_REVOLUTION;
@@ -126,23 +126,24 @@ inline constexpr ImuBno055Config imu_bno055_config = {
 #define GRN_LED2 PE4
 
 inline constexpr LedIndicatorConfig led_status_config = {
-    .pin             = RED_LED,
-    .initial_state   = HIGH,
+    .pin = RED_LED,
+    .initial_state = HIGH,
     .blink_period_ms = 500,
-    .label           = "STATUS",
+    .label = "STATUS",
 };
 
 // ────────────── Motors ──────────────
+constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
+constexpr float MAX_VELOCITY = 30.0f;
+constexpr float MIN_VELOCITY = 1.0f;
+static constexpr const char* JOINT_STATE_FRAME_ID = "base_link";
+
 inline constexpr DriverGroupConfig right_motors_driver = {PC13, PE0};
 inline constexpr DriverGroupConfig left_motors_driver = {PC14, PE1};
 inline constexpr DriverGroupConfig driver_groups[] = {
     right_motors_driver,
     left_motors_driver,
 };
-
-constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
-constexpr float MAX_VELOCITY = 30.0f;
-constexpr float MIN_VELOCITY = 1.0f;
 
 inline constexpr MotorDrv8848Config motor_fl_config = {
     .pwm_pin = PF9,
@@ -153,6 +154,7 @@ inline constexpr MotorDrv8848Config motor_fl_config = {
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
     .label = "FL",
+    .joint_name = "fl_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_fr_config = {
@@ -164,6 +166,7 @@ inline constexpr MotorDrv8848Config motor_fr_config = {
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
     .label = "FR",
+    .joint_name = "fr_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_rl_config = {
@@ -175,6 +178,7 @@ inline constexpr MotorDrv8848Config motor_rl_config = {
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
     .label = "RL",
+    .joint_name = "rl_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_rr_config = {
@@ -186,6 +190,7 @@ inline constexpr MotorDrv8848Config motor_rr_config = {
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
     .label = "RR",
+    .joint_name = "rr_wheel_joint",
 };
 
 // ────────────── PID ──────────────

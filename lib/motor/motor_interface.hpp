@@ -39,6 +39,7 @@ class MotorInterface {
   virtual MotorData getData() const { return data_; }
 
   virtual const char* name() const = 0;
+  virtual const char* jointName() const = 0;
 
  protected:
   MotorData data_ = {};

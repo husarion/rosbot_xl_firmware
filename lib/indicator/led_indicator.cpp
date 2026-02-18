@@ -15,58 +15,57 @@
 #include "led_indicator.hpp"
 
 void LedIndicator::init() {
-    pinMode(cfg_.pin, OUTPUT);
-    digitalWrite(cfg_.pin, cfg_.initial_state);
+  pinMode(cfg_.pin, OUTPUT);
+  digitalWrite(cfg_.pin, cfg_.initial_state);
 }
 
-void LedIndicator::update(bool battery_low,
-                         bool uros_disconnected,
-                         bool error) {
-    uint32_t now = millis();
+void LedIndicator::update(bool battery_low, bool uros_disconnected,
+                          bool error) {
+  uint32_t now = millis();
 
-    // Priority 1: error → SOS pattern
-    if (error) {
-        handleSOS(now);
-        return;
-    }
-    resetSOS();
+  // Priority 1: error → SOS pattern
+  if (error) {
+    handleSOS(now);
+    return;
+  }
+  resetSOS();
 
-    // Priority 2: battery low → blink
-    if (battery_low) {
-        handleBlink(now);
-        return;
-    }
+  // Priority 2: battery low → blink
+  if (battery_low) {
+    handleBlink(now);
+    return;
+  }
 
-    // Priority 3: µROS disconnected → solid ON
-    if (uros_disconnected) {
-        digitalWrite(cfg_.pin, HIGH);
-        return;
-    }
+  // Priority 3: µROS disconnected → solid ON
+  if (uros_disconnected) {
+    digitalWrite(cfg_.pin, HIGH);
+    return;
+  }
 
-    // All OK → OFF
-    digitalWrite(cfg_.pin, LOW);
+  // All OK → OFF
+  digitalWrite(cfg_.pin, LOW);
 }
 
 void LedIndicator::handleBlink(uint32_t now) {
-    if (now - last_toggle_ >= cfg_.blink_period_ms) {
-        digitalToggle(cfg_.pin);
-        last_toggle_ = now;
-    }
+  if (now - last_toggle_ >= cfg_.blink_period_ms) {
+    digitalToggle(cfg_.pin);
+    last_toggle_ = now;
+  }
 }
 
 void LedIndicator::handleSOS(uint32_t now) {
-    static const uint16_t sos_pattern[] = {
-        200, 200, 200,        // S (dit dit dit)
-        600, 200, 600,        // O (dah dah dah)
-        200, 200, 200,        // S (dit dit dit)
-        1000                  // pause
-    };
+  static const uint16_t sos_pattern[] = {
+      200, 200, 200,  // S (dit dit dit)
+      600, 200, 600,  // O (dah dah dah)
+      200, 200, 200,  // S (dit dit dit)
+      1000            // pause
+  };
 
-    if (now - last_toggle_ >= sos_pattern[sos_step_]) {
-        digitalToggle(cfg_.pin);
-        last_toggle_ = now;
-        sos_step_++;
-        if (sos_step_ >= sizeof(sos_pattern) / sizeof(sos_pattern[0]))
-            sos_step_ = 0;
-    }
+  if (now - last_toggle_ >= sos_pattern[sos_step_]) {
+    digitalToggle(cfg_.pin);
+    last_toggle_ = now;
+    sos_step_++;
+    if (sos_step_ >= sizeof(sos_pattern) / sizeof(sos_pattern[0]))
+      sos_step_ = 0;
+  }
 }
