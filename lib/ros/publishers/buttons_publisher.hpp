@@ -15,41 +15,43 @@
 #pragma once
 
 #include <Arduino.h>
-#include <micro_ros_utilities/string_utilities.h>
-#include <rcl/rcl.h>
-#include <rclc/rclc.h>
-#include <rmw_microros/rmw_microros.h>
 #include <std_msgs/msg/u_int8.h>
 
-#include "rtos.hpp"
+#include "config.hpp"
+#include "publisher_interface.hpp"
 
-class ButtonsPublisher {
+class ButtonsPublisher : public PublisherInterface {
  public:
-  rcl_ret_t init(rcl_node_t& node, const char* topic_name) {
-    initMsg();
+  ButtonsPublisher(const char* topic, const uint8_t* pins, uint8_t count)
+      : PublisherInterface(topic), pins_(pins), num_buttons_(count) {}
+
+  rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
+    memset(&msg_, 0, sizeof(msg_));
     return rclc_publisher_init_best_effort(
         &pub_, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, UInt8),
-        topic_name);
+        topic_);
   }
 
-  void publish() {
+  void publish() override {
     uint8_t state = 0;
-    state |= (digitalRead(PUSH_BUTTON1) == LOW) << 0;
-    state |= (digitalRead(PUSH_BUTTON2) == LOW) << 1;
 
-    if (state != last_state) {
-      last_state = state;
+    for (uint8_t i = 0; i < num_buttons_; ++i) {
+      state |= (digitalRead(pins_[i]) == LOW) << i;
+    }
+
+    if (state != last_state_) {
+      last_state_ = state;
       msg_.data = state;
       rcl_publish(&pub_, &msg_, NULL);
     }
   }
 
-  void fini(rcl_node_t& node) { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
 
  private:
+  const uint8_t* pins_;
+  uint8_t num_buttons_;
   rcl_publisher_t pub_;
   std_msgs__msg__UInt8 msg_;
-  uint8_t last_state = 0;
-
-  void initMsg() { memset(&msg_, 0, sizeof(msg_)); }
+  uint8_t last_state_ = 0;
 };

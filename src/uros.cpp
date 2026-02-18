@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "uros.hpp"
+#include <vector>
 
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/bool.h>
@@ -23,26 +24,31 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <rcl/time.h>
 #include <rclc/executor.h>
-#include <rosidl_runtime_c/primitives_sequence_functions.h>
 
 #include "log.hpp"
 #include "motor_array.hpp"
+#include "publishers/battery_publisher.hpp"
+#include "publishers/buttons_publisher.hpp"
+#include "publishers/imu_publisher.hpp"
+#include "publishers/joint_state_publisher.hpp"
+#include "publishers/range_publisher.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
-#include "uros/battery_publisher.hpp"
-#include "uros/buttons_publisher.hpp"
-#include "uros/imu_publisher.hpp"
-#include "uros/joint_state_publisher.hpp"
-#include "uros/range_publisher.hpp"
 
 namespace u_ros {
 
 // PUBLISHERS
-BatteryPublisher batteryPublisher;
-ButtonsPublisher buttonsPublisher;
-ImuPublisher imuPublisher;
-JointStatePublisher jointStatePublisher;
-RangePublisher rangePublisher;
+static BatteryPublisher s_battery_pub("battery");
+static ButtonsPublisher s_buttons_pub("buttons", BUTTON_PINS, NUM_BUTTONS);
+static ImuPublisher s_imu_pub("_imu/data_raw");
+static JointStatePublisher s_joint_pub("_motors_response");
+static RangePublisher s_range_pub("ranges");
+
+static std::vector<PublisherInterface*> s_publishers = {
+    &s_battery_pub, &s_buttons_pub, &s_imu_pub, &s_joint_pub, &s_range_pub
+};
+uint8_t pub_count = static_cast<uint8_t>(s_publishers.size());
+
 // SUBSCRIPTIONS
 rcl_subscription_t motors_cmd_sub;
 rcl_subscription_t left_led_sub;
@@ -103,8 +109,7 @@ void transportInit(const SerialConfig& config) {
 }
 
 bool pingAgent(void) {
-  return rmw_uros_ping_agent(uROS_PING_TIMEOUT_MS, uROS_PING_ATTEMPTS) ==
-         RMW_RET_OK;
+  return rmw_uros_ping_agent(PING_TIMEOUT_MS, PING_ATTEMPTS) == RMW_RET_OK;
 }
 
 void motorsCmdCallback(const void* msg_in) {
@@ -168,8 +173,7 @@ bool createEntities(void) {
   allocator = rcl_get_default_allocator();
   init_options = rcl_get_zero_initialized_init_options();
   RCCHECK_RETURN(rcl_init_options_init(&init_options, allocator));
-  RCCHECK_RETURN(rcl_init_options_set_domain_id(
-      &init_options, UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV));
+  RCCHECK_RETURN(rcl_init_options_set_domain_id(&init_options, DOMAIN_ID));
   RCCHECK_RETURN(rclc_support_init_with_options(&support, 0, NULL,
                                                 &init_options, &allocator));
   RCCHECK_RETURN(rclc_node_init_default(
@@ -195,11 +199,9 @@ bool createEntities(void) {
       "led/right"));
   ros_msgs_cnt++;
   /*===== PUBLISHERS ===== */
-  RCCHECK_RETURN(batteryPublisher.init(node, "battery"));
-  RCCHECK_RETURN(buttonsPublisher.init(node, "buttons"));
-  RCCHECK_RETURN(imuPublisher.init(node, "_imu/data_raw"));
-  RCCHECK_RETURN(jointStatePublisher.init(node, "_motors_response", allocator));
-  RCCHECK_RETURN(rangePublisher.init(node, "ranges"));
+  for (uint8_t i = 0; i < pub_count; ++i) {
+    RCCHECK_RETURN(s_publishers[i]->init(node, allocator));
+  }
   /*===== SERVICES ===== */
   RCCHECK_RETURN(rclc_service_init_default(
       &get_cpu_id_service, &node,
@@ -231,11 +233,7 @@ void destroyEntities(void) {
   rmw_context_t* rmw_context = rcl_context_get_rmw_context(&support.context);
   (void)rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-  batteryPublisher.fini(node);
-  buttonsPublisher.fini(node);
-  imuPublisher.fini(node);
-  jointStatePublisher.fini(node);
-  rangePublisher.fini(node);
+  for (uint8_t i = 0; i < pub_count; ++i) s_publishers[i]->fini(node);
   rcl_subscription_fini(&motors_cmd_sub, &node);
   rcl_subscription_fini(&left_led_sub, &node);
   rcl_subscription_fini(&right_led_sub, &node);
@@ -248,10 +246,11 @@ void destroyEntities(void) {
 }
 
 void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg) {
-  static float data[MOT_CMD_MSG_LEN] = {0, 0, 0, 0};
-  msg->data.capacity = MOT_CMD_MSG_LEN;
-  msg->data.size = MOT_CMD_MSG_LEN;
-  msg->data.data = (float*)data;
+  const uint8_t n = g_motors.count();
+
+  static float* data = new float[n]();
+  msg->data.size = n;
+  msg->data.data = data;
 }
 
 void loop() {
@@ -285,15 +284,9 @@ void loop() {
 }
 
 void publishLoop() {
-  if (state == CONNECTED) {
-    batteryPublisher.publish();
-    buttonsPublisher.publish();
-    imuPublisher.publish();
-    jointStatePublisher.publish();
-    rangePublisher.publish();
-
-    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
-  }
+  if (state != CONNECTED) return;
+  for (uint8_t i = 0; i < pub_count; ++i) s_publishers[i]->publish();
+  rclc_executor_spin_some(&executor, RCL_MS_TO_NS(0));
 }
 
 }  // namespace u_ros

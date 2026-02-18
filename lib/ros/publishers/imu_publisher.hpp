@@ -15,32 +15,30 @@
 #pragma once
 
 #include <micro_ros_utilities/string_utilities.h>
-#include <rcl/rcl.h>
-#include <rclc/rclc.h>
-#include <rmw_microros/rmw_microros.h>
 #include <sensor_msgs/msg/imu.h>
 
+#include "config.hpp"
+#include "publisher_interface.hpp"
 #include "rtos.hpp"
 
-class ImuPublisher {
+class ImuPublisher : public PublisherInterface {
  public:
-  rcl_ret_t init(rcl_node_t& node, const char* topic_name) {
+  explicit ImuPublisher(const char* topic) : PublisherInterface(topic) {}
+
+  rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     initMsg();
     return rclc_publisher_init_best_effort(
         &pub_, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-        topic_name);
+        topic_);
   }
 
-  void publish() {
-    if (xQueueReceive(rtos::ImuQueue, &data_, 0) != pdPASS) {
-      return;
-    }
-
+  void publish() override {
+    if (xQueueReceive(rtos::ImuQueue, &data_, 0) != pdPASS) return;
     fillMsg(data_);
     rcl_publish(&pub_, &msg_, NULL);
   }
 
-  void fini(rcl_node_t& node) { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
 
  private:
   rcl_publisher_t pub_;
@@ -49,8 +47,7 @@ class ImuPublisher {
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));
-    msg_.header.frame_id =
-        micro_ros_string_utilities_set(msg_.header.frame_id, "imu_link");
+    msg_.header.frame_id = micro_ros_string_utilities_init(IMU_FRAME_ID);
   }
 
   void fillMsg(const ImuStamped& d) {

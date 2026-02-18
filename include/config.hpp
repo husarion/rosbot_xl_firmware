@@ -61,8 +61,10 @@ inline constexpr BatteryAdcConfig battery_adc_config = {
     .correction = 0.986f};
 
 // ────────────── Buttons ──────────────
-#define PUSH_BUTTON1 PG12
-#define PUSH_BUTTON2 PG13
+static constexpr uint8_t PUSH_BUTTON1 = PG12;
+static constexpr uint8_t PUSH_BUTTON2 = PG13;
+static constexpr uint8_t BUTTON_PINS[] = {PUSH_BUTTON2, PUSH_BUTTON1};
+static constexpr uint8_t NUM_BUTTONS = 2;
 
 // ────────────── Encoders ──────────────
 constexpr float GEAR_RATIO = 34.0f;
@@ -121,9 +123,9 @@ inline constexpr ImuBno055Config imu_bno055_config = {
 };
 
 // ────────────── LEDs ──────────────
-#define RED_LED PE2
-#define GRN_LED PE3
-#define GRN_LED2 PE4
+static constexpr uint8_t RED_LED = PE2;
+static constexpr uint8_t GRN_LED = PE3;
+static constexpr uint8_t GRN_LED2 = PE4;
 
 inline constexpr LedIndicatorConfig led_status_config = {
     .pin = RED_LED,
@@ -136,7 +138,6 @@ inline constexpr LedIndicatorConfig led_status_config = {
 constexpr uint32_t MOTOR_PWM_FREQ = 20000;  // 20 kHz
 constexpr float MAX_VELOCITY = 30.0f;
 constexpr float MIN_VELOCITY = 1.0f;
-static constexpr const char* JOINT_STATE_FRAME_ID = "base_link";
 
 inline constexpr DriverGroupConfig right_motors_driver = {PC13, PE0};
 inline constexpr DriverGroupConfig left_motors_driver = {PC14, PE1};
@@ -206,20 +207,42 @@ inline constexpr PIDConfig pid_config = {
 };
 
 // ────────────── Ranges ──────────────
-#define RANGE_I2C_SDA PB9
-#define RANGE_I2C_SCL PB8
-#define RANGE_XSHUT_FL PD8
-#define RANGE_XSHUT_FR PB1
-#define RANGE_XSHUT_RL PD10
-#define RANGE_XSHUT_RR PD9
+static constexpr uint8_t RANGE_I2C_SDA = PB9;
+static constexpr uint8_t RANGE_I2C_SCL = PB8;
+static constexpr uint8_t RANGE_XSHUT_FL = PD8;
+static constexpr uint8_t RANGE_XSHUT_FR = PB1;
+static constexpr uint8_t RANGE_XSHUT_RL = PD10;
+static constexpr uint8_t RANGE_XSHUT_RR = PD9;
 
-inline const std::array<const char*, 4> RANGE_FRAME_IDS = {
-    "fl_range", "fr_range", "rl_range", "rr_range"};
+// ────────────── ROS ──────────────
+static constexpr const char* NODE_NAME = "rosbot_mcu";
+
+static constexpr const char* BATTERY_FRAME_ID = "base_link";
+static constexpr uint8_t BATTERY_NUM_CELLS = 3;
+static constexpr float BATTERY_CELL_CAPACITY = 2.6f;  // Ah
+static constexpr float BATTERY_DESIGN_CAPACITY =
+    BATTERY_NUM_CELLS * BATTERY_CELL_CAPACITY;
+
+static constexpr const char* IMU_FRAME_ID = "imu_link";
+
+static constexpr const char* JOINT_STATE_FRAME_ID = "base_link";
+
+static constexpr float RANGE_FOV = 0.26f;  // [rad]
+static constexpr float RANGE_MIN = 0.01f;  // [m]
+static constexpr float RANGE_MAX = 0.9f;   // [m]
+static constexpr const char* RANGE_FRAME_IDS[] = {
+    "fl_range",
+    "fr_range",
+    "rl_range",
+    "rr_range",
+};
+
+static constexpr uint16_t DOMAIN_ID = 255;  // 255 inherit from Micro ROS Agent
+static constexpr uint32_t PING_TIMEOUT_MS = 50;
+static constexpr uint8_t PING_ATTEMPTS = 5;
 
 // ────────────── SBC Interface ──────────────
 #define SBC_SERIAL_TIMEOUT 1  // ms
-#define SBC_STATUS \
-  PG6  // According to "Rosbot v1.3 schematics", this should be connected to
-       // GPIO_03 in RPI which is an I2C with pullup (intended for detection)
+#define SBC_STATUS PG6        // Detect RPi which is an I2C with pullup
 #define RPI_CONSOLE PG5
 #define RPI_BTN PG7

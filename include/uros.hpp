@@ -27,15 +27,8 @@
 #include "config.hpp"
 #include "log.hpp"
 namespace u_ros {
-#define UXR_CLIENT_DOMAIN_ID_TO_OVERRIDE_WITH_ENV \
-  255  // get ROS_DOMAIN_ID from Micro ROS Agent
 
 /* DEFINES */
-#define uROS_PING_TIMEOUT_MS 30
-#define uROS_PING_ATTEMPTS 5
-#define MOT_CMD_MSG_LEN 4
-#define NODE_NAME "rosbot_mcu"
-
 #define RCCHECK_RETURN(fn)              \
   {                                     \
     rcl_ret_t rc = fn;                  \
