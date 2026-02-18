@@ -27,11 +27,11 @@
 
 #include "log.hpp"
 #include "motor_array.hpp"
-#include "publishers/battery_publisher.hpp"
-#include "publishers/buttons_publisher.hpp"
-#include "publishers/imu_publisher.hpp"
-#include "publishers/joint_state_publisher.hpp"
-#include "publishers/range_publisher.hpp"
+#include "ros/publishers/battery_publisher.hpp"
+#include "ros/publishers/buttons_publisher.hpp"
+#include "ros/publishers/imu_publisher.hpp"
+#include "ros/publishers/joint_state_publisher.hpp"
+#include "ros/publishers/range_publisher.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
 
