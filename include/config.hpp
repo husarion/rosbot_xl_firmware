@@ -29,7 +29,7 @@
 #include "ros/publishers/imu_publisher.hpp"
 #include "ros/publishers/joint_state_publisher.hpp"
 #include "ros/publishers/range_publisher.hpp"
-#include "serial.hpp"
+#include "serial_manager.hpp"
 
 enum class MotorID : uint8_t { FL = 0, FR = 1, RL = 2, RR = 3, COUNT = 4 };
 
@@ -195,7 +195,7 @@ inline constexpr PIDConfig pid_config = {
     .min_output = -1.0f,
     .max_output = 1.0f,
     .min_power_to_move = 0.4f,
-    .compensation_up_to_speed = 2.0f,
+    .compensation_up_to_speed = 4.0f,
 };
 
 // ────────────── Ranges ──────────────
@@ -270,12 +270,11 @@ inline constexpr RangePublisherConfig range_pub_config = {
 };
 
 static constexpr uint16_t DOMAIN_ID = 255;  // 255 inherit from Micro ROS Agent
-static constexpr uint32_t PING_TIMEOUT_MS = 50;
-static constexpr uint8_t PING_ATTEMPTS = 5;
+static constexpr uint32_t PING_TIMEOUT_MS = 100;
+static constexpr uint8_t PING_ATTEMPTS = 3;
 
 // ────────────── SBC Interface ──────────────
 static constexpr uint32_t SBC_SERIAL_TIMEOUT_MS = 100;
-static constexpr uint8_t SBC_STATUS =
-    PG6;  // Detect RPi which is an I2C with pullup
+static constexpr uint8_t SBC_STATUS = PG6;  // Detect RPi which is a pullup pin
 static constexpr uint8_t RPI_CONSOLE = PG5;
 static constexpr uint8_t RPI_BTN = PG7;

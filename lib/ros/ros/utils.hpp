@@ -1,4 +1,3 @@
-
 // Copyright 2022 Husarion sp. z o.o.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +14,13 @@
 
 #pragma once
 
-#include <Arduino.h>
+#define RC_RETURN(fn)              \
+  {                                     \
+    rcl_ret_t rc = fn;                  \
+    if (rc != RCL_RET_OK) return false; \
+  }
 
-struct SerialConfig {
-  HardwareSerial* serial;
-  uint32_t baudrate;
-  uint8_t rxPin;
-  uint8_t txPin;
-  uint32_t timeout_ms;
-  const char* name;
-};
+#define RC_SKIP(fn)              \
+  {                                     \
+    [[maybe_unused]] rcl_ret_t rc = fn; \
+  }

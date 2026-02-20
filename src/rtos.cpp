@@ -20,9 +20,9 @@
 #include "encoder_array.hpp"
 #include "imu_interface.hpp"
 #include "led_indicator.hpp"
-#include "log.hpp"
 #include "motor_array.hpp"
-#include "uros.hpp"
+#include "ros/ros_node.hpp"
+#include "serial_manager.hpp"
 
 namespace rtos {
 
@@ -119,10 +119,9 @@ void ledIndicatorTask(void* p) {
 
   while (true) {
     bool battery_low = g_battery->isLow();
-    bool uros_disconnected = (u_ros::state != u_ros::CONNECTED);
     bool error_state = false;
 
-    g_indicator.update(battery_low, uros_disconnected, error_state);
+    g_indicator.update(battery_low, !g_ros_node.isConnected(), error_state);
     vTaskDelayUntil(&wake_time, period);
   }
 }
@@ -133,10 +132,8 @@ void monitorTask(void* p) {
   char buf[1000];
 
   while (true) {
-    if (g_firmware_log_level <= LOG_LEVEL_INFO) {
-      vTaskGetRunTimeStats(buf);
-      LOG_INFO("\r\n%s", buf);
-    }
+    vTaskGetRunTimeStats(buf);
+    g_serialManager.debug().printf("%s\r\n", buf);                           
 
     vTaskDelayUntil(&wake_time, period);
   }
@@ -174,7 +171,7 @@ void uRosTask(void* p) {
   TickType_t period = taskGetPeriod(p);
   TickType_t wake_time = xTaskGetTickCount();
   while (true) {
-    u_ros::publishLoop();
+    g_ros_node.publishLoop();
     vTaskDelayUntil(&wake_time, period);
   }
 }
@@ -184,7 +181,7 @@ void uRosPingTask(void* p) {
   TickType_t wake_time = xTaskGetTickCount();
 
   while (true) {
-    u_ros::loop();
+    g_ros_node.loop();
     vTaskDelayUntil(&wake_time, period);
   }
 }

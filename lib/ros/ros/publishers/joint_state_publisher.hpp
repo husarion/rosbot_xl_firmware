@@ -19,6 +19,7 @@
 
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
+#include "../utils.hpp"
 
 struct JointStatePublisherConfig {
   const char* topic;
@@ -40,10 +41,10 @@ class JointStatePublisher : public PublisherInterface {
   void publish() override {
     if (xQueueReceive(rtos::EncodersQueue, &data_, 0) != pdPASS) return;
     fillMsg(data_);
-    rcl_publish(&pub_, &msg_, NULL);
+    RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
   }
 
-  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
 
  private:
   rcl_publisher_t pub_;

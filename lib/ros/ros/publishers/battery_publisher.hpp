@@ -22,6 +22,7 @@
 #include <sensor_msgs/msg/battery_state.h>
 
 #include "publisher_interface.hpp"
+#include "../utils.hpp"
 #include "rtos.hpp"
 
 struct BatteryPublisherConfig {
@@ -46,10 +47,10 @@ class BatteryPublisher : public PublisherInterface {
   void publish() override {
     if (xQueueReceive(rtos::BatteryQueue, &data_, 0) != pdPASS) return;
     fillMsg(data_);
-    rcl_publish(&pub_, &msg_, NULL);
+    RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
   }
 
-  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
 
   const char* topicName() const override { return topic_; }
 

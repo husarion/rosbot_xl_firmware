@@ -20,7 +20,6 @@
 #include "battery_interface.hpp"
 #include "encoder_array.hpp"
 #include "imu_interface.hpp"
-#include "log.hpp"
 #include "range_array.hpp"
 
 struct BatteryStamped {

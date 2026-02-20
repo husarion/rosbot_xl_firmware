@@ -27,7 +27,8 @@
 #include "range_vl53l0.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
-#include "uros.hpp"
+// #include "uros.hpp"
+#include "ros/ros_node.hpp"
 
 // ───────── Battery ─────────
 BatteryAdc battery_adc(battery_adc_config);
@@ -68,8 +69,6 @@ static constexpr uint8_t RANGE_COUNT =
     sizeof(range_sensors) / sizeof(range_sensors[0]);
 
 // ─────────Extern variables─────────
-log_level_t g_firmware_log_level = LOG_LEVEL_DEBUG;
-
 BatteryInterface* g_battery = &battery_adc;
 EncoderArray g_encoders(encoders, ENCODER_COUNT);
 ImuInterface* g_imu = &imu_bno055;
@@ -86,8 +85,13 @@ void confirmAlt() {
   digitalWrite(GRN_LED2, HIGH);
 }
 
-SerialManager serialManager(SBC_SERIAL_CONFIG, &FTDI_SERIAL_CONFIG, useAlt,
-                            confirmAlt);
+SerialManagerConfig serial_config = {
+    .main = SBC_SERIAL_CONFIG,
+    .alt = &FTDI_SERIAL_CONFIG,
+    .useAltCondition = useAlt,
+    .confirmAlt = confirmAlt
+};
+SerialManager g_serialManager(serial_config);
 
 void BoardPheripheralsInit() {
   // Initialize Buttons
@@ -119,9 +123,10 @@ void setup() {
   BoardPheripheralsInit();
 
   // Pre-communication
-  serialManager.init();
-  const auto& selected_serial = serialManager.selectActive();
-  serialManager.configureNamespace();
+  g_serialManager.init();
+  const auto& selected_serial = g_serialManager.selectActive();
+  g_serialManager.configureNamespace();
+  g_ros_node.setNamespace(g_serialManager.getNamespace());
 
   // Sensors initialization
   battery_adc.init();
@@ -130,7 +135,7 @@ void setup() {
   g_indicator.init();
   g_motors.init();
   g_ranges.init();
-  u_ros::transportInit(selected_serial);
+  g_ros_node.transportInit(selected_serial);
 
   // RTOS
   rtos::createQueues();

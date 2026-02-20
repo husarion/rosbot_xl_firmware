@@ -18,41 +18,50 @@
 
 #include <functional>
 
-#include "serial.hpp"
+struct SerialConfig {
+  HardwareSerial* serial;
+  uint32_t baudrate;
+  uint8_t rxPin;
+  uint8_t txPin;
+  uint32_t timeout_ms;
+  const char* name;
+};
+
+struct SerialManagerConfig {
+  SerialConfig main;
+  const SerialConfig* alt = nullptr;
+  std::function<bool()> useAltCondition = nullptr;
+  std::function<void()> confirmAlt = nullptr;
+  uint16_t check_interval = 50;
+  uint16_t resend_ready_interval = 250;
+  const char* ns_default = "";
+};
 
 class SerialManager {
  public:
-  static constexpr uint16_t CHECK_INTERVAL = 50;
-  static constexpr uint16_t RESEND_READY_INTERVAL = 250;
   static constexpr size_t NS_MAX_LENGTH = 32;
-  static inline constexpr char NS_DEFAULT[] = "";
 
-  SerialManager(SerialConfig main, const SerialConfig* alt = nullptr,
-                std::function<bool()> useAltCondition = nullptr,
-                std::function<void()> confirmAlt = nullptr)
-      : main_(main),
-        alt_(alt),
-        useAltCondition_(useAltCondition),
-        confirmAlt_(confirmAlt) {}
+  SerialManager(SerialManagerConfig cfg)
+      : cfg_(cfg) {}
 
   void init() {
-    initSerial(main_);
-    if (alt_) initSerial(*alt_);
+    initSerial(cfg_.main);
+    if (cfg_.alt) initSerial(*cfg_.alt);
   }
 
   const SerialConfig& selectActive(uint32_t timeout_ms = 2000) {
     uint32_t startTime = millis();
 
     while ((millis() - startTime) < timeout_ms) {
-      if (alt_ && useAltCondition_ && useAltCondition_()) {
-        active_ = alt_;
-        if (confirmAlt_) confirmAlt_();
+      if (cfg_.alt && cfg_.useAltCondition && cfg_.useAltCondition()) {
+        active_ = cfg_.alt;
+        if (cfg_.confirmAlt) cfg_.confirmAlt();
         return *active_;
       }
-      delay(CHECK_INTERVAL);
+      delay(cfg_.check_interval);
     }
 
-    active_ = &main_;
+    active_ = &cfg_.main;
     return *active_;
   }
 
@@ -63,7 +72,7 @@ class SerialManager {
       return true;
     }
 
-    strncpy(namespace_, NS_DEFAULT, NS_MAX_LENGTH);
+    strncpy(namespace_, cfg_.ns_default, NS_MAX_LENGTH);
     namespace_[NS_MAX_LENGTH - 1] = '\0';
     return true;
   }
@@ -74,16 +83,15 @@ class SerialManager {
   const SerialConfig& activeConfig() const { return *active_; }
   const char* getNamespace() const { return namespace_; }
 
-  HardwareSerial& main() { return *main_.serial; }
-  HardwareSerial& alt() { return *alt_->serial; }
+  HardwareSerial& main() { return *cfg_.main.serial; }
+  HardwareSerial& alt() { return *cfg_.alt->serial; }
 
   HardwareSerial& debug() {
-    return (active_->serial == main_.serial) ? *alt_->serial : *main_.serial;
+    return (active_->serial == cfg_.main.serial) ? *cfg_.alt->serial : *cfg_.main.serial;
   }
 
  private:
-  const SerialConfig main_;
-  const SerialConfig* alt_ = nullptr;
+  SerialManagerConfig cfg_;
   const SerialConfig* active_ = nullptr;
   char namespace_[NS_MAX_LENGTH] = {};
 
@@ -108,7 +116,11 @@ class SerialManager {
     bool got_line = false;
     uint32_t last_ready = 0;
 
-    serial.println("READY");
+    const char* fw_version = "0.0.0"; 
+    #if defined(FW_VERSION)
+      fw_version = FW_VERSION;
+    #endif
+    serial.printf("FW: %s\r\n", fw_version);
     serial.flush();
     last_ready = millis();
 
@@ -122,8 +134,8 @@ class SerialManager {
         if (idx < NS_MAX_LENGTH - 1) buffer[idx++] = c;
       }
 
-      if (millis() - last_ready >= RESEND_READY_INTERVAL) {
-        serial.println("READY");
+      if (millis() - last_ready >= cfg_.resend_ready_interval) {
+        serial.printf("FW: %s\r\n", fw_version);
         serial.flush();
         last_ready = millis();
       }
@@ -140,4 +152,4 @@ class SerialManager {
   }
 };
 
-extern SerialManager serialManager;
+extern SerialManager g_serialManager;

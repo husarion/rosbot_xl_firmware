@@ -18,6 +18,7 @@
 #include <std_msgs/msg/u_int8.h>
 
 #include "publisher_interface.hpp"
+#include "../utils.hpp"
 
 struct ButtonsPublisherConfig {
   const char* topic;
@@ -47,11 +48,11 @@ class ButtonsPublisher : public PublisherInterface {
     if (state != last_state_) {
       last_state_ = state;
       msg_.data = state;
-      rcl_publish(&pub_, &msg_, NULL);
+      RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
     }
   }
 
-  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
 
  private:
   ButtonsPublisherConfig cfg_;

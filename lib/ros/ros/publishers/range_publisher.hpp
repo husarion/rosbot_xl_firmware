@@ -19,6 +19,7 @@
 
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
+#include "../utils.hpp"
 
 struct RangePublisherConfig {
   const char* topic;
@@ -57,11 +58,11 @@ class RangePublisher : public PublisherInterface {
       else
         msg_.range = range;
 
-      rcl_publish(&pub_, &msg_, NULL);
+      RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
     }
   }
 
-  void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
+  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
 
  private:
   rcl_publisher_t pub_;
