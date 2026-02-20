@@ -19,9 +19,11 @@
 #include "range_interface.hpp"
 
 #define MAX_NUM_RANGE_SENSORS 4
+#define MAX_FRAME_ID_LENGTH 16
 
 struct RangesData {
   float range[MAX_NUM_RANGE_SENSORS] = {};
+  char frame_id[MAX_NUM_RANGE_SENSORS][MAX_FRAME_ID_LENGTH] = {};
   uint8_t count = 0;
 };
 

@@ -19,7 +19,11 @@
 
 #include "range_interface.hpp"
 
-struct Vl53l0xConfig {
+struct RangeVl53l0xConfig {
+  TwoWire* bus;
+  uint8_t xshut_pin;
+  uint8_t i2c_address;
+  const char* frame_id = "range";
   uint16_t timeout_ms = 500;
   float signal_rate_limit = 0.1f;
   uint8_t vcsel_pre_range = 16;
@@ -30,20 +34,16 @@ struct Vl53l0xConfig {
 
 class RangeVl53l0x : public RangeInterface {
  public:
-  RangeVl53l0x(TwoWire* bus, uint8_t xshut_pin, uint8_t i2c_address,
-               const Vl53l0xConfig& config = {});
+  RangeVl53l0x(const RangeVl53l0xConfig& cfg);
 
   void init() override;
   void update() override;
   void powerOff() override;
   void powerOn() override;
-  const char* name() const override { return "VL53L0X"; }
+  const char* name() const override { return cfg_.frame_id; }
 
  private:
-  TwoWire* bus_;
   VL53L0X driver_;
-  uint8_t xshut_pin_;
-  uint8_t address_;
-  const Vl53l0xConfig cfg_;
+  const RangeVl53l0xConfig cfg_;
   bool initialized_ = false;
 };

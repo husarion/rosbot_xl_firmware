@@ -19,12 +19,12 @@
 #include "encoder_interface.hpp"
 
 struct HardwareEncoderConfig {
-  uint8_t pin_a;       // TIMx_CH1 pin
-  uint8_t pin_b;       // TIMx_CH2 pin
-  TIM_TypeDef* timer;  // e.g. TIM1, TIM3, TIM8
-  bool dir_cw;         // polarity
-  float rad_per_tick;  // radians per encoder tick
-  const char* label;   // human name, e.g. "FR"
+  uint8_t pin_a;         // TIMx_CH1 pin
+  uint8_t pin_b;         // TIMx_CH2 pin
+  TIM_TypeDef* timer;    // e.g. TIM1, TIM3, TIM8
+  bool dir_cw;           // polarity
+  float rad_per_tick;    // radians per encoder tick
+  const char* frame_id;  // human name, e.g. "FR"
 };
 
 class HardwareEncoder : public EncoderInterface {
@@ -34,7 +34,7 @@ class HardwareEncoder : public EncoderInterface {
   void init() override;
   void update() override;
   void reset() override;
-  const char* name() const override { return cfg_.label; }
+  const char* name() const override { return cfg_.frame_id; }
 
  private:
   const uint32_t getTicks() const { return timer_handle_->Instance->CNT; }

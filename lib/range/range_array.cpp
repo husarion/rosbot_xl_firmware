@@ -37,5 +37,6 @@ void RangeArray::update() {
   for (uint8_t i = 0; i < count_; i++) {
     sensors_[i]->update();
     data_.range[i] = sensors_[i]->getData().range;
+    strncpy(data_.frame_id[i], sensors_[i]->name(), MAX_FRAME_ID_LENGTH - 1);
   }
 }

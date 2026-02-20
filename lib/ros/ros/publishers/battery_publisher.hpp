@@ -24,9 +24,17 @@
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
 
+struct BatteryPublisherConfig {
+  const char* topic;
+  const char* frame_id;
+  float design_capacity;
+  uint16_t num_cells;
+};
+
 class BatteryPublisher : public PublisherInterface {
  public:
-  explicit BatteryPublisher(const char* topic) : PublisherInterface(topic) {}
+  explicit BatteryPublisher(BatteryPublisherConfig cfg)
+      : PublisherInterface(cfg.topic), cfg_(cfg) {}
 
   rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     initMsg();
@@ -49,11 +57,12 @@ class BatteryPublisher : public PublisherInterface {
   rcl_publisher_t pub_;
   sensor_msgs__msg__BatteryState msg_;
   BatteryStamped data_;
+  BatteryPublisherConfig cfg_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));
 
-    msg_.header.frame_id = micro_ros_string_utilities_init(BATTERY_FRAME_ID);
+    msg_.header.frame_id = micro_ros_string_utilities_init(cfg_.frame_id);
 
     msg_.voltage = NAN;
     msg_.temperature = NAN;
@@ -61,7 +70,7 @@ class BatteryPublisher : public PublisherInterface {
     msg_.charge = NAN;
     msg_.capacity = NAN;
 
-    msg_.design_capacity = BATTERY_DESIGN_CAPACITY;
+    msg_.design_capacity = cfg_.design_capacity;
 
     msg_.percentage = NAN;
     msg_.power_supply_status =
@@ -72,13 +81,12 @@ class BatteryPublisher : public PublisherInterface {
         sensor_msgs__msg__BatteryState__POWER_SUPPLY_TECHNOLOGY_LION;
     msg_.present = true;
 
-    rosidl_runtime_c__float__Sequence__init(&msg_.cell_voltage,
-                                            BATTERY_NUM_CELLS);
+    rosidl_runtime_c__float__Sequence__init(&msg_.cell_voltage, cfg_.num_cells);
     for (size_t i = 0; i < msg_.cell_voltage.size; i++)
       msg_.cell_voltage.data[i] = NAN;
 
     rosidl_runtime_c__float__Sequence__init(&msg_.cell_temperature,
-                                            BATTERY_NUM_CELLS);
+                                            cfg_.num_cells);
     for (size_t i = 0; i < msg_.cell_temperature.size; i++)
       msg_.cell_temperature.data[i] = NAN;
 

@@ -17,13 +17,18 @@
 #include <Arduino.h>
 #include <std_msgs/msg/u_int8.h>
 
-#include "config.hpp"
 #include "publisher_interface.hpp"
+
+struct ButtonsPublisherConfig {
+  const char* topic;
+  const uint8_t* pins;
+  uint8_t num_buttons;
+};
 
 class ButtonsPublisher : public PublisherInterface {
  public:
-  ButtonsPublisher(const char* topic, const uint8_t* pins, uint8_t count)
-      : PublisherInterface(topic), pins_(pins), num_buttons_(count) {}
+  ButtonsPublisher(ButtonsPublisherConfig cfg)
+      : PublisherInterface(cfg.topic), cfg_(cfg) {}
 
   rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     memset(&msg_, 0, sizeof(msg_));
@@ -35,8 +40,8 @@ class ButtonsPublisher : public PublisherInterface {
   void publish() override {
     uint8_t state = 0;
 
-    for (uint8_t i = 0; i < num_buttons_; ++i) {
-      state |= (digitalRead(pins_[i]) == LOW) << i;
+    for (uint8_t i = 0; i < cfg_.num_buttons; ++i) {
+      state |= (digitalRead(cfg_.pins[i]) == LOW) << i;
     }
 
     if (state != last_state_) {
@@ -49,8 +54,7 @@ class ButtonsPublisher : public PublisherInterface {
   void fini(rcl_node_t& node) override { rcl_publisher_fini(&pub_, &node); }
 
  private:
-  const uint8_t* pins_;
-  uint8_t num_buttons_;
+  ButtonsPublisherConfig cfg_;
   rcl_publisher_t pub_;
   std_msgs__msg__UInt8 msg_;
   uint8_t last_state_ = 0;

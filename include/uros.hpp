@@ -24,8 +24,8 @@
 #include <std_msgs/msg/float32_multi_array.h>
 
 /*===== REST =====*/
-#include "config.hpp"
 #include "log.hpp"
+#include "serial.hpp"
 namespace u_ros {
 
 /* DEFINES */

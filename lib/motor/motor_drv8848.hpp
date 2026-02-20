@@ -33,8 +33,7 @@ struct MotorDrv8848Config {
   float max_velocity;  // [rad/s] clamp
   float min_velocity;  // [rad/s] deadband
   uint32_t pwm_freq;   // [Hz]
-  const char* label;
-  const char* joint_name;
+  const char* frame_id;
 };
 
 /// DRV8848-based motor with Hi-Z control scheme.
@@ -55,8 +54,7 @@ class MotorDrv8848 : public MotorInterface {
   void setEnabled(bool en) override { enabled_ = en; }
 
   MotorData getData() const override;
-  const char* name() const override { return cfg_.label; }
-  const char* jointName() const override { return cfg_.joint_name; }
+  const char* name() const override { return cfg_.frame_id; }
 
  private:
   void setMode(MotorMode mode);

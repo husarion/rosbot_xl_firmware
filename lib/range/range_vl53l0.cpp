@@ -18,18 +18,16 @@
 
 static constexpr uint8_t RESULT_READY_MASK = 0x07;
 
-RangeVl53l0x::RangeVl53l0x(TwoWire* bus, uint8_t xshut_pin, uint8_t i2c_address,
-                           const Vl53l0xConfig& config)
-    : bus_(bus), xshut_pin_(xshut_pin), address_(i2c_address), cfg_(config) {}
+RangeVl53l0x::RangeVl53l0x(const RangeVl53l0xConfig& cfg) : cfg_(cfg) {}
 
 void RangeVl53l0x::init() {
   powerOn();
 
-  driver_.setBus(bus_);
+  driver_.setBus(cfg_.bus);
   driver_.setTimeout(cfg_.timeout_ms);
   if (!driver_.init()) return;
 
-  driver_.setAddress(address_);
+  driver_.setAddress(cfg_.i2c_address);
   driver_.setSignalRateLimit(cfg_.signal_rate_limit);
   driver_.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange,
                               cfg_.vcsel_pre_range);
@@ -53,14 +51,14 @@ void RangeVl53l0x::update() {
 }
 
 void RangeVl53l0x::powerOff() {
-  pinMode(xshut_pin_, OUTPUT);
-  digitalWrite(xshut_pin_, LOW);
+  pinMode(cfg_.xshut_pin, OUTPUT);
+  digitalWrite(cfg_.xshut_pin, LOW);
   initialized_ = false;
   delay(10);
 }
 
 void RangeVl53l0x::powerOn() {
-  pinMode(xshut_pin_, OUTPUT);
-  digitalWrite(xshut_pin_, HIGH);
+  pinMode(cfg_.xshut_pin, OUTPUT);
+  digitalWrite(cfg_.xshut_pin, HIGH);
   delay(20);
 }

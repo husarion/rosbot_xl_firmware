@@ -17,13 +17,18 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <sensor_msgs/msg/imu.h>
 
-#include "config.hpp"
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
 
+struct ImuPublisherConfig {
+  const char* topic;
+  const char* frame_id;
+};
+
 class ImuPublisher : public PublisherInterface {
  public:
-  explicit ImuPublisher(const char* topic) : PublisherInterface(topic) {}
+  explicit ImuPublisher(ImuPublisherConfig cfg)
+      : PublisherInterface(cfg.topic), cfg_(cfg) {}
 
   rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     initMsg();
@@ -44,10 +49,11 @@ class ImuPublisher : public PublisherInterface {
   rcl_publisher_t pub_;
   sensor_msgs__msg__Imu msg_;
   ImuStamped data_;
+  ImuPublisherConfig cfg_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));
-    msg_.header.frame_id = micro_ros_string_utilities_init(IMU_FRAME_ID);
+    msg_.header.frame_id = micro_ros_string_utilities_init(cfg_.frame_id);
   }
 
   void fillMsg(const ImuStamped& d) {

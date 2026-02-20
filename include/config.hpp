@@ -23,17 +23,15 @@
 #include "motor_array.hpp"
 #include "motor_drv8848.hpp"
 #include "pid.hpp"
+#include "range_vl53l0.hpp"
+#include "ros/publishers/battery_publisher.hpp"
+#include "ros/publishers/buttons_publisher.hpp"
+#include "ros/publishers/imu_publisher.hpp"
+#include "ros/publishers/joint_state_publisher.hpp"
+#include "ros/publishers/range_publisher.hpp"
+#include "serial.hpp"
 
 enum class MotorID : uint8_t { FL = 0, FR = 1, RL = 2, RR = 3, COUNT = 4 };
-
-struct SerialConfig {
-  HardwareSerial* serial;
-  uint32_t baudrate;
-  uint8_t rxPin;
-  uint8_t txPin;
-  uint32_t timeout_ms;
-  const char* name;
-};
 
 // Primary: SBC Serial (SBC connection)
 inline constexpr SerialConfig SBC_SERIAL_CONFIG = {.serial = &Serial1,
@@ -63,8 +61,6 @@ inline constexpr BatteryAdcConfig battery_adc_config = {
 // ────────────── Buttons ──────────────
 static constexpr uint8_t PUSH_BUTTON1 = PG12;
 static constexpr uint8_t PUSH_BUTTON2 = PG13;
-static constexpr uint8_t BUTTON_PINS[] = {PUSH_BUTTON2, PUSH_BUTTON1};
-static constexpr uint8_t NUM_BUTTONS = 2;
 
 // ────────────── Encoders ──────────────
 constexpr float GEAR_RATIO = 34.0f;
@@ -78,7 +74,7 @@ inline constexpr HardwareEncoderConfig enc_fl_config = {
     .timer = TIM4,
     .dir_cw = false,
     .rad_per_tick = RAD_PER_TICK,
-    .label = "fl",
+    .frame_id = "fl_wheel_joint",
 };
 
 inline constexpr HardwareEncoderConfig enc_fr_config = {
@@ -87,7 +83,7 @@ inline constexpr HardwareEncoderConfig enc_fr_config = {
     .timer = TIM2,
     .dir_cw = true,
     .rad_per_tick = RAD_PER_TICK,
-    .label = "fr",
+    .frame_id = "fr_wheel_joint",
 };
 
 inline constexpr HardwareEncoderConfig enc_rl_config = {
@@ -96,7 +92,7 @@ inline constexpr HardwareEncoderConfig enc_rl_config = {
     .timer = TIM3,
     .dir_cw = false,
     .rad_per_tick = RAD_PER_TICK,
-    .label = "rl",
+    .frame_id = "rl_wheel_joint",
 };
 
 inline constexpr HardwareEncoderConfig enc_rr_config = {
@@ -105,13 +101,13 @@ inline constexpr HardwareEncoderConfig enc_rr_config = {
     .timer = TIM8,
     .dir_cw = true,
     .rad_per_tick = RAD_PER_TICK,
-    .label = "rr",
+    .frame_id = "rr_wheel_joint",
 };
 
 // ────────────── IMU ──────────────
-#define IMU_POWER_ON PG4
-#define IMU_I2C_SDA PC9
-#define IMU_I2C_SCL PA8
+static constexpr uint8_t IMU_POWER_ON = PG4;
+static constexpr uint8_t IMU_I2C_SDA = PC9;
+static constexpr uint8_t IMU_I2C_SCL = PA8;
 
 inline TwoWire imu_i2c(IMU_I2C_SDA, IMU_I2C_SCL);
 inline constexpr ImuBno055Config imu_bno055_config = {
@@ -154,8 +150,7 @@ inline constexpr MotorDrv8848Config motor_fl_config = {
     .max_velocity = MAX_VELOCITY,
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
-    .label = "FL",
-    .joint_name = "fl_wheel_joint",
+    .frame_id = "fl_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_fr_config = {
@@ -166,8 +161,7 @@ inline constexpr MotorDrv8848Config motor_fr_config = {
     .max_velocity = MAX_VELOCITY,
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
-    .label = "FR",
-    .joint_name = "fr_wheel_joint",
+    .frame_id = "fr_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_rl_config = {
@@ -178,8 +172,7 @@ inline constexpr MotorDrv8848Config motor_rl_config = {
     .max_velocity = MAX_VELOCITY,
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
-    .label = "RL",
-    .joint_name = "rl_wheel_joint",
+    .frame_id = "rl_wheel_joint",
 };
 
 inline constexpr MotorDrv8848Config motor_rr_config = {
@@ -190,8 +183,7 @@ inline constexpr MotorDrv8848Config motor_rr_config = {
     .max_velocity = MAX_VELOCITY,
     .min_velocity = MIN_VELOCITY,
     .pwm_freq = MOTOR_PWM_FREQ,
-    .label = "RR",
-    .joint_name = "rr_wheel_joint",
+    .frame_id = "rr_wheel_joint",
 };
 
 // ────────────── PID ──────────────
@@ -209,32 +201,72 @@ inline constexpr PIDConfig pid_config = {
 // ────────────── Ranges ──────────────
 static constexpr uint8_t RANGE_I2C_SDA = PB9;
 static constexpr uint8_t RANGE_I2C_SCL = PB8;
-static constexpr uint8_t RANGE_XSHUT_FL = PD8;
-static constexpr uint8_t RANGE_XSHUT_FR = PB1;
-static constexpr uint8_t RANGE_XSHUT_RL = PD10;
-static constexpr uint8_t RANGE_XSHUT_RR = PD9;
+
+inline TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
+inline constexpr RangeVl53l0xConfig range_fl_config = {
+    .bus = &range_i2c,
+    .xshut_pin = PD8,
+    .i2c_address = 0x30,
+    .frame_id = "fl_range",
+};
+
+inline constexpr RangeVl53l0xConfig range_fr_config = {
+    .bus = &range_i2c,
+    .xshut_pin = PB1,
+    .i2c_address = 0x31,
+    .frame_id = "fr_range",
+};
+
+inline constexpr RangeVl53l0xConfig range_rl_config = {
+    .bus = &range_i2c,
+    .xshut_pin = PD10,
+    .i2c_address = 0x32,
+    .frame_id = "rl_range",
+};
+
+inline constexpr RangeVl53l0xConfig range_rr_config = {
+    .bus = &range_i2c,
+    .xshut_pin = PD9,
+    .i2c_address = 0x33,
+    .frame_id = "rr_range",
+};
 
 // ────────────── ROS ──────────────
 static constexpr const char* NODE_NAME = "rosbot_mcu";
 
-static constexpr const char* BATTERY_FRAME_ID = "base_link";
 static constexpr uint8_t BATTERY_NUM_CELLS = 3;
 static constexpr float BATTERY_CELL_CAPACITY = 2.6f;  // Ah
 static constexpr float BATTERY_DESIGN_CAPACITY =
     BATTERY_NUM_CELLS * BATTERY_CELL_CAPACITY;
+inline constexpr BatteryPublisherConfig battery_pub_config = {
+    .topic = "battery",
+    .frame_id = "base_link",
+    .design_capacity = BATTERY_DESIGN_CAPACITY,
+    .num_cells = BATTERY_NUM_CELLS,
+};
 
-static constexpr const char* IMU_FRAME_ID = "imu_link";
+inline constexpr uint8_t buttons_pins[2] = {PUSH_BUTTON2, PUSH_BUTTON1};
+inline constexpr ButtonsPublisherConfig buttons_pub_config = {
+    .topic = "buttons",
+    .pins = buttons_pins,
+    .num_buttons = 2,
+};
 
-static constexpr const char* JOINT_STATE_FRAME_ID = "base_link";
+inline constexpr ImuPublisherConfig imu_pub_config = {
+    .topic = "_imu/data_raw",
+    .frame_id = "imu_link",
+};
 
-static constexpr float RANGE_FOV = 0.26f;  // [rad]
-static constexpr float RANGE_MIN = 0.01f;  // [m]
-static constexpr float RANGE_MAX = 0.9f;   // [m]
-static constexpr const char* RANGE_FRAME_IDS[] = {
-    "fl_range",
-    "fr_range",
-    "rl_range",
-    "rr_range",
+inline constexpr JointStatePublisherConfig joint_state_pub_config = {
+    .topic = "_motors_response",
+    .frame_id = "base_link",
+};
+
+inline constexpr RangePublisherConfig range_pub_config = {
+    .topic = "ranges",
+    .fov = 0.26f,
+    .min_range = 0.01f,
+    .max_range = 0.9f,
 };
 
 static constexpr uint16_t DOMAIN_ID = 255;  // 255 inherit from Micro ROS Agent
@@ -242,7 +274,8 @@ static constexpr uint32_t PING_TIMEOUT_MS = 50;
 static constexpr uint8_t PING_ATTEMPTS = 5;
 
 // ────────────── SBC Interface ──────────────
-#define SBC_SERIAL_TIMEOUT 1  // ms
-#define SBC_STATUS PG6        // Detect RPi which is an I2C with pullup
-#define RPI_CONSOLE PG5
-#define RPI_BTN PG7
+static constexpr uint32_t SBC_SERIAL_TIMEOUT_MS = 100;
+static constexpr uint8_t SBC_STATUS =
+    PG6;  // Detect RPi which is an I2C with pullup
+static constexpr uint8_t RPI_CONSOLE = PG5;
+static constexpr uint8_t RPI_BTN = PG7;

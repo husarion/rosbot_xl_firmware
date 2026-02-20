@@ -17,14 +17,18 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <sensor_msgs/msg/joint_state.h>
 
-#include "config.hpp"
-#include "motor_array.hpp"
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
 
+struct JointStatePublisherConfig {
+  const char* topic;
+  const char* frame_id;
+};
+
 class JointStatePublisher : public PublisherInterface {
  public:
-  explicit JointStatePublisher(const char* topic) : PublisherInterface(topic) {}
+  explicit JointStatePublisher(JointStatePublisherConfig cfg)
+      : PublisherInterface(cfg.topic), cfg_(cfg) {}
 
   rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     initMsg(allocator);
@@ -45,13 +49,13 @@ class JointStatePublisher : public PublisherInterface {
   rcl_publisher_t pub_;
   sensor_msgs__msg__JointState msg_;
   EncodersStamped data_;
+  JointStatePublisherConfig cfg_;
 
   void initMsg(rcl_allocator_t& allocator) {
     memset(&msg_, 0, sizeof(msg_));
     sensor_msgs__msg__JointState__init(&msg_);
 
-    msg_.header.frame_id =
-        micro_ros_string_utilities_init(JOINT_STATE_FRAME_ID);
+    msg_.header.frame_id = micro_ros_string_utilities_init(cfg_.frame_id);
 
     const uint8_t n = g_motors.count();
 
@@ -60,8 +64,7 @@ class JointStatePublisher : public PublisherInterface {
     msg_.name.data = (rosidl_runtime_c__String*)allocator.allocate(
         n * sizeof(rosidl_runtime_c__String), allocator.state);
     for (uint8_t i = 0; i < n; ++i)
-      msg_.name.data[i] =
-          micro_ros_string_utilities_init(g_motors[i]->jointName());
+      msg_.name.data[i] = micro_ros_string_utilities_init(g_motors[i]->name());
 
     auto alloc_doubles = [&](auto& seq) {
       seq.capacity = n;

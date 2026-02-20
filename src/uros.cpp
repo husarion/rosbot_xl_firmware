@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "uros.hpp"
+
 #include <vector>
 
 /*===== ROS MSGS TYPES =====*/
@@ -25,6 +26,7 @@
 #include <rcl/time.h>
 #include <rclc/executor.h>
 
+#include "config.hpp"
 #include "log.hpp"
 #include "motor_array.hpp"
 #include "ros/publishers/battery_publisher.hpp"
@@ -38,15 +40,14 @@
 namespace u_ros {
 
 // PUBLISHERS
-static BatteryPublisher s_battery_pub("battery");
-static ButtonsPublisher s_buttons_pub("buttons", BUTTON_PINS, NUM_BUTTONS);
-static ImuPublisher s_imu_pub("_imu/data_raw");
-static JointStatePublisher s_joint_pub("_motors_response");
-static RangePublisher s_range_pub("ranges");
+static BatteryPublisher s_battery_pub(battery_pub_config);
+static ButtonsPublisher s_buttons_pub(buttons_pub_config);
+static ImuPublisher s_imu_pub(imu_pub_config);
+static JointStatePublisher s_joint_pub(joint_state_pub_config);
+static RangePublisher s_range_pub(range_pub_config);
 
 static std::vector<PublisherInterface*> s_publishers = {
-    &s_battery_pub, &s_buttons_pub, &s_imu_pub, &s_joint_pub, &s_range_pub
-};
+    &s_battery_pub, &s_buttons_pub, &s_imu_pub, &s_joint_pub, &s_range_pub};
 uint8_t pub_count = static_cast<uint8_t>(s_publishers.size());
 
 // SUBSCRIPTIONS
@@ -249,6 +250,7 @@ void initMotorsCmdMsg(std_msgs__msg__Float32MultiArray* msg) {
   const uint8_t n = g_motors.count();
 
   static float* data = new float[n]();
+  msg->data.capacity = n;
   msg->data.size = n;
   msg->data.data = data;
 }

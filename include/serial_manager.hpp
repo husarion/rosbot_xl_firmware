@@ -16,7 +16,9 @@
 
 #include <HardwareSerial.h>
 
-#include "config.hpp"
+#include <functional>
+
+#include "serial.hpp"
 
 class SerialManager {
  public:
@@ -25,38 +27,42 @@ class SerialManager {
   static constexpr size_t NS_MAX_LENGTH = 32;
   static inline constexpr char NS_DEFAULT[] = "";
 
+  SerialManager(SerialConfig main, const SerialConfig* alt = nullptr,
+                std::function<bool()> useAltCondition = nullptr,
+                std::function<void()> confirmAlt = nullptr)
+      : main_(main),
+        alt_(alt),
+        useAltCondition_(useAltCondition),
+        confirmAlt_(confirmAlt) {}
+
   void init() {
-    initSerial(SBC_SERIAL_CONFIG);
-    initSerial(FTDI_SERIAL_CONFIG);
+    initSerial(main_);
+    if (alt_) initSerial(*alt_);
   }
 
   const SerialConfig& selectActive(uint32_t timeout_ms = 2000) {
     uint32_t startTime = millis();
 
     while ((millis() - startTime) < timeout_ms) {
-      if (digitalRead(PUSH_BUTTON1) == LOW ||
-          digitalRead(PUSH_BUTTON2) == LOW) {
-        digitalWrite(GRN_LED, HIGH);
-        digitalWrite(GRN_LED2, HIGH);
-        active_ = &FTDI_SERIAL_CONFIG;
+      if (alt_ && useAltCondition_ && useAltCondition_()) {
+        active_ = alt_;
+        if (confirmAlt_) confirmAlt_();
         return *active_;
       }
       delay(CHECK_INTERVAL);
     }
 
-    active_ = &SBC_SERIAL_CONFIG;
+    active_ = &main_;
     return *active_;
   }
 
   bool configureNamespace(uint16_t timeout_ms = 2000) {
     if (!active_) return false;
 
-    // Try to get from host
     if (waitForHostConfig(timeout_ms)) {
       return true;
     }
 
-    // Default namespace
     strncpy(namespace_, NS_DEFAULT, NS_MAX_LENGTH);
     namespace_[NS_MAX_LENGTH - 1] = '\0';
     return true;
@@ -68,28 +74,21 @@ class SerialManager {
   const SerialConfig& activeConfig() const { return *active_; }
   const char* getNamespace() const { return namespace_; }
 
-  HardwareSerial& sbc() { return *SBC_SERIAL_CONFIG.serial; }
-  HardwareSerial& ftdi() { return *FTDI_SERIAL_CONFIG.serial; }
+  HardwareSerial& main() { return *main_.serial; }
+  HardwareSerial& alt() { return *alt_->serial; }
 
   HardwareSerial& debug() {
-    return (active_->serial == &Serial1) ? Serial3 : Serial1;
+    return (active_->serial == main_.serial) ? *alt_->serial : *main_.serial;
   }
 
  private:
+  const SerialConfig main_;
+  const SerialConfig* alt_ = nullptr;
   const SerialConfig* active_ = nullptr;
   char namespace_[NS_MAX_LENGTH] = {};
 
-  // Flash storage
-  static constexpr uint32_t FLASH_SECTOR = FLASH_SECTOR_11;
-  static constexpr uint32_t FLASH_ADDR = 0x080E0000;
-  static constexpr uint16_t FLASH_MAGIC = 0xCAFE;
-
-  struct FlashStorage {
-    uint16_t magic;
-    uint16_t length;
-    char ns[NS_MAX_LENGTH];
-    uint32_t crc;
-  } __attribute__((packed, aligned(4)));
+  std::function<bool()> useAltCondition_ = nullptr;
+  std::function<void()> confirmAlt_ = nullptr;
 
   // ============== Private Methods ==============
 

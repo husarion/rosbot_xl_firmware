@@ -58,11 +58,10 @@ static constexpr uint8_t DRIVER_GROUP_COUNT =
     sizeof(driver_groups) / sizeof(driver_groups[0]);
 
 // ───────── Ranges ─────────
-TwoWire range_i2c(RANGE_I2C_SDA, RANGE_I2C_SCL);
-RangeVl53l0x range_fl(&range_i2c, RANGE_XSHUT_FL, 0x30);
-RangeVl53l0x range_fr(&range_i2c, RANGE_XSHUT_FR, 0x31);
-RangeVl53l0x range_rl(&range_i2c, RANGE_XSHUT_RL, 0x32);
-RangeVl53l0x range_rr(&range_i2c, RANGE_XSHUT_RR, 0x33);
+RangeVl53l0x range_fl(range_fl_config);
+RangeVl53l0x range_fr(range_fr_config);
+RangeVl53l0x range_rl(range_rl_config);
+RangeVl53l0x range_rr(range_rr_config);
 static RangeInterface* range_sensors[] = {&range_fl, &range_fr, &range_rl,
                                           &range_rr};
 static constexpr uint8_t RANGE_COUNT =
@@ -78,7 +77,17 @@ LedIndicator g_indicator(led_status_config);
 MotorArray g_motors(motors, MOTOR_COUNT, driver_groups, DRIVER_GROUP_COUNT);
 RangeArray g_ranges(range_sensors, RANGE_COUNT);
 
-SerialManager serialManager;
+bool useAlt() {
+  return digitalRead(PUSH_BUTTON1) == LOW || digitalRead(PUSH_BUTTON2) == LOW;
+}
+
+void confirmAlt() {
+  digitalWrite(GRN_LED, HIGH);
+  digitalWrite(GRN_LED2, HIGH);
+}
+
+SerialManager serialManager(SBC_SERIAL_CONFIG, &FTDI_SERIAL_CONFIG, useAlt,
+                            confirmAlt);
 
 void BoardPheripheralsInit() {
   // Initialize Buttons

@@ -17,13 +17,20 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <sensor_msgs/msg/range.h>
 
-#include "config.hpp"
 #include "publisher_interface.hpp"
 #include "rtos.hpp"
 
+struct RangePublisherConfig {
+  const char* topic;
+  float fov;
+  float min_range;
+  float max_range;
+};
+
 class RangePublisher : public PublisherInterface {
  public:
-  explicit RangePublisher(const char* topic) : PublisherInterface(topic) {}
+  explicit RangePublisher(RangePublisherConfig cfg)
+      : PublisherInterface(cfg.topic), cfg_(cfg) {}
 
   rcl_ret_t init(rcl_node_t& node, rcl_allocator_t& allocator) override {
     initMsg();
@@ -40,7 +47,7 @@ class RangePublisher : public PublisherInterface {
 
     for (uint8_t i = 0; i < data_.data.count; i++) {
       msg_.header.frame_id =
-          micro_ros_string_utilities_init(RANGE_FRAME_IDS[i]);
+          micro_ros_string_utilities_init(data_.data.frame_id[i]);
 
       float range = data_.data.range[i];
       if (range > msg_.max_range)
@@ -60,14 +67,15 @@ class RangePublisher : public PublisherInterface {
   rcl_publisher_t pub_;
   sensor_msgs__msg__Range msg_;
   RangesStamped data_;
+  RangePublisherConfig cfg_;
 
   void initMsg() {
     memset(&msg_, 0, sizeof(msg_));
     msg_.radiation_type = sensor_msgs__msg__Range__INFRARED;
 
-    msg_.field_of_view = RANGE_FOV;
-    msg_.min_range = RANGE_MIN;
-    msg_.max_range = RANGE_MAX;
+    msg_.field_of_view = cfg_.fov;
+    msg_.min_range = cfg_.min_range;
+    msg_.max_range = cfg_.max_range;
     msg_.range = NAN;
     msg_.variance = 0.0f;
   }
