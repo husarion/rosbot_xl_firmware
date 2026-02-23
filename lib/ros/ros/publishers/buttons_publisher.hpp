@@ -17,8 +17,8 @@
 #include <Arduino.h>
 #include <std_msgs/msg/u_int8.h>
 
-#include "publisher_interface.hpp"
 #include "../utils.hpp"
+#include "publisher_interface.hpp"
 
 struct ButtonsPublisherConfig {
   const char* topic;
@@ -52,7 +52,9 @@ class ButtonsPublisher : public PublisherInterface {
     }
   }
 
-  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
+  void fini(rcl_node_t& node) override {
+    RC_SKIP(rcl_publisher_fini(&pub_, &node));
+  }
 
  private:
   ButtonsPublisherConfig cfg_;

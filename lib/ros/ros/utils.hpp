@@ -14,13 +14,13 @@
 
 #pragma once
 
-#define RC_RETURN(fn)              \
+#define RC_RETURN(fn)                   \
   {                                     \
     rcl_ret_t rc = fn;                  \
     if (rc != RCL_RET_OK) return false; \
   }
 
-#define RC_SKIP(fn)              \
+#define RC_SKIP(fn)                     \
   {                                     \
     [[maybe_unused]] rcl_ret_t rc = fn; \
   }

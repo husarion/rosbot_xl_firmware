@@ -15,106 +15,108 @@
 #include "ros_node.hpp"
 
 bool RosNode::pingAgent() {
-    return rmw_uros_ping_agent(cfg_.ping_timeout_ms, cfg_.ping_attempts) == RMW_RET_OK;
+  return rmw_uros_ping_agent(cfg_.ping_timeout_ms, cfg_.ping_attempts) ==
+         RMW_RET_OK;
 }
 
 bool RosNode::createEntities() {
-    allocator_ = rcl_get_default_allocator();
-    init_options_ = rcl_get_zero_initialized_init_options();
+  allocator_ = rcl_get_default_allocator();
+  init_options_ = rcl_get_zero_initialized_init_options();
 
-    RC_RETURN(rcl_init_options_init(&init_options_, allocator_));
-    RC_RETURN(rcl_init_options_set_domain_id(&init_options_, cfg_.domain_id));
-    rclc_support_init_with_options(&support_, 0, NULL,
-                                   &init_options_, &allocator_);
-    rclc_node_init_default(&node_, cfg_.node_name, ns_, &support_);
+  RC_RETURN(rcl_init_options_init(&init_options_, allocator_));
+  RC_RETURN(rcl_init_options_set_domain_id(&init_options_, cfg_.domain_id));
+  rclc_support_init_with_options(&support_, 0, NULL, &init_options_,
+                                 &allocator_);
+  rclc_node_init_default(&node_, cfg_.node_name, ns_, &support_);
 
-    // ── Register all publishers ──────────────────────────────
-    for (uint8_t i = 0; i < cfg_.pub_count; ++i) {
-        RC_RETURN(cfg_.publishers[i]->init(node_, allocator_));
+  // ── Register all publishers ──────────────────────────────
+  for (uint8_t i = 0; i < cfg_.pub_count; ++i) {
+    RC_RETURN(cfg_.publishers[i]->init(node_, allocator_));
+  }
+
+  // ── Register all subscriptions ──────────────────────────
+  for (uint8_t i = 0; i < cfg_.sub_count; ++i) {
+    auto& s = cfg_.subscriptions[i];
+    if (s.best_effort) {
+      rclc_subscription_init_best_effort(&s.sub, &node_, s.type_support,
+                                         s.topic_name);
+    } else {
+      rclc_subscription_init_default(&s.sub, &node_, s.type_support,
+                                     s.topic_name);
     }
+  }
 
-    // ── Register all subscriptions ──────────────────────────
-    for (uint8_t i = 0; i < cfg_.sub_count; ++i) {
-        auto& s = cfg_.subscriptions[i];
-        if (s.best_effort) {
-            rclc_subscription_init_best_effort(
-                &s.sub, &node_, s.type_support, s.topic_name);
-        } else {
-            rclc_subscription_init_default(
-                &s.sub, &node_, s.type_support, s.topic_name);
-        }
-    }
+  // ── Register all services ────────────────────────────────
+  for (uint8_t i = 0; i < cfg_.srv_count; ++i) {
+    auto& s = cfg_.services[i];
+    rclc_service_init_default(&s.srv, &node_, s.type_support, s.topic_name);
+  }
 
-    // ── Register all services ────────────────────────────────
-    for (uint8_t i = 0; i < cfg_.srv_count; ++i) {
-        auto& s = cfg_.services[i];
-        rclc_service_init_default(
-            &s.srv, &node_, s.type_support, s.topic_name);
-    }
+  // ── Count executor handles ───────────────────────────────
+  uint8_t exec_count = cfg_.sub_count + cfg_.srv_count;
 
-    // ── Count executor handles ───────────────────────────────
-    uint8_t exec_count = cfg_.sub_count + cfg_.srv_count;
+  // ── Create executor ──────────────────────────────────────
+  executor_ = rclc_executor_get_zero_initialized_executor();
+  rclc_executor_init(&executor_, &support_.context, exec_count, &allocator_);
 
-    // ── Create executor ──────────────────────────────────────
-    executor_ = rclc_executor_get_zero_initialized_executor();
-    rclc_executor_init(&executor_, &support_.context,
-                       exec_count, &allocator_);
+  for (uint8_t i = 0; i < cfg_.sub_count; ++i) {
+    auto& s = cfg_.subscriptions[i];
+    rclc_executor_add_subscription(&executor_, &s.sub, s.msg, s.callback,
+                                   ON_NEW_DATA);
+  }
+  for (uint8_t i = 0; i < cfg_.srv_count; ++i) {
+    auto& s = cfg_.services[i];
+    rclc_executor_add_service(&executor_, &s.srv, s.request, s.response,
+                              s.callback);
+  }
 
-    for (uint8_t i = 0; i < cfg_.sub_count; ++i) {
-        auto& s = cfg_.subscriptions[i];
-        rclc_executor_add_subscription(
-            &executor_, &s.sub, s.msg, s.callback, ON_NEW_DATA);
-    }
-    for (uint8_t i = 0; i < cfg_.srv_count; ++i) {
-        auto& s = cfg_.services[i];
-        rclc_executor_add_service(
-            &executor_, &s.srv, s.request, s.response, s.callback);
-    }
-
-    rmw_uros_sync_session(1000);
-    return true;
+  rmw_uros_sync_session(1000);
+  return true;
 }
 
 void RosNode::destroyEntities() {
-    auto* ctx = rcl_context_get_rmw_context(&support_.context);
-    rmw_uros_set_context_entity_destroy_session_timeout(ctx, 0);
+  auto* ctx = rcl_context_get_rmw_context(&support_.context);
+  rmw_uros_set_context_entity_destroy_session_timeout(ctx, 0);
 
-    for (uint8_t i = 0; i < cfg_.pub_count; ++i)
-        cfg_.publishers[i]->fini(node_);
-    for (uint8_t i = 0; i < cfg_.sub_count; ++i)
-        RC_SKIP(rcl_subscription_fini(&cfg_.subscriptions[i].sub, &node_));
-    for (uint8_t i = 0; i < cfg_.srv_count; ++i)
-        RC_SKIP(rcl_service_fini(&cfg_.services[i].srv, &node_));
+  for (uint8_t i = 0; i < cfg_.pub_count; ++i) cfg_.publishers[i]->fini(node_);
+  for (uint8_t i = 0; i < cfg_.sub_count; ++i)
+    RC_SKIP(rcl_subscription_fini(&cfg_.subscriptions[i].sub, &node_));
+  for (uint8_t i = 0; i < cfg_.srv_count; ++i)
+    RC_SKIP(rcl_service_fini(&cfg_.services[i].srv, &node_));
 
-    rclc_executor_fini(&executor_);
-    RC_SKIP(rcl_node_fini(&node_));
-    rclc_support_fini(&support_);
-    RC_SKIP(rcl_init_options_fini(&init_options_));
+  rclc_executor_fini(&executor_);
+  RC_SKIP(rcl_node_fini(&node_));
+  rclc_support_fini(&support_);
+  RC_SKIP(rcl_init_options_fini(&init_options_));
 }
 
 void RosNode::loop() {
-    switch (state_) {
-        case WAITING:
-            if (pingAgent()) state_ = AGENT_AVAILABLE;
-            break;
-        case AGENT_AVAILABLE:
-            if (createEntities()) state_ = CONNECTED;
-            else { destroyEntities(); state_ = WAITING; }
-            break;
-        case CONNECTED:
-            if (!pingAgent()) state_ = DISCONNECTED;
-            break;
-        case DISCONNECTED:
-            destroyEntities(); state_ = WAITING;
-            break;
-    }
+  switch (state_) {
+    case WAITING:
+      if (pingAgent()) state_ = AGENT_AVAILABLE;
+      break;
+    case AGENT_AVAILABLE:
+      if (createEntities())
+        state_ = CONNECTED;
+      else {
+        destroyEntities();
+        state_ = WAITING;
+      }
+      break;
+    case CONNECTED:
+      if (!pingAgent()) state_ = DISCONNECTED;
+      break;
+    case DISCONNECTED:
+      destroyEntities();
+      state_ = WAITING;
+      break;
+  }
 }
 
 void RosNode::publishLoop() {
-    if (state_ != CONNECTED) return;
-    for (uint8_t i = 0; i < cfg_.pub_count; ++i)
-        cfg_.publishers[i]->publish();
-    rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(0));
+  if (state_ != CONNECTED) return;
+  for (uint8_t i = 0; i < cfg_.pub_count; ++i) cfg_.publishers[i]->publish();
+  rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(0));
 }
 
 void RosNode::transportInit(const SerialConfig& config) {

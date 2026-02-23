@@ -17,12 +17,18 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <sensor_msgs/msg/range.h>
 
-#include "publisher_interface.hpp"
-#include "rtos.hpp"
 #include "../utils.hpp"
+#include "publisher_interface.hpp"
+#include "range_array.hpp"
+
+struct RangesStamped {
+  RangesData data;
+  int64_t timestamp_ns;
+};
 
 struct RangePublisherConfig {
   const char* topic;
+  QueueHandle_t& queue;
   float fov;
   float min_range;
   float max_range;
@@ -41,7 +47,7 @@ class RangePublisher : public PublisherInterface {
   }
 
   void publish() override {
-    if (xQueueReceive(rtos::RangesQueue, &data_, 0) != pdPASS) return;
+    if (xQueueReceive(cfg_.queue, &data_, 0) != pdPASS) return;
 
     msg_.header.stamp.sec = data_.timestamp_ns / 1000000000LL;
     msg_.header.stamp.nanosec = data_.timestamp_ns % 1000000000LL;
@@ -62,7 +68,9 @@ class RangePublisher : public PublisherInterface {
     }
   }
 
-  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
+  void fini(rcl_node_t& node) override {
+    RC_SKIP(rcl_publisher_fini(&pub_, &node));
+  }
 
  private:
   rcl_publisher_t pub_;

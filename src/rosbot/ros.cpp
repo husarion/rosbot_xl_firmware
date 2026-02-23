@@ -1,5 +1,20 @@
-#include "ros/ros_node.hpp"
+// Copyright 2022 Husarion sp. z o.o.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <vector>
+
+#include "ros/ros_node.hpp"
 
 /*===== ROS MSGS TYPES =====*/
 #include <std_msgs/msg/bool.h>
@@ -9,30 +24,34 @@
 
 #include "config.hpp"
 #include "motor_array.hpp"
-
 #include "ros/publishers/battery_publisher.hpp"
 #include "ros/publishers/buttons_publisher.hpp"
 #include "ros/publishers/imu_publisher.hpp"
 #include "ros/publishers/joint_state_publisher.hpp"
 #include "ros/publishers/range_publisher.hpp"
-
 #include "ros/subscribers/led_subscriber.hpp"
 
+void rosSetup() {}
 // PUBLISHERS
 static BatteryPublisher s_battery_pub(battery_pub_config);
 static ButtonsPublisher s_buttons_pub(buttons_pub_config);
 static ImuPublisher s_imu_pub(imu_pub_config);
 static JointStatePublisher s_joint_pub(joint_state_pub_config);
 static RangePublisher s_range_pub(range_pub_config);
+
 static std::vector<PublisherInterface*> s_publishers = {
     &s_battery_pub, &s_buttons_pub, &s_imu_pub, &s_joint_pub, &s_range_pub};
 uint8_t pub_count = static_cast<uint8_t>(s_publishers.size());
 
 // SUBSCRIBERS
 static std_msgs__msg__Float32MultiArray s_mot_msg = {
-    .data = { .data = new float[MAX_NUM_MOTORS](),
-              .size = MAX_NUM_MOTORS,
-              .capacity = MAX_NUM_MOTORS }
+    .layout = {},
+    .data =
+        {
+            .data = new float[MAX_NUM_MOTORS](),
+            .size = MAX_NUM_MOTORS,
+            .capacity = MAX_NUM_MOTORS,
+        },
 };
 
 void motorsCmdCallback(const void* msg_in) {
@@ -50,14 +69,14 @@ static LedSubState s_led_right_state;
 
 static std::vector<SubscriptionEntry> s_subscriptions = {
     {
-        .msg          = &s_mot_msg,
-        .type_support = ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg,
-                                                     Float32MultiArray),
-        .topic_name   = "_motors_cmd",
-        .callback     = motorsCmdCallback,
-        .best_effort  = true,
+        .msg = &s_mot_msg,
+        .type_support =
+            ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
+        .topic_name = "_motors_cmd",
+        .callback = motorsCmdCallback,
+        .best_effort = true,
     },
-    makeLedSubscription({.pin = GRN_LED,  .topic_name = "led/left"},
+    makeLedSubscription({.pin = GRN_LED, .topic_name = "led/left"},
                         &s_led_left_state),
     makeLedSubscription({.pin = GRN_LED2, .topic_name = "led/right"},
                         &s_led_right_state),
@@ -97,27 +116,24 @@ void getCpuIdCallback(const void* req, void* res) {
 
 static std::vector<ServiceEntry> s_services = {
     {
-        .srv          = {},
-        .request      = &s_cpuid_req,
-        .response     = &s_cpuid_res,
+        .srv = {},
+        .request = &s_cpuid_req,
+        .response = &s_cpuid_res,
         .type_support = ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger),
-        .topic_name   = "/get_cpu_id",
-        .callback     = getCpuIdCallback,
+        .topic_name = "/get_cpu_id",
+        .callback = getCpuIdCallback,
     },
 };
 
-
-RosNodeConfig ros_node_config = {
-    .node_name = NODE_NAME,
-    .domain_id = DOMAIN_ID,
-    .publishers = s_publishers.data(),
-    .pub_count = s_publishers.size(),
-    .subscriptions = s_subscriptions.data(),
-    .sub_count = s_subscriptions.size(),
-    .services = s_services.data(),
-    .srv_count = s_services.size(),
-    .ping_attempts = PING_ATTEMPTS,
-    .ping_timeout_ms = PING_TIMEOUT_MS
-};
+RosNodeConfig ros_node_config = {.node_name = NODE_NAME,
+                                 .domain_id = DOMAIN_ID,
+                                 .publishers = s_publishers.data(),
+                                 .pub_count = s_publishers.size(),
+                                 .subscriptions = s_subscriptions.data(),
+                                 .sub_count = s_subscriptions.size(),
+                                 .services = s_services.data(),
+                                 .srv_count = s_services.size(),
+                                 .ping_attempts = PING_ATTEMPTS,
+                                 .ping_timeout_ms = PING_TIMEOUT_MS};
 
 RosNode g_ros_node(ros_node_config);

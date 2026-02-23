@@ -21,12 +21,18 @@
 #include <rosidl_runtime_c/primitives_sequence_functions.h>
 #include <sensor_msgs/msg/battery_state.h>
 
-#include "publisher_interface.hpp"
 #include "../utils.hpp"
-#include "rtos.hpp"
+#include "battery_interface.hpp"
+#include "publisher_interface.hpp"
+
+struct BatteryStamped {
+  BatteryData data;
+  int64_t timestamp_ns;
+};
 
 struct BatteryPublisherConfig {
   const char* topic;
+  QueueHandle_t& queue;
   const char* frame_id;
   float design_capacity;
   uint16_t num_cells;
@@ -45,12 +51,14 @@ class BatteryPublisher : public PublisherInterface {
   }
 
   void publish() override {
-    if (xQueueReceive(rtos::BatteryQueue, &data_, 0) != pdPASS) return;
+    if (xQueueReceive(cfg_.queue, &data_, 0) != pdPASS) return;
     fillMsg(data_);
     RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
   }
 
-  void fini(rcl_node_t& node) override { RC_SKIP(rcl_publisher_fini(&pub_, &node)); }
+  void fini(rcl_node_t& node) override {
+    RC_SKIP(rcl_publisher_fini(&pub_, &node));
+  }
 
   const char* topicName() const override { return topic_; }
 

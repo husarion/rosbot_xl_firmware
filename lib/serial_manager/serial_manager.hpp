@@ -41,15 +41,14 @@ class SerialManager {
  public:
   static constexpr size_t NS_MAX_LENGTH = 32;
 
-  SerialManager(SerialManagerConfig cfg)
-      : cfg_(cfg) {}
+  SerialManager(SerialManagerConfig cfg) : cfg_(cfg) {}
 
   void init() {
     initSerial(cfg_.main);
     if (cfg_.alt) initSerial(*cfg_.alt);
   }
 
-  const SerialConfig& selectActive(uint32_t timeout_ms = 2000) {
+  const SerialConfig& selectCommunicationSerial(uint32_t timeout_ms = 2000) {
     uint32_t startTime = millis();
 
     while ((millis() - startTime) < timeout_ms) {
@@ -87,7 +86,8 @@ class SerialManager {
   HardwareSerial& alt() { return *cfg_.alt->serial; }
 
   HardwareSerial& debug() {
-    return (active_->serial == cfg_.main.serial) ? *cfg_.alt->serial : *cfg_.main.serial;
+    return (active_->serial == cfg_.main.serial) ? *cfg_.alt->serial
+                                                 : *cfg_.main.serial;
   }
 
  private:
@@ -116,10 +116,10 @@ class SerialManager {
     bool got_line = false;
     uint32_t last_ready = 0;
 
-    const char* fw_version = "0.0.0"; 
-    #if defined(FW_VERSION)
-      fw_version = FW_VERSION;
-    #endif
+    const char* fw_version = "0.0.0";
+#if defined(FW_VERSION)
+    fw_version = FW_VERSION;
+#endif
     serial.printf("FW: %s\r\n", fw_version);
     serial.flush();
     last_ready = millis();

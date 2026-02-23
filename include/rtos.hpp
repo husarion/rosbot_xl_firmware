@@ -17,33 +17,6 @@
 #include <STM32FreeRTOS.h>
 #include <micro_ros_arduino.h>
 
-#include "battery_interface.hpp"
-#include "encoder_array.hpp"
-#include "imu_interface.hpp"
-#include "range_array.hpp"
-
-struct BatteryStamped {
-  BatteryData data;
-  int64_t timestamp_ns;
-};
-
-struct EncodersStamped {
-  EncodersData data;
-  int64_t timestamp_ns;
-};
-
-struct ImuStamped {
-  ImuData data;
-  int64_t timestamp_ns;
-};
-
-struct RangesStamped {
-  RangesData data;
-  int64_t timestamp_ns;
-};
-
-namespace rtos {
-
 static inline bool rtos_get_timestamp_ns(int64_t& timestamp_ns) {
   if (rmw_uros_epoch_synchronized()) {
     timestamp_ns = rmw_uros_epoch_nanos();
@@ -52,14 +25,8 @@ static inline bool rtos_get_timestamp_ns(int64_t& timestamp_ns) {
   return false;
 }
 
-inline QueueHandle_t BatteryQueue;
-inline QueueHandle_t EncodersQueue;
-inline QueueHandle_t ImuQueue;
-inline QueueHandle_t RangesQueue;
-
 void createQueues();
 void createTasks();
-void destroyTasks();
 
 // Priority levels
 // 7 - Highest (configMAX_PRIORITIES)
@@ -112,22 +79,10 @@ struct TaskHandleWrapper {
                               cfg.priority, &handle);
   }
 
-  void destroy(const char* name) {
+  void destroy() {
     if (handle != nullptr) {
       vTaskDelete(handle);
       handle = nullptr;
     }
   }
 };
-
-void batteryTask(void* p);
-void encoderTask(void* p);
-void imuTask(void* p);
-void ledIndicatorTask(void* p);
-void monitorTask(void* p);
-void motorControlTask(void* p);
-void rangeTask(void* p);
-void uRosTask(void* p);
-void uRosPingTask(void* p);
-
-}  // namespace rtos

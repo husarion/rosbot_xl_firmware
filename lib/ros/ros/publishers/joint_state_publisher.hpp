@@ -17,12 +17,18 @@
 #include <micro_ros_utilities/string_utilities.h>
 #include <sensor_msgs/msg/joint_state.h>
 
+#include "encoder_array.hpp"
 #include "publisher_interface.hpp"
-#include "rtos.hpp"
 #include "../utils.hpp"
+
+struct EncodersStamped {
+  EncodersData data;
+  int64_t timestamp_ns;
+};
 
 struct JointStatePublisherConfig {
   const char* topic;
+  QueueHandle_t& queue;
   const char* frame_id;
 };
 
@@ -39,7 +45,7 @@ class JointStatePublisher : public PublisherInterface {
   }
 
   void publish() override {
-    if (xQueueReceive(rtos::EncodersQueue, &data_, 0) != pdPASS) return;
+    if (xQueueReceive(cfg_.queue, &data_, 0) != pdPASS) return;
     fillMsg(data_);
     RC_SKIP(rcl_publish(&pub_, &msg_, NULL));
   }

@@ -17,23 +17,38 @@
 #include <STM32FreeRTOS.h>
 
 #include "battery_interface.hpp"
+#include "config.hpp"
 #include "encoder_array.hpp"
 #include "imu_interface.hpp"
 #include "led_indicator.hpp"
 #include "motor_array.hpp"
+#include "ros/publishers/battery_publisher.hpp"
+#include "ros/publishers/imu_publisher.hpp"
+#include "ros/publishers/joint_state_publisher.hpp"
+#include "ros/publishers/range_publisher.hpp"
 #include "ros/ros_node.hpp"
 #include "serial_manager.hpp"
 
-namespace rtos {
 
+// ===== Queues =====
 void createQueues() {
-  BatteryQueue = xQueueCreate(1, sizeof(BatteryStamped));
-  EncodersQueue = xQueueCreate(1, sizeof(EncodersStamped));
-  ImuQueue = xQueueCreate(1, sizeof(ImuStamped));
-  RangesQueue = xQueueCreate(1, sizeof(RangesStamped));
+  battery_queue = xQueueCreate(1, sizeof(BatteryStamped));
+  imu_queue = xQueueCreate(1, sizeof(ImuStamped));
+  joint_state_queue = xQueueCreate(1, sizeof(EncodersStamped));
+  ranges_queue = xQueueCreate(1, sizeof(RangesStamped));
 }
 
-// ===== Config for all tasks =====
+// ===== Create all tasks =====
+void batteryTask(void* p);
+void encoderTask(void* p);
+void imuTask(void* p);
+void ledIndicatorTask(void* p);
+void monitorTask(void* p);
+void motorControlTask(void* p);
+void rangeTask(void* p);
+void uRosTask(void* p);
+void uRosPingTask(void* p);
+
 inline TaskConfig tasks[] = {
     {"Battery", Priority::SENSORS, Stack::SMALL, 10, batteryTask},
     {"Encoder", Priority::CONTROL, Stack::SMALL, 500, encoderTask},
@@ -46,18 +61,11 @@ inline TaskConfig tasks[] = {
     {"uRosPing", Priority::OBSERVING, Stack::MEDIUM, 2, uRosPingTask},
 };
 
-// ===== Handles =====
 inline TaskHandleWrapper taskHandles[sizeof(tasks) / sizeof(tasks[0])];
 
 void createTasks() {
   for (size_t i = 0; i < sizeof(tasks) / sizeof(tasks[0]); i++) {
     taskHandles[i].create(tasks[i]);
-  }
-}
-
-void destroyTasks() {
-  for (size_t i = 0; i < sizeof(tasks) / sizeof(tasks[0]); i++) {
-    taskHandles[i].destroy(tasks[i].name);
   }
 }
 
@@ -73,7 +81,7 @@ void batteryTask(void* p) {
     data.data = g_battery->getData();
 
     if (connected) {
-      xQueueOverwrite(BatteryQueue, &data);
+      xQueueOverwrite(battery_queue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
   }
@@ -90,7 +98,7 @@ void encoderTask(void* p) {
     data.data = g_encoders.getData();
 
     if (connected) {
-      xQueueOverwrite(EncodersQueue, &data);
+      xQueueOverwrite(joint_state_queue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
   }
@@ -107,7 +115,7 @@ void imuTask(void* p) {
     data.data = g_imu->getData();
 
     if (connected) {
-      xQueueOverwrite(ImuQueue, &data);
+      xQueueOverwrite(imu_queue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
   }
@@ -133,7 +141,7 @@ void monitorTask(void* p) {
 
   while (true) {
     vTaskGetRunTimeStats(buf);
-    g_serialManager.debug().printf("%s\r\n", buf);                           
+    g_serialManager.debug().printf("%s\r\n", buf);
 
     vTaskDelayUntil(&wake_time, period);
   }
@@ -161,7 +169,7 @@ void rangeTask(void* p) {
     data.data = g_ranges.getData();
 
     if (connected) {
-      xQueueOverwrite(RangesQueue, &data);
+      xQueueOverwrite(ranges_queue, &data);
     }
     vTaskDelayUntil(&wake_time, period);
   }
@@ -185,5 +193,3 @@ void uRosPingTask(void* p) {
     vTaskDelayUntil(&wake_time, period);
   }
 }
-
-}  // namespace rtos

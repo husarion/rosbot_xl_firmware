@@ -25,10 +25,9 @@
 #include "motor_drv8848.hpp"
 #include "range_array.hpp"
 #include "range_vl53l0.hpp"
+#include "ros/ros_node.hpp"
 #include "rtos.hpp"
 #include "serial_manager.hpp"
-// #include "uros.hpp"
-#include "ros/ros_node.hpp"
 
 // ───────── Battery ─────────
 BatteryAdc battery_adc(battery_adc_config);
@@ -85,12 +84,10 @@ void confirmAlt() {
   digitalWrite(GRN_LED2, HIGH);
 }
 
-SerialManagerConfig serial_config = {
-    .main = SBC_SERIAL_CONFIG,
-    .alt = &FTDI_SERIAL_CONFIG,
-    .useAltCondition = useAlt,
-    .confirmAlt = confirmAlt
-};
+SerialManagerConfig serial_config = {.main = SBC_SERIAL_CONFIG,
+                                     .alt = &FTDI_SERIAL_CONFIG,
+                                     .useAltCondition = useAlt,
+                                     .confirmAlt = confirmAlt};
 SerialManager g_serialManager(serial_config);
 
 void BoardPheripheralsInit() {
@@ -124,7 +121,7 @@ void setup() {
 
   // Pre-communication
   g_serialManager.init();
-  const auto& selected_serial = g_serialManager.selectActive();
+  const auto& selected_serial = g_serialManager.selectCommunicationSerial();
   g_serialManager.configureNamespace();
   g_ros_node.setNamespace(g_serialManager.getNamespace());
 
@@ -138,8 +135,8 @@ void setup() {
   g_ros_node.transportInit(selected_serial);
 
   // RTOS
-  rtos::createQueues();
-  rtos::createTasks();
+  createQueues();
+  createTasks();
   vTaskStartScheduler();
 }
 

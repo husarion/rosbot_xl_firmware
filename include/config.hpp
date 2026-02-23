@@ -233,6 +233,15 @@ inline constexpr RangeVl53l0xConfig range_rr_config = {
 
 // ────────────── ROS ──────────────
 static constexpr const char* NODE_NAME = "rosbot_mcu";
+static constexpr uint16_t DOMAIN_ID = 255;  // 255 inherit from Micro ROS Agent
+static constexpr uint32_t PING_TIMEOUT_MS = 100;
+static constexpr uint8_t PING_ATTEMPTS = 3;
+
+// ────────────── Publishers ──────────────
+inline QueueHandle_t battery_queue;
+inline QueueHandle_t imu_queue;
+inline QueueHandle_t joint_state_queue;
+inline QueueHandle_t ranges_queue;
 
 static constexpr uint8_t BATTERY_NUM_CELLS = 3;
 static constexpr float BATTERY_CELL_CAPACITY = 2.6f;  // Ah
@@ -240,6 +249,7 @@ static constexpr float BATTERY_DESIGN_CAPACITY =
     BATTERY_NUM_CELLS * BATTERY_CELL_CAPACITY;
 inline constexpr BatteryPublisherConfig battery_pub_config = {
     .topic = "battery",
+    .queue = battery_queue,
     .frame_id = "base_link",
     .design_capacity = BATTERY_DESIGN_CAPACITY,
     .num_cells = BATTERY_NUM_CELLS,
@@ -254,24 +264,23 @@ inline constexpr ButtonsPublisherConfig buttons_pub_config = {
 
 inline constexpr ImuPublisherConfig imu_pub_config = {
     .topic = "_imu/data_raw",
+    .queue = imu_queue,
     .frame_id = "imu_link",
 };
 
 inline constexpr JointStatePublisherConfig joint_state_pub_config = {
     .topic = "_motors_response",
+    .queue = joint_state_queue,
     .frame_id = "base_link",
 };
 
 inline constexpr RangePublisherConfig range_pub_config = {
     .topic = "ranges",
+    .queue = ranges_queue,
     .fov = 0.26f,
     .min_range = 0.01f,
     .max_range = 0.9f,
 };
-
-static constexpr uint16_t DOMAIN_ID = 255;  // 255 inherit from Micro ROS Agent
-static constexpr uint32_t PING_TIMEOUT_MS = 100;
-static constexpr uint8_t PING_ATTEMPTS = 3;
 
 // ────────────── SBC Interface ──────────────
 static constexpr uint32_t SBC_SERIAL_TIMEOUT_MS = 100;
